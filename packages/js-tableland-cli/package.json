@@ -3,6 +3,16 @@
   "version": "0.0.1",
   "description": "Tableland experimental command line tool",
   "main": "./dist/cli.js",
+  "files": [
+    "dist/**/*.js"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/textileio/js-tableland-cli.git"
+  },
   "scripts": {
     "build": "npx tsc && chmod +x dist/cli.js",
     "package": "pkg . --targets node17-macos-x64 --output tableland"
