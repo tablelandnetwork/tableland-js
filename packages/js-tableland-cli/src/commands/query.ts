@@ -13,7 +13,7 @@ type Options = {
   host: string;
 };
 
-export const command = "query <statement> [description]";
+export const command = "query <statement>";
 export const desc = "Run a query against a remote table";
 
 export const builder: CommandBuilder<Options, Options> = (yargs) =>

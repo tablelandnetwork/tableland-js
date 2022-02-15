@@ -1,5 +1,5 @@
 import type { Arguments, CommandBuilder } from "yargs";
-import { Wallet, providers } from "ethers";
+import { Wallet, getDefaultProvider } from "ethers";
 import { connect, ConnectionOptions } from "@textile/tableland";
 import yargs from "yargs";
 
@@ -9,6 +9,7 @@ type Options = {
   description: string | undefined;
   alchemy: string | undefined;
   infura: string | undefined;
+  etherscan: string | undefined;
   token: string;
 
   // Global
@@ -16,8 +17,9 @@ type Options = {
   host: string;
 };
 
-export const command = "create <statement> [description] [alchemy] [infura]";
-export const desc = "Run a query against a remote table";
+export const command =
+  "create <statement> [description] [alchemy] [infura] [etherscan]";
+export const desc = "Create a new unique table";
 
 export const builder: CommandBuilder<Options, Options> = (yargs) =>
   yargs
@@ -32,7 +34,11 @@ export const builder: CommandBuilder<Options, Options> = (yargs) =>
       },
       infura: {
         type: "string",
-        description: "Infura provide API key",
+        description: "Infura provider API key",
+      },
+      etherscan: {
+        type: "string",
+        description: "Etherscan provider API key",
       },
     })
     .option("t", {
@@ -46,23 +52,30 @@ export const builder: CommandBuilder<Options, Options> = (yargs) =>
     }) as yargs.Argv<Options>;
 
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
-  const { privateKey, host, token, statement, description, alchemy, infura } =
-    argv;
+  const {
+    privateKey,
+    host,
+    token,
+    statement,
+    description,
+    alchemy,
+    infura,
+    etherscan,
+  } = argv;
   const options: ConnectionOptions = {};
   if (!privateKey) {
     throw new Error("private key string required for create statements");
   }
 
   const wallet = new Wallet(privateKey);
-  if (!alchemy && !infura) {
+  if (!alchemy && !infura && !etherscan) {
     throw new Error("ETH provider API required for create statements");
   }
-  let provider: providers.JsonRpcProvider | undefined;
-  if (alchemy) {
-    provider = new providers.AlchemyProvider("rinkeby", alchemy);
-  } else if (infura) {
-    provider = new providers.InfuraProvider("rinkeby", infura);
-  }
+  const provider = getDefaultProvider("rinkeby", {
+    alchemy,
+    infura,
+    etherscan,
+  });
   if (!provider) {
     throw new Error("Unable to create ETH API provider");
   }

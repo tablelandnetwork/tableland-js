@@ -29,4 +29,9 @@ yargs(hideBin(process.argv))
     description: "Remote API host",
     default: "https://testnet.tableland.network",
   })
+  .option("network", {
+    type: "string",
+    description: "The EVM compatible network to target (currently ignored)",
+    default: "rinkeby",
+  })
   .strict().argv;
