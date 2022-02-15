@@ -10,6 +10,8 @@
 # Table of Contents
 
 - [Background](#background)
+- [Usage](#usage)
+- [Install](#install)
 - [Development](#development)
 - [Maintainers](#maintainers)
 - [Contributing](#contributing)
@@ -20,9 +22,31 @@
 This is the experimental Tableland command line tool.
 This is the first pass, and is subject to wild changes without notice!
 
+# Usage
+
+```bash
+tableland [command]
+
+Commands:
+  tableland create <statement>              Run a query against a remote table
+  [description] [alchemy] [infura]
+  tableland info <id>                       Get info about a given table by id.
+  tableland jwt                             Create a signed JWT token
+  tableland list [controller]               List tables by controller
+  tableland query <statement>               Run a query against a remote table
+  [description]
+
+Options:
+      --help        Show help                                          [boolean]
+      --version     Show version number                                [boolean]
+  -k, --privateKey  Private key string                       [string] [required]
+  -h, --host        Remote API host
+                         [string] [default: "https://testnet.tableland.network"]
+```
+
 # Install
 
-You can install via npm for now:
+You can install via npm. Homebrew etc coming soon!
 
 ```
 npm install @textile/tableland-cli
@@ -46,6 +70,8 @@ npm install
 npm run build
 npm run package
 ```
+
+# Maintainers
 
 [@carsonfarmer](https://github.com/carsonfarmer)
 
