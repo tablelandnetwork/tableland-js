@@ -12,9 +12,7 @@ if (!globalThis.fetch) {
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 
-// Useful aliases.
-yargs(hideBin(process.argv))
-  // Use the commands directory to scaffold.
+const _ = yargs(hideBin(process.argv))
   .commandDir("commands")
   .env("TBL")
   .option("k", {

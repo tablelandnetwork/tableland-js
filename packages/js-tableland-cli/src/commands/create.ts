@@ -1,5 +1,5 @@
 import type { Arguments, CommandBuilder } from "yargs";
-import { Wallet, getDefaultProvider } from "ethers";
+import { Wallet, providers } from "ethers";
 import { connect, ConnectionOptions } from "@textile/tableland";
 import yargs from "yargs";
 
@@ -15,6 +15,7 @@ type Options = {
   // Global
   privateKey: string;
   host: string;
+  network: "rinkeby";
 };
 
 export const command =
@@ -61,6 +62,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     alchemy,
     infura,
     etherscan,
+    network,
   } = argv;
   const options: ConnectionOptions = {};
   if (!privateKey) {
@@ -71,17 +73,20 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
   if (!alchemy && !infura && !etherscan) {
     throw new Error("ETH provider API required for create statements");
   }
-  const provider = getDefaultProvider("rinkeby", {
-    alchemy,
-    infura,
-    etherscan,
-  });
-  if (!provider) {
+  let provider: providers.BaseProvider | undefined;
+  if (infura) {
+    provider = new providers.InfuraProvider(network, infura);
+  } else if (etherscan) {
+    provider = new providers.EtherscanProvider(network, etherscan);
+  } else if (alchemy) {
+    provider = new providers.AlchemyProvider(network, alchemy);
+  } else {
     throw new Error("Unable to create ETH API provider");
   }
+
   options.signer = wallet.connect(provider);
   if (token) {
-    options.jwsToken = { token };
+    options.token = { token };
   }
   if (host) {
     options.host = host;
