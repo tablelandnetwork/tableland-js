@@ -1,6 +1,6 @@
 {
   "name": "@textile/tableland-cli",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Tableland experimental command line tool",
   "main": "./dist/cli.js",
   "files": [
