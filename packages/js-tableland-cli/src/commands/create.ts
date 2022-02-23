@@ -1,5 +1,5 @@
 import type { Arguments, CommandBuilder } from "yargs";
-import { Wallet, providers } from "ethers";
+import { Wallet, providers, getDefaultProvider } from "ethers";
 import { connect, ConnectionOptions } from "@textile/tableland";
 import yargs from "yargs";
 
@@ -81,9 +81,12 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
   } else if (alchemy) {
     provider = new providers.AlchemyProvider(network, alchemy);
   } else {
-    throw new Error("Unable to create ETH API provider");
+    provider = getDefaultProvider(network);
   }
 
+  if (!provider) {
+    throw new Error("Unable to create ETH API provider");
+  }
   options.signer = wallet.connect(provider);
   if (token) {
     options.token = { token };
