@@ -70,9 +70,6 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
   }
 
   const wallet = new Wallet(privateKey);
-  if (!alchemy && !infura && !etherscan) {
-    throw new Error("ETH provider API required for create statements");
-  }
   let provider: providers.BaseProvider | undefined;
   if (infura) {
     provider = new providers.InfuraProvider(network, infura);
@@ -81,6 +78,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
   } else if (alchemy) {
     provider = new providers.AlchemyProvider(network, alchemy);
   } else {
+    // This will be significantly rate limited, but we only need to run it once
     provider = getDefaultProvider(network);
   }
 
