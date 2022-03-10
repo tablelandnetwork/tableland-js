@@ -1,6 +1,6 @@
 import type { Arguments, CommandBuilder } from "yargs";
 import { Wallet, providers, getDefaultProvider } from "ethers";
-import { connect, ConnectionOptions } from "@textile/tableland";
+import { connect, ConnectionOptions } from "@tableland/sdk";
 import yargs from "yargs";
 
 type Options = {

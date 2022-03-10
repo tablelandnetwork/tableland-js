@@ -1,11 +1,11 @@
-# tableland-cli
+# @tableland/cli
 
-[![GitHub license](https://img.shields.io/github/license/textileio/tableland-cli.svg)](./LICENSE)
-[![GitHub package.json version](https://img.shields.io/github/package-json/v/textileio/tableland0cli.svg)](./package.json)
-[![Release](https://img.shields.io/github/release/textileio/tableland-cli.svg)](https://github.com/textileio/tableland-cli/releases/latest)
+[![GitHub license](https://img.shields.io/github/license/tablelandnetwork/js-tableland-cli.svg)](./LICENSE)
+[![GitHub package.json version](https://img.shields.io/github/package-json/v/tablelandnetwork/js-tableland-cli.svg)](./package.json)
+[![Release](https://img.shields.io/github/release/tablelandnetwork/js-tableland-cli.svg)](https://github.com/tablelandnetwork/js-tableland-cli/releases/latest)
 [![standard-readme compliant](https://img.shields.io/badge/standard--readme-OK-green.svg)](https://github.com/RichardLitt/standard-readme)
 
-> Experimental Tableland command line tool
+> Tableland command line tools
 
 # Table of Contents
 
@@ -19,7 +19,7 @@
 
 # Background
 
-This is the experimental Tableland command line tool.
+This is the experimental Tableland command line tools.
 This is the first pass, and is subject to wild changes without notice!
 
 # Usage
@@ -49,7 +49,7 @@ Options:
 You can install via npm. Homebrew etc coming soon!
 
 ```
-npm install @textile/tableland-cli
+npm install -g @tableland/cli
 ```
 
 # Development
@@ -84,4 +84,4 @@ Small note: If editing the README, please conform to the
 
 # License
 
-MIT © 2022 Textile.io
+MIT © 2022 Tableland Network Contributors

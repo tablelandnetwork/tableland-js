@@ -1,6 +1,6 @@
 import type { Arguments, CommandBuilder } from "yargs";
 import { Wallet, providers } from "ethers";
-import { connect, ConnectionOptions } from "@textile/tableland";
+import { connect, ConnectionOptions } from "@tableland/sdk";
 import yargs from "yargs";
 
 type Options = {
@@ -33,7 +33,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
   const options: ConnectionOptions = {};
   if (privateKey) {
     // FIXME: This is a hack due to js-tableland's restrictive use of provider
-    // See: https://github.com/textileio/js-tableland/issues/22
+    // See: https://github.com/tablelandnetwork/js-tableland/issues/22
     options.signer = new Wallet(privateKey, {
       getNetwork: async () => {
         return {
