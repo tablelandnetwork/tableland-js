@@ -55,6 +55,11 @@ const wait = async function (ms) {
     });
 }
 
+const shutdown = async function () {
+    await cleanup();
+
+    Deno.exit();
+}
 
 const start = async function () {
     // make sure we are starting fresh
@@ -77,7 +82,7 @@ const start = async function () {
     pipeNamedSubprocess(red('Hardhat'), hardhat.stderr, Deno.stderr);
 
     // very naive way to let the Hardhat node start before deploying to it
-    await wait(21 * 1000);
+    await wait(31 * 1000);
 
     // Deploy the Registry to the Hardhat node
     const deployRegistry = Deno.run({
@@ -116,5 +121,8 @@ const start = async function () {
     pipeNamedSubprocess(magenta('Validator'), validator.stdout, Deno.stdout);
     pipeNamedSubprocess(red('Validator'), validator.stderr, Deno.stderr);
 }
+
+Deno.addSignalListener("SIGINT", shutdown);
+Deno.addSignalListener("SIGQUIT", shutdown);
 
 await start();
