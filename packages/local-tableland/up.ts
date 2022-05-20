@@ -42,16 +42,16 @@ const cleanup = async function () {
 
 };
 
-const pipeNamedSubprocess = async function (prefix, reader, writer) {
+const pipeNamedSubprocess = async function (prefix: string, reader: Deno.Reader, writer: Deno.Writer) {
   const encoder = new TextEncoder();
   for await (const line of readLines(reader)) {
     await writeAll(writer, encoder.encode(`[${prefix}] ${line}\n`));
   }
 }
 
-const wait = async function (ms) {
+const wait = async function (ms: number) {
     return new Promise(function (resolve, reject) {
-        setTimeout(() => resolve(), ms);
+        setTimeout(() => resolve(void 0), ms);
     });
 }
 
