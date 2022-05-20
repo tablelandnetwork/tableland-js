@@ -20,5 +20,5 @@ Everything should be running and you are now free to develop your tableland app 
 ## Notes
 
  - Make sure to have Docker running before doing this.
- - Keep and eye out for Zombie processes. Killing the Deno process should kill all of the subprocesses, but this kind of script is prone to leaking zombies.
+ - Keep and eye out for Zombie processes. Killing the Deno process should kill all of the subprocesses, but this kind of script is prone to leaking zombies 🧟
  - There are default values for the registry contract address and the validator wallet address that should match what is in eth-tableland, but you can edit these in `go-tableland/local/config.json`
