@@ -12,7 +12,7 @@ Example:
 ```
 export HARDHAT_DIR=<your path to the eth-tableland repo>
 export VALIDATOR_DIR=<your path to the go-tableland repo>/local # <- notice the '/local' !!
-deno run --allow-run --allow-env e2e-test.js
+deno run --allow-run --allow-env up.js
 ```
 
 Everything should be running and you are now free to develop your tableland app by connecting to the local validator at http://localhost:8080 and/or the local blockchain at http://localhost:8545
