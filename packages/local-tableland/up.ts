@@ -1,9 +1,15 @@
 /**
- * Run end to end Tableland
- */
+ *  Run end to end Tableland
+ **/
+
+import {
+    cyan,
+    brightGreen,
+    magenta,red
+} from 'https://deno.land/std@0.140.0/fmt/colors.ts';
+import { delay } from "https://deno.land/std@0.140.0/async/delay.ts";
 import { readLines } from 'https://deno.land/std@0.140.0/io/mod.ts';
 import { writeAll } from 'https://deno.land/std@0.140.0/io/util.ts';
-import { cyan, brightGreen, magenta, red } from 'https://deno.land/std@0.140.0/fmt/colors.ts'
 
 const cleanup = async function () {
     const pruneContainer = Deno.run({cmd: [
@@ -11,7 +17,7 @@ const cleanup = async function () {
         'container',
         'prune',
         '-f'
-    ]})
+    ]});
     await pruneContainer.status();
 
     const removeApi = Deno.run({cmd: [
@@ -20,7 +26,7 @@ const cleanup = async function () {
         'rm',
         'local_api',
         '-f'
-    ]})
+    ]});
     await removeApi.status();
 
     const removeDb = Deno.run({cmd: [
@@ -29,7 +35,7 @@ const cleanup = async function () {
         'rm',
         'local_database',
         '-f'
-    ]})
+    ]});
     await removeDb.status();
 
     const pruneVolume = Deno.run({cmd: [
@@ -37,7 +43,7 @@ const cleanup = async function () {
         'volume',
         'prune',
         '-f'
-    ]})
+    ]});
     await pruneVolume.status()
 
 };
@@ -47,19 +53,13 @@ const pipeNamedSubprocess = async function (prefix: string, reader: Deno.Reader,
   for await (const line of readLines(reader)) {
     await writeAll(writer, encoder.encode(`[${prefix}] ${line}\n`));
   }
-}
-
-const wait = async function (ms: number) {
-    return new Promise(function (resolve, reject) {
-        setTimeout(() => resolve(void 0), ms);
-    });
-}
+};
 
 const shutdown = async function () {
     await cleanup();
 
     Deno.exit();
-}
+};
 
 const start = async function () {
     // make sure we are starting fresh
@@ -76,13 +76,12 @@ const start = async function () {
         stdout: 'piped',
         stderr: 'piped'
     });
-    console.log(hardhat);
     // NOTE: the process should keep running until we kill it
     pipeNamedSubprocess(cyan('Hardhat'), hardhat.stdout, Deno.stdout);
     pipeNamedSubprocess(red('Hardhat'), hardhat.stderr, Deno.stderr);
 
     // very naive way to let the Hardhat node start before deploying to it
-    await wait(31 * 1000);
+    await delay(31 * 1000);
 
     // Deploy the Registry to the Hardhat node
     const deployRegistry = Deno.run({
@@ -120,7 +119,12 @@ const start = async function () {
     // NOTE: the process should keep running until we kill it
     pipeNamedSubprocess(magenta('Validator'), validator.stdout, Deno.stdout);
     pipeNamedSubprocess(red('Validator'), validator.stderr, Deno.stderr);
-}
+
+    // very naive way to let the Validator start before signaling that things are all running
+    await delay(31 * 1000);
+
+    console.log('Tableland is running!')
+};
 
 Deno.addSignalListener("SIGINT", shutdown);
 Deno.addSignalListener("SIGQUIT", shutdown);
