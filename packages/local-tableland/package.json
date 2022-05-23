@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "test": "node --experimental-fetch node_modules/.bin/jest --verbose",
+    "test-js": "node --experimental-fetch --experimental-vm-modules node_modules/.bin/jest --verbose",
     "up": "HARDHAT_DIR=../eth-tableland VALIDATOR_DIR=../go-tableland/local deno run --allow-run --allow-env up.ts"
   },
   "type": "module",
