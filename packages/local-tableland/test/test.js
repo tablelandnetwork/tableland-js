@@ -16,7 +16,6 @@ const getTableId = async function (tableland, txnHash) {
         tries++;
     }
 
-    // TODO: The Validator sporatically doesn't see Hardhat chain event logs and the table isn't created
     await expect(table).toBeDefined();
     await expect(typeof table.tableId).toEqual('string');
 
@@ -66,13 +65,46 @@ describe("Validator, Chain, and SDK work end to end", function () {
         const queryableName = `${prefix}_${chainId}_${tableId}`;
 
         const writeRes = await tableland.write(`INSERT INTO ${queryableName} (key, val) VALUES ('tree', 'aspen')`);
-console.log(writeRes);
 
         await new Promise(resolve => setTimeout(resolve, 4000));
 
         const data = await tableland.read(`SELECT * FROM ${queryableName};`);
         console.log(data);
         await expect(data.rows).toEqual([['tree', 'aspen']]);
+    });
+
+    test("Create a table can have a row deleted", async function () {
+        const wallet = new Wallet('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' /* Hardhat #1 */);
+        const provider = new providers.JsonRpcProvider('http://localhost:8545');
+        const signer = wallet.connect(provider);
+
+        const tableland = await connect({
+            signer: signer,
+            network: 'local',
+            host: 'http://localhost:8080'
+        });
+
+        const prefix = 'test_create_delete';
+        const receipt = await tableland.create(31337, 'key TEXT, val TEXT', prefix);
+
+        const tableId = await getTableId(tableland, receipt.transactionHash);
+        const chainId = 31337;
+        const queryableName = `${prefix}_${chainId}_${tableId}`;
+
+        await tableland.write(`INSERT INTO ${queryableName} (key, val) VALUES ('tree', 'aspen')`);
+        await tableland.write(`INSERT INTO ${queryableName} (key, val) VALUES ('tree', 'pine')`);
+
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
+        const data = await tableland.read(`SELECT * FROM ${queryableName};`);
+        await expect(data.rows.length).toEqual(2);
+
+        await tableland.write(`DELETE FROM ${queryableName} WHERE val = 'pine';`);
+
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
+        const data2 = await tableland.read(`SELECT * FROM ${queryableName};`);
+        await expect(data2.rows.length).toEqual(1);
     });
 
 });
