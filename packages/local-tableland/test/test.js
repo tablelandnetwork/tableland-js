@@ -8,6 +8,15 @@ import { jest } from '@jest/globals';
 jest.setTimeout(20000);
 
 const getTableId = async function (tableland, txnHash) {
+    const table = await waitForTx(tableland, txnHash);
+
+    await expect(table).toBeDefined();
+    await expect(typeof table.tableId).toEqual('string');
+
+    return table.tableId;
+};
+
+const waitForTx = async function (tableland, txnHash) {
     let table = await tableland.receipt(txnHash);
     let tries = 0
     while (!table && tries < 5) {
@@ -16,10 +25,9 @@ const getTableId = async function (tableland, txnHash) {
         tries++;
     }
 
-    await expect(table).toBeDefined();
-    await expect(typeof table.tableId).toEqual('string');
+    if (!table) throw new Error(`could not get transaction receipt: ${txnHash}`);
 
-    return table.tableId;
+    return table;
 };
 
 describe("Validator, Chain, and SDK work end to end", function () {
@@ -37,7 +45,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
         });
 
         const prefix = 'test_create_read';
-        const receipt = await tableland.create(31337, 'key TEXT, val TEXT', prefix);
+        const receipt = await tableland.create('key TEXT, val TEXT', prefix);
 
         const tableId = await getTableId(tableland, receipt.transactionHash);
         const chainId = 31337;
@@ -58,7 +66,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
         });
 
         const prefix = 'test_not_allowed';
-        const receipt = await tableland.create(31337, 'key TEXT, val TEXT', prefix);
+        const receipt = await tableland.create('key TEXT, val TEXT', prefix);
 
         const tableId = await getTableId(tableland, receipt.transactionHash);
         const chainId = 31337;
@@ -79,10 +87,11 @@ describe("Validator, Chain, and SDK work end to end", function () {
 
         const writeRes = await tableland2.write(`INSERT INTO ${queryableName} (key, val) VALUES ('tree', 'aspen')`);
 
-        await new Promise(resolve => setTimeout(resolve, 4000));
+        expect(typeof writeRes.hash).toEqual('string');
+        await waitForTx(tableland, writeRes.hash);
 
         const data2 = await tableland2.read(`SELECT * FROM ${queryableName};`);
-        console.log(data);
+
         await expect(data.rows).toEqual([]);
     });
 
@@ -98,7 +107,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
         });
 
         const prefix = 'test_create_write';
-        const receipt = await tableland.create(31337, 'key TEXT, val TEXT', prefix);
+        const receipt = await tableland.create('key TEXT, val TEXT', prefix);
 
         const tableId = await getTableId(tableland, receipt.transactionHash);
         const chainId = 31337;
@@ -106,7 +115,8 @@ describe("Validator, Chain, and SDK work end to end", function () {
 
         const writeRes = await tableland.write(`INSERT INTO ${queryableName} (key, val) VALUES ('tree', 'aspen')`);
 
-        await new Promise(resolve => setTimeout(resolve, 4000));
+        expect(typeof writeRes.hash).toEqual('string');
+        await waitForTx(tableland, writeRes.hash);
 
         const data = await tableland.read(`SELECT * FROM ${queryableName};`);
         await expect(data.rows).toEqual([['tree', 'aspen']]);
@@ -124,16 +134,21 @@ describe("Validator, Chain, and SDK work end to end", function () {
         });
 
         const prefix = 'test_create_delete';
-        const receipt = await tableland.create(31337, 'key TEXT, val TEXT', prefix);
+        const receipt = await tableland.create('key TEXT, val TEXT', prefix);
 
         const tableId = await getTableId(tableland, receipt.transactionHash);
         const chainId = 31337;
         const queryableName = `${prefix}_${chainId}_${tableId}`;
 
-        await tableland.write(`INSERT INTO ${queryableName} (key, val) VALUES ('tree', 'aspen')`);
-        await tableland.write(`INSERT INTO ${queryableName} (key, val) VALUES ('tree', 'pine')`);
+        const write1 = await tableland.write(`INSERT INTO ${queryableName} (key, val) VALUES ('tree', 'aspen')`);
 
-        await new Promise(resolve => setTimeout(resolve, 6000));
+        expect(typeof write1.hash).toEqual('string');
+        await waitForTx(tableland, write1.hash);
+
+        const write2 = await tableland.write(`INSERT INTO ${queryableName} (key, val) VALUES ('tree', 'pine')`);
+
+        expect(typeof write2.hash).toEqual('string');
+        await waitForTx(tableland, write2.hash);
 
         const data = await tableland.read(`SELECT * FROM ${queryableName};`);
         await expect(data.rows.length).toEqual(2);
