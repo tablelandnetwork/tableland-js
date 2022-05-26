@@ -160,7 +160,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
 
         const data2 = await tableland.read(`SELECT * FROM ${queryableName};`);
         await expect(data2.rows.length).toEqual(1);
-    });
+    }, 30000);
 
     test("List an account's tables", async function () {
         const wallet = new Wallet('0x701b615bbdfb9de65240bc28bd21bbc0d996645a3dd57e7b12bc2bdf6f192c82' /* Hardhat #11 */);
