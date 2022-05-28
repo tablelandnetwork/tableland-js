@@ -7,9 +7,10 @@ import {
     brightGreen,
     magenta,red
 } from 'https://deno.land/std@0.140.0/fmt/colors.ts';
-import { delay } from "https://deno.land/std@0.140.0/async/delay.ts";
+import { delay } from 'https://deno.land/std@0.140.0/async/delay.ts';
 import { readLines } from 'https://deno.land/std@0.140.0/io/mod.ts';
 import { writeAll } from 'https://deno.land/std@0.140.0/io/util.ts';
+import { join } from 'https://deno.land/std/path/mod.ts';
 
 const cleanup = async function () {
     const pruneContainer = Deno.run({cmd: [
@@ -46,6 +47,15 @@ const cleanup = async function () {
     ]});
     await pruneVolume.status()
 
+    const rmTemp = Deno.run({
+        cmd: [
+            'rm',
+            '-rf',
+            './tmp'
+        ]
+    });
+    await rmTemp.status();
+
 };
 
 const pipeNamedSubprocess = async function (prefix: string, reader: Deno.Reader, writer: Deno.Writer) {
@@ -64,10 +74,15 @@ const shutdown = async function () {
 const start = async function () {
     // make sure we are starting fresh
     await cleanup();
+    const VALIDATOR_DIR = Deno.env.get('VALIDATOR_DIR');
+    const HARDHAT_DIR = Deno.env.get('HARDHAT_DIR');
+
+    if (typeof VALIDATOR_DIR !== 'string') throw new Error('you must supply path to Validator');
+    if (typeof HARDHAT_DIR !== 'string') throw new Error('you must supply path to Hardhat');
 
     // Run a local hardhat node
     const hardhat = Deno.run({
-        cwd: Deno.env.get('HARDHAT_DIR'),
+        cwd: HARDHAT_DIR,
         cmd: [
             'npm',
             'run',
@@ -85,7 +100,7 @@ const start = async function () {
 
     // Deploy the Registry to the Hardhat node
     const deployRegistry = Deno.run({
-        cwd: Deno.env.get('HARDHAT_DIR'),
+        cwd: HARDHAT_DIR,
         cmd: [
             'npx',
             'hardhat',
@@ -105,7 +120,7 @@ const start = async function () {
 
     // start the validator
     const validator = Deno.run({
-        cwd: Deno.env.get('VALIDATOR_DIR'),
+        cwd: VALIDATOR_DIR,
         cmd: [
             'make',
             'up'
@@ -120,13 +135,32 @@ const start = async function () {
     pipeNamedSubprocess(magenta('Validator'), validator.stdout, Deno.stdout);
     pipeNamedSubprocess(red('Validator'), validator.stderr, Deno.stderr);
 
+    // copy the api spec to a place the tests can find it
+    const mkdirTemp = Deno.run({
+        cmd: [
+            'mkdir',
+            './tmp'
+        ]
+    });
+    await mkdirTemp.status();
+
+    console.log(join(VALIDATOR_DIR, '..', 'tableland-openapi-spec.yaml'));
+    const openApiSpec = Deno.run({
+        cmd: [
+            'cp',
+            join(VALIDATOR_DIR, '..', 'tableland-openapi-spec.yaml'),
+            './tmp'
+        ]
+    });
+    await openApiSpec.status();
+
     // very naive way to let the Validator start before signaling that things are all running
     await delay(31 * 1000);
 
     console.log('Tableland is running!')
 };
 
-Deno.addSignalListener("SIGINT", shutdown);
-Deno.addSignalListener("SIGQUIT", shutdown);
+Deno.addSignalListener('SIGINT', shutdown);
+Deno.addSignalListener('SIGQUIT', shutdown);
 
 await start();
