@@ -3,38 +3,25 @@ import { Wallet, providers } from 'ethers';
 import { spawn } from 'child_process';
 import { createInterface } from 'readline';
 import { jest } from '@jest/globals';
-import yaml from 'js-yaml';
-import fs from 'fs';
 import path from 'path';
+import {
+    HOST,
+    testRpcResponse,
+    testHttpResponse,
+    testSameTypes,
+    getTableId,
+    getSafe,
+    waitForTx,
+    renderPath,
+    loadSpecTestData
+} from './utils';
 
 const __dirname = path.resolve(path.dirname(''));
-const HOST = 'http://localhost:8080';
+
 
 // These tests take a bit longer than normal since we are usually waiting for blocks to finalize etc...
 jest.setTimeout(20000);
 
-const getTableId = async function (tableland, txnHash, tries = 5) {
-    const table = await waitForTx(tableland, txnHash, tries);
-
-    await expect(table).toBeDefined();
-    await expect(typeof table.tableId).toEqual('string');
-
-    return table.tableId;
-};
-
-const waitForTx = async function (tableland, txnHash, tries = 5) {
-    let table = await tableland.receipt(txnHash);
-    let tryy = 0
-    while (!table && tryy < tries) {
-        await new Promise(resolve => setTimeout(resolve, 1500 + (tries * 500)));
-        table = await tableland.receipt(txnHash);
-        tryy++;
-    }
-
-    if (!table) throw new Error(`could not get transaction receipt: ${txnHash}`);
-
-    return table;
-};
 
 describe('Validator, Chain, and SDK work end to end', function () {
     // NOTE: these tests require the a local Tableland is already running
@@ -196,27 +183,6 @@ describe('Validator, Chain, and SDK work end to end', function () {
 
 });
 
-// The open api spec file routes are templated with single squiggle brakets {} 
-// This is a simple implementation of rendering that type of template
-const renderPath = function (tmpl, data) {
-    let rendered = '';
-    for (let i = 0; i < tmpl.length; i++) {
-        if (tmpl[i] !== '{') {
-            rendered += tmpl[i];
-            continue;
-        }
-
-        const open = i;
-        const close = tmpl.indexOf('}');
-
-        const val = data[tmpl.slice(open + 1, close)].toString();
-
-        return renderPath(`${tmpl.slice(0, open)}${val}${tmpl.slice(close + 1)}`, data);
-    }
-
-    return rendered;
-};
-
 describe('Validator gateway server', function () {
     let token;
     beforeAll(async function () {
@@ -230,78 +196,11 @@ describe('Validator gateway server', function () {
             host: HOST
         });
 
+        // The only thing we really need from the SDK if the token, hoist it..
         token = tableland.token.token;
     });
 
-    const tests = [];
-
-    // Let's consume the open api spec and map it to fetch requests that we can test the spec's responses against
-    const spec = yaml.load(fs.readFileSync(path.join(__dirname, 'tmp', 'tableland-openapi-spec.yaml'), 'utf8'));
-    const routes = [];
-
-    for (const routeTemplate in spec.paths) {
-        // NOTE: the template and data variable names are defined in the spec
-        const route = renderPath(routeTemplate, {
-            chainID: 31337,
-            id: 1,
-            ethAddress: '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266' // Hardhat #1
-        });
-
-        const methods = Object.keys(spec.paths[routeTemplate]).reduce((acc, cur) => {
-            const method = {
-                name: cur
-            };
-            if (cur === 'post') {
-                // TODO: this is obviously a hack, we could map all the content types to an example request,
-                //       but currently there's only application/json
-                method.examples = spec.paths[routeTemplate][cur].requestBody.content['application/json'].examples
-            }
-            acc.push(method);
-            return acc;
-        }, []);
-
-        routes.push({ route, routeTemplate, methods });
-    }
-
-    // Now we have the routes methods and what the request body's (if any) look like
-    for (let i = 0; i < routes.length; i++) {
-        const route = routes[i].route;
-        const routeTemplate = routes[i].routeTemplate;
-
-        for (let j = 0; j < routes[i].methods.length; j++) {
-            const method = routes[i].methods[j];
-            const examples = method.examples ? Object.keys(method.examples) : [''];
-
-            for (let k = 0; k < examples.length; k++) {
-                const exampleName = examples[k];
-                const body = method.examples ? method.examples[exampleName].value : '';
-
-                tests.push({
-                    name: `API spec file: ${routeTemplate} ${method.name} ${exampleName}`,
-                    host: HOST,
-                    route,
-                    methodName: method.name,
-                    body
-                });
-            }
-        }
-    }
-
-    const testRpcResponse = async function (res) {
-        if (!res.ok) throw new Error(res.statusText);
-
-        const json = await res.json();
-
-        if (json.error) throw new Error(json.error.message);
-        if (!json.result) throw new Error("Malformed RPC response");
-    };
-    const testHttpResponse = async function (res) {
-        if (!res.ok) throw new Error(res.statusText);
-
-        const json = await res.json();
-
-        // TODO: anything else to test here?
-    };
+    const tests = loadSpecTestData(path.join(__dirname, 'tmp', 'tableland-openapi-spec.yaml'));
 
     test.each(tests)('$name', async function (_test) {
         const payload = {
@@ -317,8 +216,11 @@ describe('Validator gateway server', function () {
 
         const res = await fetch(`${_test.host}${_test.route}`, payload);
 
-        if (_test.route === '/rpc') return await testRpcResponse(res);
-        await testHttpResponse(res)
+        expect(typeof _test.response).not.toEqual('undefined');
+
+        if (_test.route === '/rpc') return await testRpcResponse(res, _test.response);
+        await testHttpResponse(res, _test.response)
     });
 });
+
 

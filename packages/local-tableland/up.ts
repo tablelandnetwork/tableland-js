@@ -144,7 +144,6 @@ const start = async function () {
     });
     await mkdirTemp.status();
 
-    console.log(join(VALIDATOR_DIR, '..', 'tableland-openapi-spec.yaml'));
     const openApiSpec = Deno.run({
         cmd: [
             'cp',
