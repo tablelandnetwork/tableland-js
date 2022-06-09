@@ -221,7 +221,12 @@ describe('Validator gateway server', function () {
         transactionHash = receipt.txnHash;
     });
 
-    const tests = loadSpecTestData(path.join(__dirname, 'tmp', 'tableland-openapi-spec.yaml'));
+    const tests = loadSpecTestData(path.join(__dirname, 'tmp', 'tableland-openapi-spec.yaml'), {
+        chainID: 31337,
+        id: 1,
+        address: '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', // Hardhat #1
+        readStatement: 'SELECT * FROM healthbot_31337_1'
+    });
 
     test.each(tests)('$name', async function (_test) {
         const payload = {

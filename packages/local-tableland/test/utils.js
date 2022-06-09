@@ -93,7 +93,7 @@ export const renderPath = function (tmpl, data) {
     return rendered;
 };
 
-export const loadSpecTestData = function (specPath) {
+export const loadSpecTestData = function (specPath, renderData) {
 
     // Let's consume the open api spec and map it to fetch requests that we can test the spec's responses against
     const spec = yaml.load(fs.readFileSync(specPath, 'utf8'));
@@ -102,21 +102,15 @@ export const loadSpecTestData = function (specPath) {
 
     for (const routeTemplate in spec.paths) {
         // NOTE: the template and data variable names are defined in the spec
-        const route = renderPath(routeTemplate, {
-            chainID: 31337,
-            id: 1,
-            address: '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', // Hardhat #1
-            ethAddress: '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', // Hardhat #1
-            readStatement: 'SELECT * FROM healthbot_31337_1'
-        });
+        const route = renderPath(routeTemplate, renderData);
 
         const methods = Object.keys(spec.paths[routeTemplate]).reduce((acc, cur) => {
             const method = {
                 name: cur
             };
             if (cur === 'post') {
-                // TODO: this is obviously a hack, we could map all the content types to an example request,
-                //       but currently there's only application/json so I am just grabbing that one.
+                // NOTE: We could map all the content types to an example request, but the http server only
+                //       ever responses with application/json so I am just grabbing that one.
                 method.examples = spec.paths[routeTemplate][cur].requestBody.content['application/json'].examples
 
                 const exampleResponses = getSafe(spec, [
@@ -124,6 +118,8 @@ export const loadSpecTestData = function (specPath) {
                     routeTemplate,
                     cur,
                     'responses',
+                    // NOTE: We could be looping through all status codes and testing each, but that would mean
+                    //       the spec would need some means to construct a request that results in a > 400 code
                     '200',
                     'content',
                     'application/json',
@@ -180,6 +176,7 @@ export const loadSpecTestData = function (specPath) {
                 const body = method.examples ? method.examples[exampleName].value : '';
                 const response = method.examples ? method.examples[exampleName].response : {};
 
+                // TODO: The spec includes headers and we might as well test them
                 tests.push({
                     name: `API spec file: ${routeTemplate} ${method.name} ${exampleName}`,
                     host: HOST,

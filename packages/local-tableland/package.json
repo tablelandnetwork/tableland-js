@@ -5,7 +5,7 @@
   },
   "type": "module",
   "devDependencies": {
-    "@tableland/sdk": "^0.0.2",
+    "@tableland/sdk": "^0.1.0",
     "@types/jest": "^27.5.1",
     "ethers": "^5.6.6",
     "jest": "^28.1.0",
