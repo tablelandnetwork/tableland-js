@@ -83,7 +83,9 @@ export const renderPath = function (tmpl, data) {
         const open = i;
         const close = tmpl.indexOf('}');
 
-        const val = data[tmpl.slice(open + 1, close)].toString();
+        const datum = data[tmpl.slice(open + 1, close)];
+        if (!datum) throw new Error('Failed to render open api spec for ' + tmpl)
+        const val = datum.toString();
 
         return renderPath(`${tmpl.slice(0, open)}${val}${tmpl.slice(close + 1)}`, data);
     }
@@ -103,7 +105,9 @@ export const loadSpecTestData = function (specPath) {
         const route = renderPath(routeTemplate, {
             chainID: 31337,
             id: 1,
-            ethAddress: '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266' // Hardhat #1
+            address: '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', // Hardhat #1
+            ethAddress: '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266', // Hardhat #1
+            readStatement: 'SELECT * FROM healthbot_31337_1'
         });
 
         const methods = Object.keys(spec.paths[routeTemplate]).reduce((acc, cur) => {
@@ -132,8 +136,8 @@ export const loadSpecTestData = function (specPath) {
                     method.examples[resExampleName].response = resExample;
                 }
             } else {
-                // TODO: put GET requests' responses on the method object
-                const exampleResponse = getSafe(spec, [
+                // put GET requests' responses on the method object
+                const schema = getSafe(spec, [
                     'paths',
                     routeTemplate,
                     cur,
@@ -141,8 +145,14 @@ export const loadSpecTestData = function (specPath) {
                     '200',
                     'content',
                     'application/json',
-                    'schema',
+                    'schema'
+                ]);
+
+                // get example for array and object response types
+                const exampleResponse = schema?.type === 'array' ? getSafe(schema, [
                     'items',
+                    'example'
+                ]) : getSafe(schema, [
                     'example'
                 ]);
 

@@ -33,14 +33,14 @@ describe('Validator, Chain, and SDK work end to end', function () {
 
         const tableland = await connect({
             signer: signer,
-            network: 'local',
+            network: 'localhost',
             host: 'http://localhost:8080'
         });
 
         const prefix = 'test_create_read';
         const receipt = await tableland.create('key TEXT, val TEXT', prefix);
 
-        const tableId = await getTableId(tableland, receipt.transactionHash);
+        const tableId = await getTableId(tableland, receipt.txnHash);
         const chainId = 31337;
 
         const data = await tableland.read(`SELECT * FROM ${prefix}_${chainId}_${tableId};`);
@@ -54,14 +54,14 @@ describe('Validator, Chain, and SDK work end to end', function () {
 
         const tableland = await connect({
             signer: signer,
-            network: 'local',
+            network: 'localhost',
             host: 'http://localhost:8080'
         });
 
         const prefix = 'test_create_write';
         const receipt = await tableland.create('key TEXT, val TEXT', prefix);
 
-        const tableId = await getTableId(tableland, receipt.transactionHash);
+        const tableId = await getTableId(tableland, receipt.txnHash);
         const chainId = 31337;
         const queryableName = `${prefix}_${chainId}_${tableId}`;
 
@@ -81,14 +81,14 @@ describe('Validator, Chain, and SDK work end to end', function () {
 
         const tableland = await connect({
             signer: signer,
-            network: 'local',
+            network: 'localhost',
             host: 'http://localhost:8080'
         });
 
         const prefix = 'test_not_allowed';
         const receipt = await tableland.create('key TEXT, val TEXT', prefix);
 
-        const tableId = await getTableId(tableland, receipt.transactionHash);
+        const tableId = await getTableId(tableland, receipt.txnHash);
         const chainId = 31337;
         const queryableName = `${prefix}_${chainId}_${tableId}`;
 
@@ -101,7 +101,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
 
         const tableland2 = await connect({
             signer: signer2,
-            network: 'local',
+            network: 'localhost',
             host: 'http://localhost:8080'
         });
 
@@ -122,14 +122,14 @@ describe('Validator, Chain, and SDK work end to end', function () {
 
         const tableland = await connect({
             signer: signer,
-            network: 'local',
+            network: 'localhost',
             host: 'http://localhost:8080'
         });
 
         const prefix = 'test_create_delete';
         const receipt = await tableland.create('key TEXT, val TEXT', prefix);
 
-        const tableId = await getTableId(tableland, receipt.transactionHash);
+        const tableId = await getTableId(tableland, receipt.txnHash);
         const chainId = 31337;
         const queryableName = `${prefix}_${chainId}_${tableId}`;
 
@@ -162,14 +162,14 @@ describe('Validator, Chain, and SDK work end to end', function () {
 
         const tableland = await connect({
             signer: signer,
-            network: 'local',
+            network: 'localhost',
             host: 'http://localhost:8080'
         });
 
         const prefix = 'test_create_list';
         const receipt = await tableland.create('key TEXT, val TEXT', prefix);
 
-        const tableId = await getTableId(tableland, receipt.transactionHash, 7);
+        const tableId = await getTableId(tableland, receipt.txnHash, 7);
         const chainId = 31337;
         const queryableName = `${prefix}_${chainId}_${tableId}`;
 
@@ -184,20 +184,41 @@ describe('Validator, Chain, and SDK work end to end', function () {
 });
 
 describe('Validator gateway server', function () {
-    let token;
+    let token, transactionHash;
     beforeAll(async function () {
         // get our wallet, provider, and signer and a connection to tableland so that we can craft a realistic HTTP request
-        const wallet = new Wallet('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80' /* Hardhat #0 */);
         const provider = new providers.JsonRpcProvider('http://localhost:8545');
-        const signer = wallet.connect(provider);
-        const tableland = await connect({
-            signer: signer,
-            network: 'local',
+
+        const wallet0 = new Wallet('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80' /* Hardhat #0 */);
+        const signer0 = wallet0.connect(provider);
+        const tableland0 = await connect({
+            signer: signer0,
+            network: 'localhost',
             host: HOST
         });
 
-        // The only thing we really need from the SDK if the token, hoist it..
-        token = tableland.token.token;
+        // We can't use the Validator's Wallet to create tables because the Validator's nonce tracking will get out of sync
+        const wallet1 = new Wallet('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' /* Hardhat #1 */);
+        const signer1 = wallet1.connect(provider);
+        const tableland1 = await connect({
+            signer: signer1,
+            network: 'localhost',
+            host: HOST
+        });
+
+
+        const prefix = 'test_transaction';
+        const receipt = await tableland1.create('key TEXT, val TEXT', prefix);
+
+        const tableId = await getTableId(tableland1, receipt.txnHash);
+        const chainId = 31337;
+
+        const data = await tableland1.read(`SELECT * FROM ${prefix}_${chainId}_${tableId};`);
+        await expect(data.rows).toEqual([]);
+
+        // We need the token and a transaction hash for a transaction on the Hardhat chain, hoist them..
+        token = tableland0.token.token;
+        transactionHash = receipt.txnHash;
     });
 
     const tests = loadSpecTestData(path.join(__dirname, 'tmp', 'tableland-openapi-spec.yaml'));
@@ -212,7 +233,12 @@ describe('Validator gateway server', function () {
         };
 
         // Cannot have a body on a GET/HEAD request
-        if (_test.body) payload.body = JSON.stringify(_test.body);
+        if (_test.body) {
+            console.log(_test.body);
+            // For some of the example requests we need to inject values for the chain tests are using
+            if (_test.body.params && _test.body.params[0].txn_hash) _test.body.params[0].txn_hash = transactionHash;
+            payload.body = JSON.stringify(_test.body);
+        }
 
         const res = await fetch(`${_test.host}${_test.route}`, payload);
 
