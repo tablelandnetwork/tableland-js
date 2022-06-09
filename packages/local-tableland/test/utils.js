@@ -12,9 +12,23 @@ export const testRpcResponse = async function (res, expected) {
     if (json.error) throw new Error(json.error.message);
     if (!json.result) throw new Error("Malformed RPC response");
 
-    // TODO: Test the responses
-    testSameTypes(json, expected);
+    // Test that responses have the schema for the body matching the spec
+    testSameTypes(json, expected.response);
+
+    // Test that the responses have headers matching the spec
+    testHeaders(res.headers, expected.headers);
 };
+
+const testHeaders = function (headers, expected) {
+    for (const headerName in expected) {
+        const headerVal = headers.get(headerName);
+
+        console.log(`Header- ${headerName}: ${headerVal}`);
+
+        expect(typeof headerVal).not.toEqual('undefined');
+        expect(typeof headerVal).toEqual(expected[headerName].schema.type);
+    }
+}
 
 export const testHttpResponse = async function (res, expected) {
     if (!res.ok) throw new Error(res.statusText);
@@ -113,6 +127,15 @@ export const loadSpecTestData = function (specPath, renderData) {
                 //       ever responses with application/json so I am just grabbing that one.
                 method.examples = spec.paths[routeTemplate][cur].requestBody.content['application/json'].examples
 
+                const resHeaders = getSafe(spec, [
+                    'paths',
+                    routeTemplate,
+                    cur,
+                    'responses',
+                    '200',
+                    'headers'
+                ]);
+
                 const exampleResponses = getSafe(spec, [
                     'paths',
                     routeTemplate,
@@ -130,6 +153,7 @@ export const loadSpecTestData = function (specPath, renderData) {
                     const resExample = exampleResponses[resExampleName].value;
 
                     method.examples[resExampleName].response = resExample;
+                    method.examples[resExampleName].headers = resHeaders;
                 }
             } else {
                 // put GET requests' responses on the method object
@@ -175,15 +199,17 @@ export const loadSpecTestData = function (specPath, renderData) {
                 const exampleName = examples[k];
                 const body = method.examples ? method.examples[exampleName].value : '';
                 const response = method.examples ? method.examples[exampleName].response : {};
+                const headers = method.examples ? method.examples[exampleName].headers : {};
 
                 // TODO: The spec includes headers and we might as well test them
                 tests.push({
                     name: `API spec file: ${routeTemplate} ${method.name} ${exampleName}`,
                     host: HOST,
-                    route,
                     methodName: method.name,
+                    route,
                     body,
-                    response: response
+                    response,
+                    headers
                 });
             }
         }

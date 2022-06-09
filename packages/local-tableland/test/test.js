@@ -249,7 +249,7 @@ describe('Validator gateway server', function () {
 
         expect(typeof _test.response).not.toEqual('undefined');
 
-        if (_test.route === '/rpc') return await testRpcResponse(res, _test.response);
+        if (_test.route === '/rpc') return await testRpcResponse(res, _test);
         await testHttpResponse(res, _test.response)
     });
 });
