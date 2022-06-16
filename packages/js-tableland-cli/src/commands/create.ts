@@ -1,55 +1,44 @@
 import type { Arguments, CommandBuilder } from "yargs";
 import { Wallet, providers, getDefaultProvider } from "ethers";
-import { connect, ConnectionOptions } from "@tableland/sdk";
+import {
+  connect,
+  ConnectOptions,
+  SUPPORTED_CHAINS,
+  ChainName,
+} from "@tableland/sdk";
 import yargs from "yargs";
 
 type Options = {
   // Local
-  statement: string;
-  description: string | undefined;
-  alchemy: string | undefined;
-  infura: string | undefined;
-  etherscan: string | undefined;
-  token: string;
+  schema: string;
+  prefix: string | undefined;
 
   // Global
   privateKey: string;
   host: string;
-  network: "rinkeby";
+  chain: ChainName;
+  alchemy: string | undefined;
+  infura: string | undefined;
+  etherscan: string | undefined;
+  token: string;
 };
 
-export const command =
-  "create <statement> [description] [alchemy] [infura] [etherscan]";
-export const desc = "Create a new unique table";
+const supportedNetworks = Object.fromEntries(
+  Object.entries(SUPPORTED_CHAINS).map(([key, value]) => [key, value.name])
+);
+
+export const command = "create <schema> [prefix]";
+export const desc = "Create a new table";
 
 export const builder: CommandBuilder<Options, Options> = (yargs) =>
   yargs
-    .options({
-      description: {
-        type: "string",
-        description: "Table description",
-      },
-      alchemy: {
-        type: "string",
-        description: "Alchemy provider API key",
-      },
-      infura: {
-        type: "string",
-        description: "Infura provider API key",
-      },
-      etherscan: {
-        type: "string",
-        description: "Etherscan provider API key",
-      },
-    })
-    .option("t", {
-      alias: "token",
+    .positional("schema", {
       type: "string",
-      description: "Signed JWT token (see `jwt --help`)",
+      description: "SQL table schema",
     })
-    .positional("statement", {
+    .option("prefix", {
       type: "string",
-      description: "SQL CREATE statement",
+      description: "Table name prefix",
     }) as yargs.Argv<Options>;
 
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
@@ -57,44 +46,53 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     privateKey,
     host,
     token,
-    statement,
-    description,
+    schema,
+    prefix,
     alchemy,
     infura,
     etherscan,
-    network,
+    chain,
   } = argv;
-  const options: ConnectionOptions = {};
+
+  const options: ConnectOptions = {
+    host,
+  };
+  if (token) {
+    options.token = { token };
+  }
   if (!privateKey) {
-    throw new Error("private key string required for create statements");
+    console.error("missing required flag (`-k` or `--privateKey`)\n");
+    process.exit(1);
   }
 
   const wallet = new Wallet(privateKey);
   let provider: providers.BaseProvider | undefined;
   if (infura) {
-    provider = new providers.InfuraProvider(network, infura);
+    provider = new providers.InfuraProvider(supportedNetworks[chain], infura);
   } else if (etherscan) {
-    provider = new providers.EtherscanProvider(network, etherscan);
+    provider = new providers.EtherscanProvider(
+      supportedNetworks[chain],
+      etherscan
+    );
   } else if (alchemy) {
-    provider = new providers.AlchemyProvider(network, alchemy);
+    provider = new providers.AlchemyProvider(supportedNetworks[chain], alchemy);
   } else {
     // This will be significantly rate limited, but we only need to run it once
-    provider = getDefaultProvider(network);
+    provider = getDefaultProvider(supportedNetworks[chain]);
   }
 
   if (!provider) {
-    throw new Error("Unable to create ETH API provider");
+    console.error("unable to create ETH API provider\n");
+    process.exit(1);
   }
   options.signer = wallet.connect(provider);
-  if (token) {
-    options.token = { token };
-  }
-  if (host) {
-    options.host = host;
-  }
   const tbl = await connect(options);
-  const res = await tbl.create(statement, { description });
-  const out = JSON.stringify(res, null, 2);
-  process.stdout.write(`${out}\n`);
+  const res = await tbl.create(schema, prefix);
+  const out = JSON.stringify(
+    { ...res, tableId: (res.tableId ?? "").toString() },
+    null,
+    2
+  );
+  console.log(out);
   process.exit(0);
 };

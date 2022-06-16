@@ -28,20 +28,31 @@ This is the first pass, and is subject to wild changes without notice!
 tableland [command]
 
 Commands:
-  tableland create <statement>              Run a query against a remote table
-  [description] [alchemy] [infura]
-  tableland info <id>                       Get info about a given table by id.
-  tableland jwt                             Create a signed JWT token
-  tableland list [controller]               List tables by controller
-  tableland query <statement>               Run a query against a remote table
-  [description]
+  tableland chains                    List information about supported chains
+  tableland create <schema> [prefix]  Create a new table
+  tableland info <id>                 Get info about a given table by id
+  tableland list [address]            List tables by address
+  tableland read <query>              Run a read-only query against a remote table
+  tableland receipt <hash>            Get the receipt of a chain transaction to
+                                      know if it was executed, and the execution
+                                      details
+  tableland token                     Create a SIWE token
+  tableland write <statement>         Run a mutating SQL statement against a remote
+                                   table
 
 Options:
       --help        Show help                                          [boolean]
       --version     Show version number                                [boolean]
-  -k, --privateKey  Private key string                       [string] [required]
-  -h, --host        Remote API host
-                         [string] [default: "https://testnet.tableland.network"]
+  -k, --privateKey  Private key string                                  [string]
+  -h, --host        Remote API host (e.g.
+                    https://{testnet,staging}.tableland.network)
+                       [string] [default: "https://testnetv2.tableland.network"]
+      --chain       The EVM compatible chain to target
+                                           [string] [default: "ethereum-goerli"]
+      --alchemy     Alchemy provider API key                            [string]
+      --infura      Infura provider API key                             [string]
+      --etherscan   Etherscan provider API key                          [string]
+  -t, --token       Signed SIWE token (see `token --help`)              [string]
 ```
 
 # Install
@@ -84,4 +95,4 @@ Small note: If editing the README, please conform to the
 
 # License
 
-MIT © 2022 Tableland Network Contributors
+MIT AND Apache-2.0, © 2021-2022 Tableland Network Contributors
