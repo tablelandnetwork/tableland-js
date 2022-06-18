@@ -23,6 +23,7 @@ const testHeaders = function (headers, expected) {
     for (const headerName in expected) {
         const headerVal = headers.get(headerName);
 
+        // log in case someone wants to manually inspect
         console.log(`Header- ${headerName}: ${headerVal}`);
 
         expect(typeof headerVal).not.toEqual('undefined');

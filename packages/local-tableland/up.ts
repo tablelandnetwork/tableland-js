@@ -12,6 +12,17 @@ import { readLines } from 'https://deno.land/std@0.140.0/io/mod.ts';
 import { writeAll } from 'https://deno.land/std@0.140.0/io/util.ts';
 import { join } from 'https://deno.land/std/path/mod.ts';
 
+const rmImage = async function (name: string) {
+    const rm = Deno.run({cmd: [
+        'docker',
+        'image',
+        'rm',
+        name,
+        '-f'
+    ]});
+    await rm.status();
+};
+
 const cleanup = async function () {
     const pruneContainer = Deno.run({cmd: [
         'docker',
@@ -21,23 +32,8 @@ const cleanup = async function () {
     ]});
     await pruneContainer.status();
 
-    const removeApi = Deno.run({cmd: [
-        'docker',
-        'image',
-        'rm',
-        'local_api',
-        '-f'
-    ]});
-    await removeApi.status();
-
-    const removeDb = Deno.run({cmd: [
-        'docker',
-        'image',
-        'rm',
-        'local_database',
-        '-f'
-    ]});
-    await removeDb.status();
+    await rmImage('local_api');
+    await rmImage('local_database');
 
     const pruneVolume = Deno.run({cmd: [
         'docker',
