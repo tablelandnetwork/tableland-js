@@ -1,4 +1,3 @@
-import { connect } from '@tableland/sdk';
 import { Wallet, providers } from 'ethers';
 import { spawn } from 'child_process';
 import { createInterface } from 'readline';
@@ -10,6 +9,7 @@ import {
     testHttpResponse,
     testSameTypes,
     getTableId,
+    getTableland,
     getSafe,
     waitForTx,
     renderPath,
@@ -31,11 +31,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
         const provider = new providers.JsonRpcProvider('http://localhost:8545');
         const signer = wallet.connect(provider);
 
-        const tableland = await connect({
-            signer: signer,
-            network: 'localhost',
-            host: 'http://localhost:8080'
-        });
+        const tableland = await getTableland(signer);
 
         const prefix = 'test_create_read';
         const receipt = await tableland.create('key TEXT, val TEXT', prefix);
@@ -52,11 +48,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
         const provider = new providers.JsonRpcProvider('http://localhost:8545');
         const signer = wallet.connect(provider);
 
-        const tableland = await connect({
-            signer: signer,
-            network: 'localhost',
-            host: 'http://localhost:8080'
-        });
+        const tableland = await getTableland(signer);
 
         const prefix = 'test_create_write';
         const receipt = await tableland.create('key TEXT, val TEXT', prefix);
@@ -79,11 +71,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
         const provider = new providers.JsonRpcProvider('http://localhost:8545');
         const signer = wallet.connect(provider);
 
-        const tableland = await connect({
-            signer: signer,
-            network: 'localhost',
-            host: 'http://localhost:8080'
-        });
+        const tableland = await getTableland(signer);
 
         const prefix = 'test_not_allowed';
         const receipt = await tableland.create('key TEXT, val TEXT', prefix);
@@ -99,11 +87,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
         const provider2 = new providers.JsonRpcProvider('http://localhost:8545');
         const signer2 = wallet2.connect(provider2);
 
-        const tableland2 = await connect({
-            signer: signer2,
-            network: 'localhost',
-            host: 'http://localhost:8080'
-        });
+        const tableland2 = await getTableland(signer2);
 
         const writeRes = await tableland2.write(`INSERT INTO ${queryableName} (key, val) VALUES ('tree', 'aspen')`);
 
@@ -120,11 +104,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
         const provider = new providers.JsonRpcProvider('http://localhost:8545');
         const signer = wallet.connect(provider);
 
-        const tableland = await connect({
-            signer: signer,
-            network: 'localhost',
-            host: 'http://localhost:8080'
-        });
+        const tableland = await getTableland(signer);
 
         const prefix = 'test_create_delete';
         const receipt = await tableland.create('key TEXT, val TEXT', prefix);
@@ -160,11 +140,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
         const provider = new providers.JsonRpcProvider('http://localhost:8545');
         const signer = wallet.connect(provider);
 
-        const tableland = await connect({
-            signer: signer,
-            network: 'localhost',
-            host: 'http://localhost:8080'
-        });
+        const tableland = await getTableland(signer);
 
         const prefix = 'test_create_list';
         const receipt = await tableland.create('key TEXT, val TEXT', prefix);
@@ -175,10 +151,11 @@ describe('Validator, Chain, and SDK work end to end', function () {
 
         const tablesMeta = await tableland.list();
 
+        await expect(Array.isArray(tablesMeta)).toEqual(true);
         const table = tablesMeta.find(table => table.name === queryableName);
 
-        expect(table).toBeDefined();
-        expect(table.controller).toEqual('0x71bE63f3384f5fb98995898A86B02Fb2426c5788' /* account 11 pubkey */ );
+        await expect(table).toBeDefined();
+        await expect(table.controller).toEqual('0x71bE63f3384f5fb98995898A86B02Fb2426c5788' /* account 11 pubkey */ );
     });
 
 });
@@ -191,21 +168,13 @@ describe('Validator gateway server', function () {
 
         const wallet0 = new Wallet('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80' /* Hardhat #0 */);
         const signer0 = wallet0.connect(provider);
-        const tableland0 = await connect({
-            signer: signer0,
-            network: 'localhost',
-            host: HOST
-        });
+        const tableland0 = await getTableland(signer0);
+        await tableland0.siwe();
 
         // We can't use the Validator's Wallet to create tables because the Validator's nonce tracking will get out of sync
         const wallet1 = new Wallet('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' /* Hardhat #1 */);
         const signer1 = wallet1.connect(provider);
-        const tableland1 = await connect({
-            signer: signer1,
-            network: 'localhost',
-            host: HOST
-        });
-
+        const tableland1 = await getTableland(signer1);
 
         const prefix = 'test_transaction';
         const receipt = await tableland1.create('key TEXT, val TEXT', prefix);

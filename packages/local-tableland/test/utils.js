@@ -1,8 +1,18 @@
 import fs from 'fs';
 import yaml from 'js-yaml';
-
+import { connect } from '@tableland/sdk';
 
 export const HOST = 'http://localhost:8080';
+
+export const getTableland = async function (signer) {
+    return await connect({
+        signer: signer,
+        chain: 'custom',
+        // default contract address on hardhat
+        contract: '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
+        host: 'http://localhost:8080'
+    });
+};
 
 export const testRpcResponse = async function (res, expected) {
     if (!res.ok) throw new Error(res.statusText);
