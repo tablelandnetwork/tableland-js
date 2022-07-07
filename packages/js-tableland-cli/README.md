@@ -9,10 +9,13 @@
 
 # Table of Contents
 
+- [@tableland/cli](#tablelandcli)
+- [Table of Contents](#table-of-contents)
 - [Background](#background)
 - [Usage](#usage)
 - [Install](#install)
 - [Development](#development)
+  - [Building a binary](#building-a-binary)
 - [Maintainers](#maintainers)
 - [Contributing](#contributing)
 - [License](#license)
@@ -45,8 +48,8 @@ Options:
       --version     Show version number                                [boolean]
   -k, --privateKey  Private key string                                  [string]
   -h, --host        Remote API host (e.g.
-                    https://{testnet,staging}.tableland.network)
-                       [string] [default: "https://testnetv2.tableland.network"]
+                    https://{testnet}.tableland.network)
+                       [string] [default: "https://testnet.tableland.network"]
       --chain       The EVM compatible chain to target
                                            [string] [default: "ethereum-goerli"]
       --alchemy     Alchemy provider API key                            [string]

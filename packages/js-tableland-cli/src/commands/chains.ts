@@ -11,7 +11,13 @@ export const desc = "List information about supported chains";
 export const builder: CommandBuilder<Options, Options> = (yargs) => yargs;
 
 export const handler = async (_argv: Arguments<Options>): Promise<void> => {
-  const out = JSON.stringify(SUPPORTED_CHAINS, null, 2);
+  const chains: any = SUPPORTED_CHAINS;
+  for (const [name] of Object.entries(chains)) {
+    if (name.includes("staging")) {
+      delete chains[name];
+    }
+  }
+  const out = JSON.stringify(chains, null, 2);
   console.log(out);
   process.exit(0);
 };

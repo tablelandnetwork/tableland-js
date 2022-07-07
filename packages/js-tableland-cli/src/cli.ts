@@ -24,8 +24,8 @@ const _ = yargs(hideBin(process.argv))
     alias: "host",
     type: "string",
     description:
-      "Remote API host (e.g. https://{testnet,staging}.tableland.network)",
-    default: "https://testnetv2.tableland.network",
+      "Remote API host (e.g. https://{testnet}.tableland.network)",
+    default: "https://testnet.tableland.network",
   })
   .option("chain", {
     type: "string",
