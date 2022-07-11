@@ -119,7 +119,7 @@ const start = async function () {
         cwd: VALIDATOR_DIR,
         cmd: [
             'make',
-            'up'
+            'local-up'
         ],
         env: {
             CONFIG_FILE: 'config.json'
