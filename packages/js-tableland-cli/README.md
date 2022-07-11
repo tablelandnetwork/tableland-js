@@ -5,7 +5,7 @@
 [![Release](https://img.shields.io/github/release/tablelandnetwork/js-tableland-cli.svg)](https://github.com/tablelandnetwork/js-tableland-cli/releases/latest)
 [![standard-readme compliant](https://img.shields.io/badge/standard--readme-OK-green.svg)](https://github.com/RichardLitt/standard-readme)
 
-> Tableland command line tools
+> Tableland command line tool
 
 # Table of Contents
 
@@ -22,8 +22,7 @@
 
 # Background
 
-This is the experimental Tableland command line tools.
-This is the first pass, and is subject to wild changes without notice!
+An experimental Tableland command line tool.
 
 # Usage
 
