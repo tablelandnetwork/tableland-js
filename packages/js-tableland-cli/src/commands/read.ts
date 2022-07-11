@@ -1,6 +1,12 @@
 import type { Arguments, CommandBuilder } from "yargs";
-import { connect, resultsToObjects, ConnectOptions } from "@tableland/sdk";
+import {
+  connect,
+  resultsToObjects,
+  ConnectOptions,
+  ChainName,
+} from "@tableland/sdk";
 import yargs from "yargs";
+import getChains from "../chains";
 
 type Options = {
   // Local
@@ -8,7 +14,7 @@ type Options = {
   format: "raw" | "table" | "objects";
 
   // Global
-  host: string;
+  chain: ChainName;
 };
 
 export const command = "read <query>";
@@ -27,9 +33,16 @@ export const builder: CommandBuilder<Options, Options> = (_yargs) =>
     }) as yargs.Argv<Options>;
 
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
-  const { host, query, format } = argv;
+  const { query, format, chain } = argv;
+
+  const network = getChains()[chain];
+  if (!network) {
+    console.error("unsupported chain (see `chains` command for details)\n");
+    process.exit(1);
+  }
+
   const options: ConnectOptions = {
-    host,
+    chain,
   };
   const tbl = await connect(options);
   const res = await tbl.read(query);

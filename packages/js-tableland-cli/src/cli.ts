@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import * as dotenv from "dotenv";
 import fetch, { Headers, Request, Response } from "node-fetch";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
@@ -11,6 +12,8 @@ if (!globalThis.fetch) {
   (globalThis as any).Response = Response;
 }
 
+dotenv.config();
+
 // eslint-disable-next-line no-unused-vars
 const _ = yargs(hideBin(process.argv))
   .commandDir("commands")
@@ -20,13 +23,8 @@ const _ = yargs(hideBin(process.argv))
     type: "string",
     description: "Private key string",
   })
-  .option("h", {
-    alias: "host",
-    type: "string",
-    description: "Remote API host (e.g. https://testnet.tableland.network)",
-    default: "https://testnet.tableland.network",
-  })
-  .option("chain", {
+  .option("c", {
+    alias: "chain",
     type: "string",
     description: "The EVM compatible chain to target",
     default: "ethereum-goerli",
@@ -44,11 +42,6 @@ const _ = yargs(hideBin(process.argv))
       type: "string",
       description: "Etherscan provider API key",
     },
-  })
-  .option("t", {
-    alias: "token",
-    type: "string",
-    description: "Signed SIWE token (see `token --help`)",
   })
 
   .strict().argv;

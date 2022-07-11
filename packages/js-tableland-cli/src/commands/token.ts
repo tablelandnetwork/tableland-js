@@ -1,6 +1,7 @@
 import type { Arguments, CommandBuilder } from "yargs";
 import { Wallet } from "ethers";
-import { userCreatesToken, SUPPORTED_CHAINS, ChainName } from "@tableland/sdk";
+import { userCreatesToken, ChainName } from "@tableland/sdk";
+import getChains from "../chains";
 
 type Options = {
   // Global
@@ -20,10 +21,14 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     console.error("missing required flag (`-k` or `--privateKey`)\n");
     process.exit(1);
   }
-  const signer = new Wallet(privateKey);
-  const chainId = SUPPORTED_CHAINS[chain].chainId ?? 5;
+  const network = getChains()[chain];
+  if (!network) {
+    console.error("unsupported chain (see `chains` command for details)\n");
+    process.exit(1);
+  }
 
-  const { token } = await userCreatesToken(signer, chainId);
+  const signer = new Wallet(privateKey);
+  const { token } = await userCreatesToken(signer, network.chainId);
   const out = JSON.stringify(token, null, 2);
   console.log(out);
   process.exit(0);
