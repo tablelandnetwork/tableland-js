@@ -1,11 +1,11 @@
 {
   "scripts": {
     "test-js": "node --experimental-fetch --experimental-vm-modules node_modules/.bin/jest --verbose",
-    "up": "HARDHAT_DIR=../evm-tableland VALIDATOR_DIR=../go-tableland/docker deno run --allow-run --allow-env up.ts"
+    "up": "HARDHAT_DIR=../evm-tableland VALIDATOR_DIR=../go-tableland/docker deno run --allow-run --allow-env --allow-read --allow-write up.ts"
   },
   "type": "module",
   "devDependencies": {
-    "@tableland/sdk": "^1.0.0",
+    "@tableland/sdk": "^2.0.1",
     "@types/jest": "^27.5.1",
     "ethers": "^5.6.6",
     "jest": "^28.1.0",

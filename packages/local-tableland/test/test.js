@@ -34,7 +34,8 @@ describe('Validator, Chain, and SDK work end to end', function () {
         const tableland = await getTableland(signer);
 
         const prefix = 'test_create_read';
-        const receipt = await tableland.create('key TEXT, val TEXT', prefix);
+        // `key` is a reserved word in sqlite
+        const receipt = await tableland.create('keyy TEXT, val TEXT', prefix);
 
         const tableId = await getTableId(tableland, receipt.txnHash);
         const chainId = 31337;
@@ -51,13 +52,13 @@ describe('Validator, Chain, and SDK work end to end', function () {
         const tableland = await getTableland(signer);
 
         const prefix = 'test_create_write';
-        const receipt = await tableland.create('key TEXT, val TEXT', prefix);
+        const receipt = await tableland.create('keyy TEXT, val TEXT', prefix);
 
         const tableId = await getTableId(tableland, receipt.txnHash);
         const chainId = 31337;
         const queryableName = `${prefix}_${chainId}_${tableId}`;
 
-        const writeRes = await tableland.write(`INSERT INTO ${queryableName} (key, val) VALUES ('tree', 'aspen')`);
+        const writeRes = await tableland.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`);
 
         expect(typeof writeRes.hash).toEqual('string');
         await waitForTx(tableland, writeRes.hash);
@@ -74,7 +75,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
         const tableland = await getTableland(signer);
 
         const prefix = 'test_not_allowed';
-        const receipt = await tableland.create('key TEXT, val TEXT', prefix);
+        const receipt = await tableland.create('keyy TEXT, val TEXT', prefix);
 
         const tableId = await getTableId(tableland, receipt.txnHash);
         const chainId = 31337;
@@ -89,7 +90,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
 
         const tableland2 = await getTableland(signer2);
 
-        const writeRes = await tableland2.write(`INSERT INTO ${queryableName} (key, val) VALUES ('tree', 'aspen')`);
+        const writeRes = await tableland2.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`);
 
         expect(typeof writeRes.hash).toEqual('string');
         await waitForTx(tableland, writeRes.hash);
@@ -107,18 +108,18 @@ describe('Validator, Chain, and SDK work end to end', function () {
         const tableland = await getTableland(signer);
 
         const prefix = 'test_create_delete';
-        const receipt = await tableland.create('key TEXT, val TEXT', prefix);
+        const receipt = await tableland.create('keyy TEXT, val TEXT', prefix);
 
         const tableId = await getTableId(tableland, receipt.txnHash);
         const chainId = 31337;
         const queryableName = `${prefix}_${chainId}_${tableId}`;
 
-        const write1 = await tableland.write(`INSERT INTO ${queryableName} (key, val) VALUES ('tree', 'aspen')`);
+        const write1 = await tableland.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`);
 
         expect(typeof write1.hash).toEqual('string');
         await waitForTx(tableland, write1.hash);
 
-        const write2 = await tableland.write(`INSERT INTO ${queryableName} (key, val) VALUES ('tree', 'pine')`);
+        const write2 = await tableland.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'pine')`);
 
         expect(typeof write2.hash).toEqual('string');
         await waitForTx(tableland, write2.hash);
@@ -143,7 +144,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
         const tableland = await getTableland(signer);
 
         const prefix = 'test_create_list';
-        const receipt = await tableland.create('key TEXT, val TEXT', prefix);
+        const receipt = await tableland.create('keyy TEXT, val TEXT', prefix);
 
         const tableId = await getTableId(tableland, receipt.txnHash, 7);
         const chainId = 31337;
@@ -177,7 +178,7 @@ describe('Validator gateway server', function () {
         const tableland1 = await getTableland(signer1);
 
         const prefix = 'test_transaction';
-        const receipt = await tableland1.create('key TEXT, val TEXT', prefix);
+        const receipt = await tableland1.create('keyy TEXT, val TEXT', prefix);
 
         const tableId = await getTableId(tableland1, receipt.txnHash);
         const chainId = 31337;

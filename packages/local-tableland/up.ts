@@ -11,6 +11,9 @@ import { delay } from 'https://deno.land/std@0.140.0/async/delay.ts';
 import { readLines } from 'https://deno.land/std@0.140.0/io/mod.ts';
 import { writeAll } from 'https://deno.land/std@0.140.0/io/util.ts';
 import { join } from 'https://deno.land/std/path/mod.ts';
+import * as path from "https://deno.land/std@0.57.0/path/mod.ts";
+
+const __dirname = path.dirname(path.fromFileUrl(import.meta.url));
 
 const rmImage = async function (name: string) {
     const rm = Deno.run({cmd: [
@@ -32,8 +35,7 @@ const cleanup = async function () {
     ]});
     await pruneContainer.status();
 
-    await rmImage('local_api');
-    await rmImage('local_database');
+    await rmImage('docker_api');
 
     const pruneVolume = Deno.run({cmd: [
         'docker',
@@ -51,6 +53,26 @@ const cleanup = async function () {
         ]
     });
     await rmTemp.status();
+
+    const VALIDATOR_DIR = Deno.env.get('VALIDATOR_DIR');
+    if (typeof VALIDATOR_DIR !== 'string') throw new Error('you must supply path to Validator');
+
+    const dbFiles = [
+        join(__dirname, VALIDATOR_DIR, '/local/api/database.db'),
+        join(__dirname, VALIDATOR_DIR, '/local/api/database.db-shm'),
+        join(__dirname, VALIDATOR_DIR, '/local/api/database.db-wal')
+    ];
+
+    for (const filepath of dbFiles) {
+        const rmDb = Deno.run({
+            cmd: [
+                'rm',
+                '-f',
+                filepath
+            ]
+        });
+        await rmDb.status();
+    }
 
 };
 
@@ -114,6 +136,19 @@ const start = async function () {
     // wait till the deploy finishes
     await deployRegistry.status();
 
+    // Add the registry address to the Validator config
+    const configFilePath = join(VALIDATOR_DIR, 'local/api/config.json');
+    const validatorConfig = JSON.parse(
+        await Deno.readTextFile(configFilePath)
+    );
+    validatorConfig.Chains[0].Registry.ContractAddress = '0xe7f1725e7734ce288f8367e1bb143e90bb3f0512';
+
+    await Deno.writeTextFile(configFilePath, JSON.stringify(validatorConfig, null, 2));
+
+    // Add a .env file to the validator
+    const validatorEnv = await Deno.readTextFile(join(__dirname, '.env_validator'))
+    await Deno.writeTextFile(join(VALIDATOR_DIR, 'local/api/.env_validator'), validatorEnv);
+
     // start the validator
     const validator = Deno.run({
         cwd: VALIDATOR_DIR,
@@ -121,9 +156,6 @@ const start = async function () {
             'make',
             'local-up'
         ],
-        env: {
-            CONFIG_FILE: 'config.json'
-        },
         stdout: 'piped',
         stderr: 'piped'
     });
