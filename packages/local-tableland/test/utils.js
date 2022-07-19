@@ -34,6 +34,7 @@ const testHeaders = function (headers, expected) {
     for (const headerName in expected) {
         const headerVal = headers.get(headerName);
 
+        // TODO: use a lib like debug to enable logging based on a --verbose flag or similar
         // log in case someone wants to manually inspect
         console.log(`Header- ${headerName}: ${headerVal}`);
 
@@ -64,15 +65,6 @@ export const testSameTypes = function (res, expected) {
     }
 };
 
-export const getTableId = async function (tableland, txnHash, tries = 5) {
-    const table = await waitForTx(tableland, txnHash, tries);
-
-    await expect(table).toBeDefined();
-    await expect(typeof table.tableId).toEqual('string');
-
-    return table.tableId;
-};
-
 export const getSafe = function (obj, location) {
     const keys = typeof location == 'string' ? location.split('.') : location;
 
@@ -80,20 +72,6 @@ export const getSafe = function (obj, location) {
         if (!acc) return acc;
         return acc[curr];
     }, obj);
-};
-
-export const waitForTx = async function (tableland, txnHash, tries = 5) {
-    let table = await tableland.receipt(txnHash);
-    let tryy = 0
-    while (!table && tryy < tries) {
-        await new Promise(resolve => setTimeout(resolve, 1500 + (tries * 500)));
-        table = await tableland.receipt(txnHash);
-        tryy++;
-    }
-
-    if (!table) throw new Error(`could not get transaction receipt: ${txnHash}`);
-
-    return table;
 };
 
 // The open api spec file routes are templated with single squiggle brakets {} 
