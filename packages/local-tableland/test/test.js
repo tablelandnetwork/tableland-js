@@ -17,7 +17,7 @@ import {
 const __dirname = path.resolve(path.dirname(''));
 
 // These tests take a bit longer than normal since we are usually waiting for blocks to finalize etc...
-jest.setTimeout(20000);
+jest.setTimeout(25000);
 
 describe('Validator, Chain, and SDK work end to end', function () {
     // NOTE: these tests require the a local Tableland is already running
@@ -248,7 +248,57 @@ describe('Validator, Chain, and SDK work end to end', function () {
         const { hash } = await tableland.setController('0x14dC79964da2C08b23698B3D3cc7Ca32193d9955', name);
 
         expect(typeof hash).toEqual('string');
-        expect(hash.length).toEqual(56);
+        expect(hash.length).toEqual(66);
+    });
+
+    test('get controller returns an address', async function () {
+        const wallet = new Wallet('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' /* Hardhat #1 */);
+        const provider = new providers.JsonRpcProvider('http://localhost:8545');
+        const signer = wallet.connect(provider);
+
+        const tableland = await getTableland(signer);
+
+        const prefix = 'test_create_getcontroller';
+        // `key` is a reserved word in sqlite
+        const { name } = await tableland.create('keyy TEXT, val TEXT', { prefix });
+
+        const chainId = 31337;
+        // Hardhat #7
+        const controllerAddress = '0x14dC79964da2C08b23698B3D3cc7Ca32193d9955'
+
+        const { hash } = await tableland.setController(controllerAddress, name);
+
+        expect(typeof hash).toEqual('string');
+        expect(hash.length).toEqual(66);
+
+        const controller = await tableland.getController(name);
+
+        expect(controller).toEqual(controllerAddress);
+    });
+
+    test('lock controller without relay returns a transaction hash', async function () {
+        const wallet = new Wallet('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' /* Hardhat #1 */);
+        const provider = new providers.JsonRpcProvider('http://localhost:8545');
+        const signer = wallet.connect(provider);
+
+        const tableland = await getTableland(signer, { rpcRelay: false });
+
+        const prefix = 'test_create_lockcontroller';
+        // `key` is a reserved word in sqlite
+        const { name } = await tableland.create('keyy TEXT, val TEXT', { prefix });
+
+        const chainId = 31337;
+        // Hardhat #7
+        const controllerAddress = '0x14dC79964da2C08b23698B3D3cc7Ca32193d9955'
+
+        const { hash } = await tableland.setController(controllerAddress, name);
+
+        expect(typeof hash).toEqual('string');
+        expect(hash.length).toEqual(66);
+
+        const tx = await tableland.lockController(name);
+
+        expect(typeof tx.hash).toEqual("string");
     });
 
 });
