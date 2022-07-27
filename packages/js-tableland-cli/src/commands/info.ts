@@ -31,20 +31,21 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
   }
 
   const parts = name.split("_");
-  if (parts.length !== 3) {
+  if (parts.length < 3) {
     console.error(
       "invalid table name (name format is `prefix_chainId_tableId`)\n"
     );
     process.exit(1);
   }
-  const chainId = parts[1];
+
+  const id = parts.pop();
+  const chainId = parts.pop();
   if (chainId !== (network.chainId as number).toString()) {
     console.error(
       "table `chainId` does not match selected chain (see `chains` command for details)\n"
     );
     process.exit(1);
   }
-  const id = parts[2];
 
   const res = await fetch(
     `${network.host}/chain/${network.chainId}/tables/${id}`
