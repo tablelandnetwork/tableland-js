@@ -12,6 +12,9 @@ import { readLines } from 'https://deno.land/std@0.140.0/io/mod.ts';
 import { writeAll } from 'https://deno.land/std@0.140.0/io/util.ts';
 import { join } from 'https://deno.land/std/path/mod.ts';
 import * as path from "https://deno.land/std@0.57.0/path/mod.ts";
+import { EventEmitter } from "https://deno.land/std@0.149.0/node/events.ts";
+
+const initEmitter = new EventEmitter();
 
 const __dirname = path.dirname(path.fromFileUrl(import.meta.url));
 
@@ -76,11 +79,35 @@ const cleanup = async function () {
 
 };
 
-const pipeNamedSubprocess = async function (prefix: string, reader: Deno.Reader, writer: Deno.Writer) {
+const pipeNamedSubprocess = async function (
+  prefix: string,
+  reader: Deno.Reader,
+  writer: Deno.Writer,
+  options?: any
+) {
   const encoder = new TextEncoder();
+  // optionally setup an event in the global emitter that indicates when this
+  // process is done initalizing based on the stdout text.
+  let ready = !(options && options.message);
+
   for await (const line of readLines(reader)) {
+    if (!ready) {
+        if (line.includes(options.message) && options.readyEvent) {
+            initEmitter.emit(options.readyEvent);
+            ready = true;
+        }
+    }
+
     await writeAll(writer, encoder.encode(`[${prefix}] ${line}\n`));
   }
+};
+
+const waitForReady = function (readyEvent: string): Promise<void> {
+    return new Promise(function (resolve, reject) {
+        initEmitter.once(readyEvent, function () {
+            resolve();
+        });
+    });
 };
 
 const shutdown = async function () {
@@ -109,12 +136,17 @@ const start = async function () {
         stdout: 'piped',
         stderr: 'piped'
     });
+
+    const hardhatReadyEvent = 'hardhat ready';
     // NOTE: the process should keep running until we kill it
-    pipeNamedSubprocess(cyan('Hardhat'), hardhat.stdout, Deno.stdout);
+    pipeNamedSubprocess(cyan('Hardhat'), hardhat.stdout, Deno.stdout, {
+        readyEvent: hardhatReadyEvent,
+        message: 'Mined empty block'
+    });
     pipeNamedSubprocess(red('Hardhat'), hardhat.stderr, Deno.stderr);
 
-    // very naive way to let the Hardhat node start before deploying to it
-    await delay(31 * 1000);
+    // wait until initialization is done
+    await waitForReady(hardhatReadyEvent);
 
     // Deploy the Registry to the Hardhat node
     const deployRegistry = Deno.run({
@@ -159,8 +191,13 @@ const start = async function () {
         stdout: 'piped',
         stderr: 'piped'
     });
+
+    const validatorReadyEvent = 'validator ready';
     // NOTE: the process should keep running until we kill it
-    pipeNamedSubprocess(magenta('Validator'), validator.stdout, Deno.stdout);
+    pipeNamedSubprocess(magenta('Validator'), validator.stdout, Deno.stdout, {
+        readyEvent: validatorReadyEvent,
+        message: 'processing height'
+    });
     pipeNamedSubprocess(red('Validator'), validator.stderr, Deno.stderr);
 
     // copy the api spec to a place the tests can find it
@@ -181,10 +218,15 @@ const start = async function () {
     });
     await openApiSpec.status();
 
-    // very naive way to let the Validator start before signaling that things are all running
-    await delay(31 * 1000);
+    // wait until initialization is done
+    await waitForReady(validatorReadyEvent);
 
-    console.log('Tableland is running!')
+    console.log('\n\n******  Tableland is running!  ******');
+    console.log('             _________');
+    console.log('         ___/         \\');
+    console.log('        /              \\');
+    console.log('       /                \\');
+    console.log('______/                  \\______\n\n');
 };
 
 Deno.addSignalListener('SIGINT', shutdown);

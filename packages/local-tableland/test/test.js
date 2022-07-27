@@ -11,21 +11,20 @@ import {
     getTableland,
     getSafe,
     renderPath,
-    loadSpecTestData
+    loadSpecTestData,
+    getAccounts
 } from './utils';
 
 const __dirname = path.resolve(path.dirname(''));
 
 // These tests take a bit longer than normal since we are usually waiting for blocks to finalize etc...
 jest.setTimeout(25000);
+const accounts = getAccounts();
 
+// NOTE: these tests require the a local Tableland is already running
 describe('Validator, Chain, and SDK work end to end', function () {
-    // NOTE: these tests require the a local Tableland is already running
-
     test('Create a table that can be read from', async function () {
-        const wallet = new Wallet('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' /* Hardhat #1 */);
-        const provider = new providers.JsonRpcProvider('http://localhost:8545');
-        const signer = wallet.connect(provider);
+        const signer = accounts[1];
 
         const tableland = await getTableland(signer);
 
@@ -40,9 +39,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
     });
 
     test('Create a table that can be written to', async function () {
-        const wallet = new Wallet('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' /* Hardhat #1 */);
-        const provider = new providers.JsonRpcProvider('http://localhost:8545');
-        const signer = wallet.connect(provider);
+        const signer = accounts[1];
 
         const tableland = await getTableland(signer);
 
@@ -61,9 +58,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
     });
 
     test('Table cannot be written to unless caller is allowed', async function () {
-        const wallet = new Wallet('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' /* Hardhat #1 */);
-        const provider = new providers.JsonRpcProvider('http://localhost:8545');
-        const signer = wallet.connect(provider);
+        const signer = accounts[1];
 
         const tableland = await getTableland(signer);
 
@@ -76,10 +71,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
         const data = await tableland.read(`SELECT * FROM ${queryableName};`);
         await expect(data.rows).toEqual([]);
 
-        const wallet2 = new Wallet('0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a' /* Hardhat #2 */);
-        const provider2 = new providers.JsonRpcProvider('http://localhost:8545');
-        const signer2 = wallet2.connect(provider2);
-
+        const signer2 = accounts[2];
         const tableland2 = await getTableland(signer2);
 
         const writeRes = await tableland2.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`);
@@ -91,9 +83,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
     });
 
     test('Create a table can have a row deleted', async function () {
-        const wallet = new Wallet('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' /* Hardhat #1 */);
-        const provider = new providers.JsonRpcProvider('http://localhost:8545');
-        const signer = wallet.connect(provider);
+        const signer = accounts[1];
 
         const tableland = await getTableland(signer);
 
@@ -123,9 +113,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
     }, 30000);
 
     test('List an account\'s tables', async function () {
-        const wallet = new Wallet('0x701b615bbdfb9de65240bc28bd21bbc0d996645a3dd57e7b12bc2bdf6f192c82' /* Hardhat #11 */);
-        const provider = new providers.JsonRpcProvider('http://localhost:8545');
-        const signer = wallet.connect(provider);
+        const signer = accounts[1];
 
         const tableland = await getTableland(signer);
 
@@ -145,9 +133,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
     });
 
     test('write to a table without using the relay', async function () {
-        const wallet = new Wallet('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' /* Hardhat #1 */);
-        const provider = new providers.JsonRpcProvider('http://localhost:8545');
-        const signer = wallet.connect(provider);
+        const signer = accounts[1];
 
         const tableland = await getTableland(signer, {rpcRelay: false});
 
@@ -166,9 +152,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
     });
 
     test('write without relay statement validates table name prefix', async function () {
-        const wallet = new Wallet('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' /* Hardhat #1 */);
-        const provider = new providers.JsonRpcProvider('http://localhost:8545');
-        const signer = wallet.connect(provider);
+        const signer = accounts[1];
 
         const tableland = await getTableland(signer, {rpcRelay: false});
 
@@ -190,9 +174,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
     });
 
     test('write without relay statement validates table ID', async function () {
-        const wallet = new Wallet('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' /* Hardhat #1 */);
-        const provider = new providers.JsonRpcProvider('http://localhost:8545');
-        const signer = wallet.connect(provider);
+        const signer = accounts[1];
 
         const tableland = await getTableland(signer, {rpcRelay: false});
 
@@ -210,9 +192,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
     });
 
     test('set controller without relay', async function () {
-        const wallet = new Wallet('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' /* Hardhat #1 */);
-        const provider = new providers.JsonRpcProvider('http://localhost:8545');
-        const signer = wallet.connect(provider);
+        const signer = accounts[1];
 
         const tableland = await getTableland(signer, { rpcRelay: false });
 
@@ -230,9 +210,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
     });
 
     test('set controller with relay', async function () {
-        const wallet = new Wallet('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' /* Hardhat #1 */);
-        const provider = new providers.JsonRpcProvider('http://localhost:8545');
-        const signer = wallet.connect(provider);
+        const signer = accounts[1];
 
         const tableland = await getTableland(signer, {
             rpcRelay: true /* this is default `true`, just being explicit */
@@ -252,9 +230,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
     });
 
     test('get controller returns an address', async function () {
-        const wallet = new Wallet('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' /* Hardhat #1 */);
-        const provider = new providers.JsonRpcProvider('http://localhost:8545');
-        const signer = wallet.connect(provider);
+        const signer = accounts[1];
 
         const tableland = await getTableland(signer);
 
@@ -277,9 +253,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
     });
 
     test('lock controller without relay returns a transaction hash', async function () {
-        const wallet = new Wallet('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' /* Hardhat #1 */);
-        const provider = new providers.JsonRpcProvider('http://localhost:8545');
-        const signer = wallet.connect(provider);
+        const signer = accounts[1];
 
         const tableland = await getTableland(signer, { rpcRelay: false });
 
@@ -311,14 +285,12 @@ describe('Validator gateway server', function () {
 
         // TODO: split openapi spec tests and js tests into different files and npm commands,
         //       then `npm test` can run everything.
-        const wallet0 = new Wallet('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80' /* Hardhat #0 */);
-        const signer0 = wallet0.connect(provider);
+        const signer0 = accounts[0];
         const tableland0 = await getTableland(signer0);
         await tableland0.siwe();
 
         // We can't use the Validator's Wallet to create tables because the Validator's nonce tracking will get out of sync
-        const wallet1 = new Wallet('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' /* Hardhat #1 */);
-        const signer1 = wallet1.connect(provider);
+        const signer1 = accounts[1];
         const tableland1 = await getTableland(signer1);
 
         const prefix = 'test_transaction';
