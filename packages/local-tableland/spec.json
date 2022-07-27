@@ -1,630 +1,574 @@
 {
-    "openapi": "3.0.0",
-    "info": {
-        "title": "Tableland Remote API",
-        "version": "0.0.1"
-    },
-    "servers": [
-        {
-            "url": "https://testnet.tableland.network"
-        }
-    ],
-    "paths": {
-        "/rpc": {
-            "post": {
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ],
-                "summary": "Lets you interact with Tableland's JSON-RPC calls",
-                "description": "There are four available JSON-RPC methods:\n* The `validateCreateTable` method allows you validate a CREATE TABLE query as a pre-mint check, and also calculate its corresponding structure hash.\n* The `runReadQuery` method allows you execute a read-query in the validator and get the result.\n* The `relayWriteQuery` method allows you to rely on the validator to send a runSQL SC call on your behalf for write-queries.\n* The `getReceipt` method allows you to get the receipt of a chain transaction to know if it was executed, and the execution details.\n* The `setController` method allows you to rely on the validator to send a setController SC call on your behalf for a table.\nAll the above RPC calls expect an Authorization header with a signed SIWE except: - runReadQuery\n",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "oneOf": [
-                                    {
-                                        "$ref": "#/components/schemas/runReadQuery"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/relayWriteQuery"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/validateCreateTable"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/getReceipt"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/setController"
-                                    }
-                                ]
-                            },
-                            "examples": {
-                                "validateCreateTable": {
-                                    "value": {
-                                        "jsonrpc": "2.0",
-                                        "method": "tableland_validateCreateTable",
-                                        "id": 1,
-                                        "params": {
-                                            "id": "0",
-                                            "create_statement": "CREATE TABLE myname (column_a int, column_b text);"
-                                        }
-                                    }
-                                },
-                                "runReadQuery": {
-                                    "value": {
-                                        "jsonrpc": "2.0",
-                                        "method": "tableland_runReadQuery",
-                                        "id": 1,
-                                        "params": {
-                                            "statement": "SELECT * FROM Hello_4_10;"
-                                        }
-                                    }
-                                },
-                                "relayWriteQuery": {
-                                    "value": {
-                                        "jsonrpc": "2.0",
-                                        "method": "tableland_relayWriteQuery",
-                                        "id": 1,
-                                        "params": {
-                                            "statement": "INSERT INTO Hello_4_10 values (1);"
-                                        }
-                                    }
-                                },
-                                "getReceipt": {
-                                    "value": {
-                                        "jsonrpc": "2.0",
-                                        "method": "tableland_getReceipt",
-                                        "id": 1,
-                                        "params": {
-                                            "txn_hash": "0xc3e7d1e81b59556f414a5f5c23760eb61b4bfaa18150d924d7d3b334941dbecd"
-                                        }
-                                    }
-                                },
-                                "setController": {
-                                    "value": {
-                                        "jsonrpc": "2.0",
-                                        "method": "tableland_setController",
-                                        "id": 1,
-                                        "params": {
-                                            "Caller": "0x6887246668a3b87f54deb3b94ba47a6f63f32985",
-                                            "Controller": "0x5e4e65926ba27467555eb562121fac00d24e9dd2",
-                                            "token_id": "10"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "headers": {
-                            "Access-Control-Allow-Headers": {
-                                "schema": {
-                                    "type": "string",
-                                    "example": "Accept, Accept-Language, Content-Type, Authorization"
-                                }
-                            },
-                            "Access-Control-Allow-Origin": {
-                                "schema": {
-                                    "type": "string",
-                                    "example": "*"
-                                }
-                            },
-                            "Access-Control-Allow-Methods": {
-                                "schema": {
-                                    "type": "string",
-                                    "example": "GET, POST, OPTIONS"
-                                }
-                            },
-                            "Trace-Id": {
-                                "schema": {
-                                    "type": "string",
-                                    "example": "579bf7aa-9bcf-4405-9d9e-7fd6c1672d1b"
-                                }
-                            },
-                            "Content-Type": {
-                                "schema": {
-                                    "type": "string",
-                                    "example": "application/json"
-                                }
-                            }
-                        },
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object"
-                                },
-                                "examples": {
-                                    "validateCreateTable": {
-                                        "value": {
-                                            "jsonrpc": "2.0",
-                                            "id": 1,
-                                            "result": {
-                                                "structure_hash": "ef7be01282ea97380e4d3bbcba6774cbc7242c46ee51b7e611f1efdfa3623e53"
-                                            }
-                                        }
-                                    },
-                                    "relayWriteQuery": {
-                                        "value": {
-                                            "jsonrpc": "2.0",
-                                            "id": 1,
-                                            "result": {
-                                                "tx": {
-                                                    "hash": "0xc3e7d1e81b59556f414a5f5c23760eb61b4bfaa18150d924d7d3b334941dbecd"
-                                                }
-                                            }
-                                        }
-                                    },
-                                    "runReadQuery": {
-                                        "value": {
-                                            "jsonrpc": "2.0",
-                                            "id": 1,
-                                            "result": {
-                                                "data": {
-                                                    "columns": [
-                                                        {
-                                                            "name": "column_a"
-                                                        },
-                                                        {
-                                                            "name": "column_b"
-                                                        }
-                                                    ],
-                                                    "rows": [
-                                                        [
-                                                            "e11",
-                                                            "e12"
-                                                        ],
-                                                        [
-                                                            "e21",
-                                                            "e22"
-                                                        ]
-                                                    ]
-                                                }
-                                            }
-                                        }
-                                    },
-                                    "getReceipt": {
-                                        "value": {
-                                            "jsonrpc": "2.0",
-                                            "id": 1,
-                                            "result": {
-                                                "ok": "true",
-                                                "receipt": {
-                                                    "chain_id": 4,
-                                                    "txn_hash": "0xc3e7d1e81b59556f414a5f5c23760eb61b4bfaa18150d924d7d3b334941dbecd",
-                                                    "block_number": 1000,
-                                                    "error": "",
-                                                    "table_id": 102
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/chain/{chainID}/tables/controller/{ethAddress}": {
-            "get": {
-                "summary": "Get all tables controlled by an ETH address",
-                "parameters": [
-                    {
-                        "in": "path",
-                        "name": "chainID",
-                        "schema": {
-                            "type": "int"
-                        },
-                        "required": true,
-                        "description": "The ChainID of the targeted chain."
-                    },
-                    {
-                        "in": "path",
-                        "name": "ethAddress",
-                        "schema": {
-                            "type": "string"
-                        },
-                        "required": true,
-                        "description": "An ETH address"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "object",
-                                        "required": [
-                                            "uuid",
-                                            "controller",
-                                            "type",
-                                            "created_at"
-                                        ],
-                                        "properties": {
-                                            "name": {
-                                                "type": "string"
-                                            },
-                                            "controller": {
-                                                "type": "string"
-                                            },
-                                            "description": {
-                                                "type": "string"
-                                            },
-                                            "created_at": {
-                                                "type": "string"
-                                            },
-                                            "structure": {
-                                                "type": "string"
-                                            }
-                                        },
-                                        "example": {
-                                            "controller": "0xbAb12215Ed94713A290e0c618fa8177fAb5eFd2D",
-                                            "name": "myname_0",
-                                            "description": "tableland rocks!",
-                                            "structure": "be1eb905f03347a439ecf9b612632fd53839b7f082dc2f9be6ef7da5dfddd660",
-                                            "created_at": "2022-02-07T22:57:41.606803Z"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/chain/{chainID}/tables/{id}": {
-            "get": {
-                "summary": "Get the metadata associated with a table",
-                "parameters": [
-                    {
-                        "in": "path",
-                        "name": "chainID",
-                        "schema": {
-                            "type": "int"
-                        },
-                        "required": true,
-                        "description": "The ChainID of the targeted chain."
-                    },
-                    {
-                        "in": "path",
-                        "name": "id",
-                        "schema": {
-                            "type": "string"
-                        },
-                        "required": true,
-                        "description": "The id of the table"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "required": [
-                                        "name",
-                                        "description",
-                                        "external_url",
-                                        "image",
-                                        "attributes"
-                                    ],
-                                    "properties": {
-                                        "name": {
-                                            "type": "string"
-                                        },
-                                        "description": {
-                                            "type": "string"
-                                        },
-                                        "external_url": {
-                                            "type": "string"
-                                        },
-                                        "image": {
-                                            "type": "string"
-                                        },
-                                        "attributes": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "object",
-                                                "required": [
-                                                    "display_type",
-                                                    "trait_type",
-                                                    "value"
-                                                ],
-                                                "properties": {
-                                                    "display_type": {
-                                                        "type": "string"
-                                                    },
-                                                    "trait_type": {
-                                                        "type": "string"
-                                                    },
-                                                    "value": {
-                                                        "type": "integer"
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    },
-                                    "example": {
-                                        "name": "myname",
-                                        "description": "tableland rocks!",
-                                        "external_url": "https://testnet.tableland.network/tables/0",
-                                        "image": "https://bafkreifhuhrjhzbj4onqgbrmhpysk2mop2jimvdvfut6taiyzt2yqzt43a.ipfs.dweb.link",
-                                        "attributes": [
-                                            {
-                                                "display_type": "date",
-                                                "trait_type": "created",
-                                                "value": 1644274661
-                                            }
-                                        ]
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "required": [
-                                        "message"
-                                    ],
-                                    "example": {
-                                        "message": "Invalid id format"
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "required": [
-                                        "message"
-                                    ],
-                                    "example": {
-                                        "message": "Failed to fetch metadata"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    },
-    "components": {
-        "securitySchemes": {
-            "bearerAuth": {
-                "type": "http",
-                "scheme": "bearer",
-                "bearerFormat": "SIWE"
-            }
-        },
-        "schemas": {
-            "runReadQuery": {
-                "type": "object",
-                "required": [
-                    "method",
-                    "id",
-                    "jsonrpc",
-                    "params"
-                ],
-                "properties": {
-                    "method": {
-                        "type": "string",
-                        "description": "Method name"
-                    },
-                    "id": {
-                        "type": "integer",
-                        "default": 1,
-                        "format": "int32",
-                        "description": "Request ID"
-                    },
-                    "jsonrpc": {
-                        "type": "string",
-                        "default": "2.0",
-                        "description": "JSON-RPC Version (2.0)"
-                    },
-                    "params": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "required": [
-                                "statement"
-                            ],
-                            "properties": {
-                                "statement": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "relayWriteQuery": {
-                "type": "object",
-                "required": [
-                    "method",
-                    "id",
-                    "jsonrpc",
-                    "params"
-                ],
-                "properties": {
-                    "method": {
-                        "type": "string",
-                        "description": "Method name"
-                    },
-                    "id": {
-                        "type": "integer",
-                        "default": 1,
-                        "format": "int32",
-                        "description": "Request ID"
-                    },
-                    "jsonrpc": {
-                        "type": "string",
-                        "default": "2.0",
-                        "description": "JSON-RPC Version (2.0)"
-                    },
-                    "params": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "required": [
-                                "statement"
-                            ],
-                            "properties": {
-                                "statement": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "validateCreateTable": {
-                "type": "object",
-                "required": [
-                    "method",
-                    "id",
-                    "jsonrpc",
-                    "params"
-                ],
-                "properties": {
-                    "method": {
-                        "type": "string",
-                        "description": "Method name"
-                    },
-                    "id": {
-                        "type": "integer",
-                        "default": 1,
-                        "format": "int32",
-                        "description": "Request ID"
-                    },
-                    "jsonrpc": {
-                        "type": "string",
-                        "default": "2.0",
-                        "description": "JSON-RPC Version (2.0)"
-                    },
-                    "params": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "required": [
-                                "create_statement"
-                            ],
-                            "properties": {
-                                "create_statement": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "getReceipt": {
-                "type": "object",
-                "required": [
-                    "method",
-                    "id",
-                    "jsonrpc",
-                    "params"
-                ],
-                "properties": {
-                    "method": {
-                        "type": "string",
-                        "description": "Method name"
-                    },
-                    "id": {
-                        "type": "integer",
-                        "default": 1,
-                        "format": "int32",
-                        "description": "Request ID"
-                    },
-                    "jsonrpc": {
-                        "type": "string",
-                        "default": "2.0",
-                        "description": "JSON-RPC Version (2.0)"
-                    },
-                    "params": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "required": [
-                                "txn_hash"
-                            ],
-                            "properties": {
-                                "txn_hash": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "setController": {
-                "type": "object",
-                "required": [
-                    "method",
-                    "id",
-                    "jsonrpc",
-                    "params"
-                ],
-                "properties": {
-                    "method": {
-                        "type": "string",
-                        "description": "Method name"
-                    },
-                    "id": {
-                        "type": "integer",
-                        "default": 1,
-                        "format": "int32",
-                        "description": "Request ID"
-                    },
-                    "jsonrpc": {
-                        "type": "string",
-                        "default": "2.0",
-                        "description": "JSON-RPC Version (2.0)"
-                    },
-                    "params": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "required": [
-                                "caller",
-                                "controller",
-                                "token_id"
-                            ],
-                            "properties": {
-                                "txn_hash": {
-                                    "type": "string"
-                                },
-                                "controller": {
-                                    "type": "string"
-                                },
-                                "token_id": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Tableland Remote API",
+    "version": "0.0.1"
+  },
+  "servers": [
+    {
+      "url": "https://testnet.tableland.network"
     }
+  ],
+  "paths": {
+    "/rpc": {
+      "post": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Lets you interact with Tableland's JSON-RPC calls",
+        "description": "There are four available JSON-RPC methods:\n* The `validateCreateTable` method allows you validate a CREATE TABLE query as a pre-mint check, and also calculate its corresponding structure hash.\n* The `runReadQuery` method allows you execute a read-query in the validator and get the result.\n* The `relayWriteQuery` method allows you to rely on the validator to send a runSQL SC call on your behalf for write-queries.\n* The `getReceipt` method allows you to get the receipt of a chain transaction to know if it was executed, and the execution details.\n* The `setController` method allows you to rely on the validator to send a setController SC call on your behalf for a table.\nAll the above RPC calls expect an Authorization header with a signed SIWE except: - runReadQuery\n",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/runReadQuery"
+                  },
+                  {
+                    "$ref": "#/components/schemas/relayWriteQuery"
+                  },
+                  {
+                    "$ref": "#/components/schemas/validateCreateTable"
+                  },
+                  {
+                    "$ref": "#/components/schemas/getReceipt"
+                  },
+                  {
+                    "$ref": "#/components/schemas/setController"
+                  }
+                ]
+              },
+              "examples": {
+                "validateCreateTable": {
+                  "value": {
+                    "jsonrpc": "2.0",
+                    "method": "tableland_validateCreateTable",
+                    "id": 1,
+                    "params": {
+                      "id": "0",
+                      "create_statement": "CREATE TABLE myname (column_a int, column_b text);"
+                    }
+                  }
+                },
+                "runReadQuery": {
+                  "value": {
+                    "jsonrpc": "2.0",
+                    "method": "tableland_runReadQuery",
+                    "id": 1,
+                    "params": {
+                      "statement": "SELECT * FROM Hello_4_10;"
+                    }
+                  }
+                },
+                "relayWriteQuery": {
+                  "value": {
+                    "jsonrpc": "2.0",
+                    "method": "tableland_relayWriteQuery",
+                    "id": 1,
+                    "params": {
+                      "statement": "INSERT INTO Hello_4_10 values (1);"
+                    }
+                  }
+                },
+                "getReceipt": {
+                  "value": {
+                    "jsonrpc": "2.0",
+                    "method": "tableland_getReceipt",
+                    "id": 1,
+                    "params": {
+                      "txn_hash": "0xc3e7d1e81b59556f414a5f5c23760eb61b4bfaa18150d924d7d3b334941dbecd"
+                    }
+                  }
+                },
+                "setController": {
+                  "value": {
+                    "jsonrpc": "2.0",
+                    "method": "tableland_setController",
+                    "id": 1,
+                    "params": {
+                      "Caller": "0x6887246668a3b87f54deb3b94ba47a6f63f32985",
+                      "Controller": "0x5e4e65926ba27467555eb562121fac00d24e9dd2",
+                      "token_id": "10"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Access-Control-Allow-Headers": {
+                "schema": {
+                  "type": "string",
+                  "example": "Accept, Accept-Language, Content-Type, Authorization"
+                }
+              },
+              "Access-Control-Allow-Origin": {
+                "schema": {
+                  "type": "string",
+                  "example": "*"
+                }
+              },
+              "Access-Control-Allow-Methods": {
+                "schema": {
+                  "type": "string",
+                  "example": "GET, POST, OPTIONS"
+                }
+              },
+              "Trace-Id": {
+                "schema": {
+                  "type": "string",
+                  "example": "579bf7aa-9bcf-4405-9d9e-7fd6c1672d1b"
+                }
+              },
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "examples": {
+                  "validateCreateTable": {
+                    "value": {
+                      "jsonrpc": "2.0",
+                      "id": 1,
+                      "result": {
+                        "structure_hash": "ef7be01282ea97380e4d3bbcba6774cbc7242c46ee51b7e611f1efdfa3623e53"
+                      }
+                    }
+                  },
+                  "relayWriteQuery": {
+                    "value": {
+                      "jsonrpc": "2.0",
+                      "id": 1,
+                      "result": {
+                        "tx": {
+                          "hash": "0xc3e7d1e81b59556f414a5f5c23760eb61b4bfaa18150d924d7d3b334941dbecd"
+                        }
+                      }
+                    }
+                  },
+                  "runReadQuery": {
+                    "value": {
+                      "jsonrpc": "2.0",
+                      "id": 1,
+                      "result": {
+                        "data": {
+                          "columns": [
+                            {
+                              "name": "column_a"
+                            },
+                            {
+                              "name": "column_b"
+                            }
+                          ],
+                          "rows": [
+                            ["e11", "e12"],
+                            ["e21", "e22"]
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  "getReceipt": {
+                    "value": {
+                      "jsonrpc": "2.0",
+                      "id": 1,
+                      "result": {
+                        "ok": "true",
+                        "receipt": {
+                          "chain_id": 4,
+                          "txn_hash": "0xc3e7d1e81b59556f414a5f5c23760eb61b4bfaa18150d924d7d3b334941dbecd",
+                          "block_number": 1000,
+                          "error": "",
+                          "table_id": 102
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chain/{chainID}/tables/controller/{ethAddress}": {
+      "get": {
+        "summary": "Get all tables controlled by an ETH address",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "chainID",
+            "schema": {
+              "type": "int"
+            },
+            "required": true,
+            "description": "The ChainID of the targeted chain."
+          },
+          {
+            "in": "path",
+            "name": "ethAddress",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "An ETH address"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["uuid", "controller", "type", "created_at"],
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "controller": {
+                        "type": "string"
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                      "created_at": {
+                        "type": "string"
+                      },
+                      "structure": {
+                        "type": "string"
+                      }
+                    },
+                    "example": {
+                      "controller": "0xbAb12215Ed94713A290e0c618fa8177fAb5eFd2D",
+                      "name": "myname_0",
+                      "description": "tableland rocks!",
+                      "structure": "be1eb905f03347a439ecf9b612632fd53839b7f082dc2f9be6ef7da5dfddd660",
+                      "created_at": "2022-02-07T22:57:41.606803Z"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chain/{chainID}/tables/{id}": {
+      "get": {
+        "summary": "Get the metadata associated with a table",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "chainID",
+            "schema": {
+              "type": "int"
+            },
+            "required": true,
+            "description": "The ChainID of the targeted chain."
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "The id of the table"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "description",
+                    "external_url",
+                    "image",
+                    "attributes"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "external_url": {
+                      "type": "string"
+                    },
+                    "image": {
+                      "type": "string"
+                    },
+                    "attributes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["display_type", "trait_type", "value"],
+                        "properties": {
+                          "display_type": {
+                            "type": "string"
+                          },
+                          "trait_type": {
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "example": {
+                    "name": "myname",
+                    "description": "tableland rocks!",
+                    "external_url": "https://testnet.tableland.network/tables/0",
+                    "image": "https://bafkreifhuhrjhzbj4onqgbrmhpysk2mop2jimvdvfut6taiyzt2yqzt43a.ipfs.dweb.link",
+                    "attributes": [
+                      {
+                        "display_type": "date",
+                        "trait_type": "created",
+                        "value": 1644274661
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["message"],
+                  "example": {
+                    "message": "Invalid id format"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["message"],
+                  "example": {
+                    "message": "Failed to fetch metadata"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "SIWE"
+      }
+    },
+    "schemas": {
+      "runReadQuery": {
+        "type": "object",
+        "required": ["method", "id", "jsonrpc", "params"],
+        "properties": {
+          "method": {
+            "type": "string",
+            "description": "Method name"
+          },
+          "id": {
+            "type": "integer",
+            "default": 1,
+            "format": "int32",
+            "description": "Request ID"
+          },
+          "jsonrpc": {
+            "type": "string",
+            "default": "2.0",
+            "description": "JSON-RPC Version (2.0)"
+          },
+          "params": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["statement"],
+              "properties": {
+                "statement": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "relayWriteQuery": {
+        "type": "object",
+        "required": ["method", "id", "jsonrpc", "params"],
+        "properties": {
+          "method": {
+            "type": "string",
+            "description": "Method name"
+          },
+          "id": {
+            "type": "integer",
+            "default": 1,
+            "format": "int32",
+            "description": "Request ID"
+          },
+          "jsonrpc": {
+            "type": "string",
+            "default": "2.0",
+            "description": "JSON-RPC Version (2.0)"
+          },
+          "params": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["statement"],
+              "properties": {
+                "statement": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "validateCreateTable": {
+        "type": "object",
+        "required": ["method", "id", "jsonrpc", "params"],
+        "properties": {
+          "method": {
+            "type": "string",
+            "description": "Method name"
+          },
+          "id": {
+            "type": "integer",
+            "default": 1,
+            "format": "int32",
+            "description": "Request ID"
+          },
+          "jsonrpc": {
+            "type": "string",
+            "default": "2.0",
+            "description": "JSON-RPC Version (2.0)"
+          },
+          "params": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["create_statement"],
+              "properties": {
+                "create_statement": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "getReceipt": {
+        "type": "object",
+        "required": ["method", "id", "jsonrpc", "params"],
+        "properties": {
+          "method": {
+            "type": "string",
+            "description": "Method name"
+          },
+          "id": {
+            "type": "integer",
+            "default": 1,
+            "format": "int32",
+            "description": "Request ID"
+          },
+          "jsonrpc": {
+            "type": "string",
+            "default": "2.0",
+            "description": "JSON-RPC Version (2.0)"
+          },
+          "params": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["txn_hash"],
+              "properties": {
+                "txn_hash": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "setController": {
+        "type": "object",
+        "required": ["method", "id", "jsonrpc", "params"],
+        "properties": {
+          "method": {
+            "type": "string",
+            "description": "Method name"
+          },
+          "id": {
+            "type": "integer",
+            "default": 1,
+            "format": "int32",
+            "description": "Request ID"
+          },
+          "jsonrpc": {
+            "type": "string",
+            "default": "2.0",
+            "description": "JSON-RPC Version (2.0)"
+          },
+          "params": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["caller", "controller", "token_id"],
+              "properties": {
+                "txn_hash": {
+                  "type": "string"
+                },
+                "controller": {
+                  "type": "string"
+                },
+                "token_id": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }
