@@ -9,6 +9,7 @@ type Options = {
   hash: string;
 
   // Global
+  rpcRelay: boolean;
   privateKey: string;
   chain: ChainName;
 };
@@ -24,7 +25,7 @@ export const builder: CommandBuilder<Options, Options> = (yargs) =>
   }) as yargs.Argv<Options>;
 
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
-  const { hash, privateKey, chain } = argv;
+  const { hash, privateKey, chain, rpcRelay } = argv;
 
   if (!privateKey) {
     console.error("missing required flag (`-k` or `--privateKey`)\n");
@@ -38,10 +39,10 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
 
   const options: ConnectOptions = {
     chain,
+    rpcRelay,
     signer: new Wallet(privateKey),
   };
-  const tbl = await connect(options);
-  const res = await tbl.receipt(hash);
+  const res = await connect(options).receipt(hash);
   const out = JSON.stringify(res, null, 2);
   console.log(out);
   process.exit(0);

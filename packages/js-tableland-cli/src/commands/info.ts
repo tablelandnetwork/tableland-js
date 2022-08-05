@@ -47,10 +47,15 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     process.exit(1);
   }
 
-  const res = await fetch(
-    `${network.host}/chain/${network.chainId}/tables/${id}`
-  );
-  const out = JSON.stringify(await res.json(), null, 2);
-  console.log(out);
-  process.exit(0);
+  try {
+    const res = await fetch(
+      `${network.host}/chain/${network.chainId}/tables/${id}`
+    );
+    const out = JSON.stringify(await res.json(), null, 2);
+    console.log(out);
+    process.exit(0);
+  } catch (err: any) {
+    console.error(err.message);
+    process.exit(1);
+  }
 };
