@@ -31,30 +31,31 @@ tableland [command]
 
 Commands:
   tableland chains                    List information about supported chains
+  tableland controller <sub>          Get, set, and lock the controller contract
+                                      for a given table
   tableland create <schema> [prefix]  Create a new table
-  tableland info <id>                 Get info about a given table by id
+  tableland info <name>               Get info about a given table by name
   tableland list [address]            List tables by address
-  tableland read <query>              Run a read-only query against a remote table
+  tableland read <query>              Run a read-only query against a remote
+                                      table
   tableland receipt <hash>            Get the receipt of a chain transaction to
                                       know if it was executed, and the execution
                                       details
   tableland token                     Create a SIWE token
-  tableland write <statement>         Run a mutating SQL statement against a remote
-                                   table
+  tableland write <statement>         Run a mutating SQL statement against a
+                                      remote table
 
 Options:
       --help        Show help                                          [boolean]
       --version     Show version number                                [boolean]
   -k, --privateKey  Private key string                                  [string]
-  -h, --host        Remote API host (e.g.
-                    https://{testnet}.tableland.network)
-                       [string] [default: "https://testnet.tableland.network"]
-      --chain       The EVM compatible chain to target
+  -c, --chain       The EVM compatible chain to target
                                            [string] [default: "ethereum-goerli"]
+  -r, --rpcRelay    Whether writes should be relayed via a validator
+                                                       [boolean] [default: true]
       --alchemy     Alchemy provider API key                            [string]
       --infura      Infura provider API key                             [string]
       --etherscan   Etherscan provider API key                          [string]
-  -t, --token       Signed SIWE token (see `token --help`)              [string]
 ```
 
 # Install
@@ -86,7 +87,9 @@ npm run package
 
 # Maintainers
 
-[@carsonfarmer](https://github.com/carsonfarmer)
+- [@carsonfarmer](https://github.com/carsonfarmer)
+- [@joewagner](https://github.com/joewagner)
+- [@sanderpick](https://github.com/sanderpick)
 
 # Contributing
 

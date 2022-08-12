@@ -39,9 +39,9 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
 
   const options: ConnectOptions = {
     chain,
-    rpcRelay,
     signer: new Wallet(privateKey),
   };
+  if (typeof rpcRelay === "boolean") options.rpcRelay = rpcRelay;
   const res = await connect(options).receipt(hash);
   const out = JSON.stringify(res, null, 2);
   console.log(out);

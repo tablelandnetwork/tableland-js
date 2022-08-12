@@ -42,11 +42,6 @@ export const builder: CommandBuilder<Options, Options> = (yargs) =>
           rpcRelay,
         } = argv;
 
-        if (rpcRelay) {
-          console.error("Cannot relay controller calls via RPC");
-          process.exit(1);
-        }
-
         try {
           const signer = getWallet({
             privateKey,
@@ -59,6 +54,7 @@ export const builder: CommandBuilder<Options, Options> = (yargs) =>
             chain,
             signer,
           };
+          if (typeof rpcRelay === "boolean") options.rpcRelay = rpcRelay;
           const res = await connect(options).getController(name);
           const out = JSON.stringify(res, null, 2);
           console.log(out);
@@ -94,11 +90,6 @@ export const builder: CommandBuilder<Options, Options> = (yargs) =>
           rpcRelay,
         } = argv;
 
-        if (rpcRelay) {
-          console.error("Cannot relay controller calls via RPC");
-          process.exit(1);
-        }
-
         try {
           const signer = getWallet({
             privateKey,
@@ -111,6 +102,7 @@ export const builder: CommandBuilder<Options, Options> = (yargs) =>
             chain,
             signer,
           };
+          if (typeof rpcRelay === "boolean") options.rpcRelay = rpcRelay;
           const res = await connect(options).setController(controller, name);
           const out = JSON.stringify(res, null, 2);
           console.log(out);

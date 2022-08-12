@@ -47,9 +47,9 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     const signer = getWallet({ privateKey, chain, infura, etherscan, alchemy });
     const options: ConnectOptions = {
       chain,
-      rpcRelay,
       signer,
     };
+    if (typeof rpcRelay === "boolean") options.rpcRelay = rpcRelay;
     const res = await connect(options).create(schema, { prefix });
     const out = JSON.stringify(
       { ...res, tableId: (res.tableId ?? "").toString() },
