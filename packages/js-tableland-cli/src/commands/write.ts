@@ -1,8 +1,7 @@
 import type yargs from "yargs";
 import type { Arguments, CommandBuilder } from "yargs";
-import { Wallet } from "ethers";
 import { connect, ConnectOptions, ChainName } from "@tableland/sdk";
-import getChains from "../chains";
+import { getWallet } from "../utils";
 
 type Options = {
   // Local
@@ -12,6 +11,9 @@ type Options = {
   rpcRelay: boolean;
   privateKey: string;
   chain: ChainName;
+  alchemy: string | undefined;
+  infura: string | undefined;
+  etherscan: string | undefined;
 };
 
 export const command = "write <statement>";
@@ -24,24 +26,16 @@ export const builder: CommandBuilder<Options, Options> = (yargs) =>
   }) as yargs.Argv<Options>;
 
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
-  const { statement, privateKey, chain, rpcRelay } = argv;
+  const { statement, privateKey, chain, alchemy, infura, etherscan, rpcRelay } =
+    argv;
 
-  if (!privateKey) {
-    console.error("missing required flag (`-k` or `--privateKey`)\n");
-    process.exit(1);
-  }
-  const network = getChains()[chain];
-  if (!network) {
-    console.error("unsupported chain (see `chains` command for details)\n");
-    process.exit(1);
-  }
-
-  const options: ConnectOptions = {
-    chain,
-    signer: new Wallet(privateKey),
-  };
-  if (typeof rpcRelay === "boolean") options.rpcRelay = rpcRelay;
   try {
+    const signer = getWallet({ privateKey, chain, infura, etherscan, alchemy });
+    const options: ConnectOptions = {
+      chain,
+      rpcRelay,
+      signer,
+    };
     const res = await connect(options).write(statement);
     const out = JSON.stringify(res, null, 2);
     console.log(out);
