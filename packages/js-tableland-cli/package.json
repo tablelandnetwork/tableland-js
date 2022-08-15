@@ -1,6 +1,6 @@
 {
   "name": "@tableland/cli",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "Tableland command line tools",
   "main": "./dist/cli.js",
   "files": [
