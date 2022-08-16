@@ -16,7 +16,6 @@
 - [Install](#install)
 - [Development](#development)
   - [Building a binary](#building-a-binary)
-- [Maintainers](#maintainers)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -84,12 +83,6 @@ npm install
 npm run build
 npm run package
 ```
-
-# Maintainers
-
-- [@carsonfarmer](https://github.com/carsonfarmer)
-- [@joewagner](https://github.com/joewagner)
-- [@sanderpick](https://github.com/sanderpick)
 
 # Contributing
 
