@@ -26,8 +26,8 @@ const _ = yargs(hideBin(process.argv))
   .option("c", {
     alias: "chain",
     type: "string",
-    description: "The EVM compatible chain to target",
-    default: "ethereum-goerli",
+    description: "The EVM chain to target",
+    default: "polygon-mumbai",
   })
   .option("r", {
     alias: "rpcRelay",
