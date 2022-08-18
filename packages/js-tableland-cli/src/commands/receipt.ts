@@ -1,7 +1,7 @@
 import type yargs from "yargs";
 import type { Arguments, CommandBuilder } from "yargs";
 import { connect, ConnectOptions, ChainName } from "@tableland/sdk";
-import { getWallet } from "../utils";
+import { getLink, getSignerOnly } from "../utils";
 
 type Options = {
   // Local
@@ -27,12 +27,9 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
   const { hash, privateKey, chain, rpcRelay } = argv;
 
   try {
-    const signer = getWallet({
+    const signer = getSignerOnly({
       privateKey,
       chain,
-      alchemy: undefined,
-      infura: undefined,
-      etherscan: undefined,
     });
     const options: ConnectOptions = {
       chain,
@@ -40,7 +37,11 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       signer,
     };
     const res = await connect(options).receipt(hash);
-    const out = JSON.stringify(res, null, 2);
+    let out = "";
+    if (res) {
+      const link = getLink(chain, res.txnHash);
+      out = JSON.stringify({ ...res, link }, null, 2);
+    }
     console.log(out);
     process.exit(0);
   } catch (err: any) {

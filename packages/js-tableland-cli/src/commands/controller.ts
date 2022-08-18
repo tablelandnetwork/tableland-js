@@ -1,7 +1,7 @@
 import type yargs from "yargs";
 import type { Arguments, CommandBuilder } from "yargs";
 import { connect, ConnectOptions, ChainName } from "@tableland/sdk";
-import { getWallet } from "../utils";
+import { getWallet, getLink } from "../utils";
 
 type Options = {
   // Local
@@ -104,7 +104,8 @@ export const builder: CommandBuilder<Options, Options> = (yargs) =>
           };
           if (typeof rpcRelay === "boolean") options.rpcRelay = rpcRelay;
           const res = await connect(options).setController(controller, name);
-          const out = JSON.stringify(res, null, 2);
+          const link = getLink(chain, res.hash);
+          const out = JSON.stringify({ ...res, link }, null, 2);
           console.log(out);
           process.exit(0);
         } catch (err: any) {
@@ -150,7 +151,8 @@ export const builder: CommandBuilder<Options, Options> = (yargs) =>
             signer,
           };
           const res = await connect(options).lockController(name);
-          const out = JSON.stringify(res, null, 2);
+          const link = getLink(chain, res.hash);
+          const out = JSON.stringify({ ...res, link }, null, 2);
           console.log(out);
           process.exit(0);
         } catch (err: any) {

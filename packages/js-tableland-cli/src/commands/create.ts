@@ -1,7 +1,7 @@
 import type yargs from "yargs";
 import type { Arguments, CommandBuilder } from "yargs";
 import { connect, ConnectOptions, ChainName } from "@tableland/sdk";
-import { getWallet } from "../utils";
+import { getWallet, getLink } from "../utils";
 
 type Options = {
   // Local
@@ -51,8 +51,9 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     };
     if (typeof rpcRelay === "boolean") options.rpcRelay = rpcRelay;
     const res = await connect(options).create(schema, { prefix });
+    const link = getLink(chain, res.txnHash);
     const out = JSON.stringify(
-      { ...res, tableId: (res.tableId ?? "").toString() },
+      { ...res, link, tableId: (res.tableId ?? "").toString() },
       null,
       2
     );
