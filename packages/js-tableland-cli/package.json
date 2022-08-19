@@ -1,6 +1,6 @@
 {
   "name": "@tableland/cli",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "description": "Tableland command line tools",
   "main": "./dist/cli.js",
   "files": [
@@ -55,7 +55,7 @@
     "@tableland/sdk": "^3.1.0",
     "dotenv": "^16.0.1",
     "ethers": "^5.6.9",
-    "node-fetch": "^3.2.10",
+    "node-fetch": "^2.6.7",
     "yargs": "^17.5.1"
   }
 }
