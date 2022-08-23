@@ -277,10 +277,56 @@ describe("Validator, Chain, and SDK work end to end", function () {
     expect(typeof tx.hash).toEqual("string");
   });
 
+  test("get the schema for a table", async function () {
+    const signer = accounts[1];
+
+    const tableland = await getTableland(signer);
+
+    const prefix = "test_get_schema";
+    const { tableId } = await tableland.create("a INT PRIMARY KEY", { prefix });
+
+    const chainId = 31337;
+    const queryableName = `${prefix}_${chainId}_${tableId}`;
+
+    const tableSchema = await tableland.schema(queryableName);
+
+    expect(typeof tableSchema.columns).toEqual("object");
+    expect(Array.isArray(tableSchema.table_constraints)).toEqual(true);
+    expect(tableSchema.columns.length).toEqual(1);
+    expect(tableSchema.columns[0].name).toEqual("a");
+    expect(tableSchema.columns[0].type).toEqual("int");
+    expect(Array.isArray(tableSchema.columns[0].constraints)).toEqual(true);
+    expect(tableSchema.columns[0].constraints[0]).toEqual("PRIMARY KEY");
+  });
+
+  test("get the structure for a hash", async function () {
+    const signer = accounts[1];
+
+    const tableland = await getTableland(signer);
+
+    const prefix = "test_get_structure";
+    const { tableId } = await tableland.create("a TEXT, b INT PRIMARY KEY", { prefix });
+
+    const chainId = 31337;
+    const queryableName = `${prefix}_${chainId}_${tableId}`;
+
+    const { structureHash } = await tableland.hash("a TEXT, b INT PRIMARY KEY", { prefix });
+
+    const tableStructure = await tableland.structure(structureHash);
+
+    expect(Array.isArray(tableStructure)).toEqual(true);
+
+    const lastStructure = tableStructure[tableStructure.length - 1];
+
+    expect(lastStructure.name).toEqual(queryableName);
+    expect(lastStructure.controller).toEqual(accounts[1].address);
+    expect(lastStructure.structure).toEqual(structureHash);
+  });
+
 });
 
 describe("Validator gateway server", function () {
-  let token, transactionHash;
+  let token, transactionHash, tableHash, schemaTableId;
   beforeAll(async function () {
     // TODO: split openapi spec tests and js tests into different files and npm commands,
     //       then `npm test` can run everything.
@@ -295,6 +341,12 @@ describe("Validator gateway server", function () {
     const prefix = "test_transaction";
     const { txnHash, tableId } = await tableland1.create("keyy TEXT, val TEXT", { prefix });
 
+    const { tableId: tableId2 } = await tableland1.create("a INT PRIMARY KEY, CHECK (a > 0)", { prefix: "test_schema_route" });
+    schemaTableId = tableId2;
+
+    const { structureHash } = await tableland1.hash("a INT PRIMARY KEY", { prefix: "test_schema_route" });
+    tableHash = structureHash;
+
     const chainId = 31337;
 
     const data = await tableland1.read(`SELECT * FROM ${prefix}_${chainId}_${tableId};`);
@@ -306,12 +358,7 @@ describe("Validator gateway server", function () {
     transactionHash = txnHash;
   });
 
-  const tests = loadSpecTestData(path.join(__dirname, "tmp", "tableland-openapi-spec.yaml"), {
-    chainID: 31337,
-    id: 1,
-    address: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266", // Hardhat #1
-    readStatement: "SELECT * FROM healthbot_31337_1"
-  });
+  const tests = loadSpecTestData(path.join(__dirname, "tmp", "tableland-openapi-spec.yaml"));
 
   test.each(tests)("$name", async function (_test) {
     const payload = {
@@ -322,19 +369,28 @@ describe("Validator gateway server", function () {
       }
     };
 
+    const routeTemplateData = {
+      chainID: 31337,
+      id: 1,
+      address: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266", // Hardhat #1
+      readStatement: "SELECT * FROM healthbot_31337_1",
+      tableName: `test_schema_route_31337_${schemaTableId}`,
+      hash: tableHash
+    };
+
     // Cannot have a body on a GET/HEAD request
     if (_test.body) {
-      console.log(_test.body);
       // For some of the example requests we need to inject values for the chain tests are using
       if (_test.body.params && _test.body.params[0].txn_hash) _test.body.params[0].txn_hash = transactionHash;
       payload.body = JSON.stringify(_test.body);
     }
 
-    const res = await fetch(`${_test.host}${_test.route}`, payload);
+    const route = _test.route(routeTemplateData)
+    const res = await fetch(`${_test.host}${route}`, payload);
 
     expect(typeof _test.response).not.toEqual("undefined");
 
-    if (_test.route === "/rpc") return await testRpcResponse(res, _test);
+    if (route === "/rpc") return await testRpcResponse(res, _test);
     await testHttpResponse(res, _test.response)
   });
 });

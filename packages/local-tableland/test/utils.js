@@ -98,7 +98,7 @@ export const renderPath = function (tmpl, data) {
   return rendered;
 };
 
-export const loadSpecTestData = function (specPath, renderData) {
+export const loadSpecTestData = function (specPath) {
 
   // Let's consume the open api spec and map it to fetch requests that we can test the spec's responses against
   const spec = yaml.load(fs.readFileSync(specPath, "utf8"));
@@ -107,7 +107,10 @@ export const loadSpecTestData = function (specPath, renderData) {
 
   for (const routeTemplate in spec.paths) {
     // NOTE: the template and data variable names are defined in the spec
-    const route = renderPath(routeTemplate, renderData);
+    const route = function (routeTemplate) {
+      // capture `routeTemplate` from outer scope
+      return (renderData) => renderPath(routeTemplate, renderData);
+    }(routeTemplate.toString());
 
     const methods = Object.keys(spec.paths[routeTemplate]).reduce((acc, cur) => {
       const method = {
@@ -160,10 +163,7 @@ export const loadSpecTestData = function (specPath, renderData) {
         ]);
 
         // get example for array and object response types
-        const exampleResponse = schema?.type === "array" ? getSafe(schema, [
-          "items",
-          "example"
-        ]) : getSafe(schema, [
+        const exampleResponse = getSafe(schema, [
           "example"
         ]);
 
