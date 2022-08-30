@@ -8,8 +8,8 @@ type Options = {
   name: string;
 };
 
-export const command = "info <name>";
-export const desc = "Get info about a given table by name";
+export const command = "schema <name>";
+export const desc = "Get info about a given table schema";
 
 export const builder: CommandBuilder = (yargs) =>
   yargs.positional("name", {
@@ -28,7 +28,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     process.exit(1);
   }
 
-  const id = parts.pop()!;
+  parts.pop()!;
   const chainId = parseInt(parts.pop()!);
   const network = Object.values(SUPPORTED_CHAINS).find(
     (v) => v.chainId === chainId
@@ -39,7 +39,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
   }
 
   try {
-    const res = await fetch(`${network.host}/chain/${chainId}/tables/${id}`);
+    const res = await fetch(`${network.host}/schema/${name}`);
     const out = JSON.stringify(await res.json(), null, 2);
     console.log(out);
     process.exit(0);

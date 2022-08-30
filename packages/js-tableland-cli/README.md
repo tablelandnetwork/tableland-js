@@ -33,12 +33,16 @@ Commands:
   tableland controller <sub>          Get, set, and lock the controller contract
                                       for a given table
   tableland create <schema> [prefix]  Create a new table
+  tableland hash <schema> [prefix]    Validate a table schema and get the structure
+                                      hash
   tableland info <name>               Get info about a given table by name
   tableland list [address]            List tables by address
   tableland read <query>              Run a read-only query against a remote table
   tableland receipt <hash>            Get the receipt of a chain transaction to
                                       know if it was executed, and the execution
                                       details
+  tableland schema <name>             Get info about a given table schema
+  tableland structure <hash>          Get table name(s) by schema structure hash
   tableland token                     Create a SIWE token
   tableland write <statement>         Run a mutating SQL statement against a remote
                                       table
