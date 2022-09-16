@@ -11,7 +11,7 @@ import getChains from "../chains";
 type Options = {
   // Local
   query: string;
-  format: "raw" | "table" | "objects";
+  format: "pretty" | "table" | "objects";
 
   // Global
   chain: ChainName;
@@ -28,8 +28,8 @@ export const builder: CommandBuilder<Options, Options> = (_yargs) =>
     })
     .option("format", {
       type: "string",
-      description: "Output format. One of 'raw', 'tabular', or 'objects'.",
-      default: "raw",
+      description: "Output format. One of 'pretty', 'table', or 'objects'.",
+      default: "table",
     }) as yargs.Argv<Options>;
 
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
@@ -45,10 +45,11 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     chain,
   };
   try {
-    const res = await connect(options).read(query);
-    const formatted = format === "raw" ? res : resultsToObjects(res);
+    const res = await connect(options).read(query); // Defaults to "table"
+    // After we upgrade the SDK to version 4.x, we can drop some of this formatting code
+    const formatted = format === "table" ? res : resultsToObjects(res);
 
-    if (format.startsWith("tab")) {
+    if (format === "pretty") {
       console.table(formatted);
     } else {
       const out = JSON.stringify(formatted, null, 2);
