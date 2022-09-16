@@ -29,13 +29,13 @@ jobs:
         run: npm install
 
       - id: publish
+        name: Publish to NPM 📦
         uses: JS-DevTools/npm-publish@v1
         with:
           token: ${{ secrets.NPM_AUTH_TOKEN }}
           tag: next
           access: public
           check-version: true
-          greater-version-only: true
 
       - if: steps.publish.outputs.type != 'none'
         run: |
