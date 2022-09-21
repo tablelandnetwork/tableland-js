@@ -6,7 +6,7 @@ import {
   ChainName,
 } from "@tableland/sdk";
 import yargs from "yargs";
-import getChains from "../chains";
+import getChains from "../chains.js";
 
 type Options = {
   // Local
@@ -20,14 +20,14 @@ type Options = {
 export const command = "read <query>";
 export const desc = "Run a read-only query against a remote table";
 
-export const builder: CommandBuilder<Options, Options> = (_yargs) =>
+export const builder: CommandBuilder<Options, Options> = (yargs) =>
   yargs
     .positional("query", {
       type: "string",
       description: "SQL query statement",
     })
     .option("format", {
-      type: "string",
+      choices: ["pretty", "table", "objects"] as const,
       description: "Output format. One of 'pretty', 'table', or 'objects'.",
       default: "table",
     }) as yargs.Argv<Options>;

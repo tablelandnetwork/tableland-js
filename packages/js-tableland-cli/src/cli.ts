@@ -4,6 +4,7 @@ import * as dotenv from "dotenv";
 import fetch, { Headers, Request, Response } from "node-fetch";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
+import { commands } from "./commands/index.js";
 
 if (!globalThis.fetch) {
   (globalThis as any).fetch = fetch;
@@ -12,11 +13,13 @@ if (!globalThis.fetch) {
   (globalThis as any).Response = Response;
 }
 
+// If a dotenv file (or exported env vars) are provided, these override any config values
 dotenv.config();
 
 // eslint-disable-next-line no-unused-vars
 const _ = yargs(hideBin(process.argv))
-  .commandDir("commands")
+  // .commandDir("commands")
+  .command(commands as any)
   .env("TBL")
   .option("k", {
     alias: "privateKey",
@@ -48,5 +51,5 @@ const _ = yargs(hideBin(process.argv))
       description: "Etherscan provider API key",
     },
   })
-
+  .demandCommand(1, "")
   .strict().argv;

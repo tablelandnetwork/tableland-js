@@ -1,6 +1,6 @@
 import { Wallet, providers, getDefaultProvider } from "ethers";
 import { ChainName } from "@tableland/sdk";
-import getChains from "./chains";
+import getChains from "./chains.js";
 
 export interface Options {
   privateKey: string;

@@ -1,7 +1,7 @@
 import type yargs from "yargs";
 import type { Arguments, CommandBuilder } from "yargs";
 import { connect, ConnectOptions, ChainName } from "@tableland/sdk";
-import { getLink, getSignerOnly } from "../utils";
+import { getLink, getSignerOnly } from "../utils.js";
 
 type Options = {
   // Local

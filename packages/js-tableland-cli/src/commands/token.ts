@@ -2,7 +2,7 @@ import type yargs from "yargs";
 import type { Arguments, CommandBuilder } from "yargs";
 import { Wallet } from "ethers";
 import { userCreatesToken, ChainName } from "@tableland/sdk";
-import getChains from "../chains";
+import getChains from "../chains.js";
 
 type Options = {
   // Local

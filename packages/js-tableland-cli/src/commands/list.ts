@@ -3,7 +3,7 @@ import type { Arguments, CommandBuilder } from "yargs";
 import { Wallet } from "ethers";
 import fetch from "node-fetch";
 import { ChainName } from "@tableland/sdk";
-import getChains from "../chains";
+import getChains from "../chains.js";
 
 type Options = {
   // Local

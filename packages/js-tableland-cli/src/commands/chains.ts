@@ -1,5 +1,5 @@
 import type { Arguments, CommandBuilder } from "yargs";
-import getChains from "../chains";
+import getChains from "../chains.js";
 
 type Options = {
   // empty
