@@ -3,6 +3,7 @@ import * as controller from "./controller.js";
 import * as create from "./create.js";
 import * as hash from "./hash.js";
 import * as info from "./info.js";
+import * as init from "./init.js";
 import * as list from "./list.js";
 import * as read from "./read.js";
 import * as receipt from "./receipt.js";
@@ -17,6 +18,7 @@ export const commands = [
   create,
   hash,
   info,
+  init,
   list,
   read,
   receipt,

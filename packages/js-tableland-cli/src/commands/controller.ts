@@ -1,7 +1,7 @@
 import type yargs from "yargs";
 import type { Arguments, CommandBuilder } from "yargs";
 import { connect, ConnectOptions, ChainName } from "@tableland/sdk";
-import { getWallet, getLink } from "../utils.js";
+import { getWalletWithProvider, getLink } from "../utils.js";
 
 type Options = {
   // Local
@@ -12,9 +12,7 @@ type Options = {
   rpcRelay: boolean;
   privateKey: string;
   chain: ChainName;
-  alchemy: string | undefined;
-  infura: string | undefined;
-  etherscan: string | undefined;
+  providerUrl: string | undefined;
 };
 
 export const command = "controller <sub>";
@@ -32,23 +30,13 @@ export const builder: CommandBuilder<Options, Options> = (yargs) =>
           description: "The target table name",
         }) as yargs.Argv<Options>,
       async (argv) => {
-        const {
-          name,
-          chain,
-          privateKey,
-          etherscan,
-          infura,
-          alchemy,
-          rpcRelay,
-        } = argv;
+        const { name, chain, privateKey, providerUrl, rpcRelay } = argv;
 
         try {
-          const signer = getWallet({
+          const signer = getWalletWithProvider({
             privateKey,
             chain,
-            infura,
-            etherscan,
-            alchemy,
+            providerUrl,
           });
           const options: ConnectOptions = {
             chain,
@@ -79,24 +67,14 @@ export const builder: CommandBuilder<Options, Options> = (yargs) =>
             description: "The target table name",
           }) as yargs.Argv<Options>,
       async (argv) => {
-        const {
-          name,
-          controller,
-          chain,
-          privateKey,
-          etherscan,
-          infura,
-          alchemy,
-          rpcRelay,
-        } = argv;
+        const { name, controller, chain, privateKey, providerUrl, rpcRelay } =
+          argv;
 
         try {
-          const signer = getWallet({
+          const signer = getWalletWithProvider({
             privateKey,
             chain,
-            infura,
-            etherscan,
-            alchemy,
+            providerUrl,
           });
           const options: ConnectOptions = {
             chain,
@@ -123,15 +101,7 @@ export const builder: CommandBuilder<Options, Options> = (yargs) =>
           description: "The target table name",
         }) as yargs.Argv<Options>,
       async (argv) => {
-        const {
-          name,
-          chain,
-          privateKey,
-          etherscan,
-          infura,
-          alchemy,
-          rpcRelay,
-        } = argv;
+        const { name, chain, privateKey, providerUrl, rpcRelay } = argv;
 
         if (rpcRelay) {
           console.error("Cannot relay controller calls via RPC");
@@ -139,12 +109,10 @@ export const builder: CommandBuilder<Options, Options> = (yargs) =>
         }
 
         try {
-          const signer = getWallet({
+          const signer = getWalletWithProvider({
             privateKey,
             chain,
-            infura,
-            etherscan,
-            alchemy,
+            providerUrl,
           });
           const options: ConnectOptions = {
             chain,

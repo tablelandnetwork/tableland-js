@@ -5,9 +5,7 @@ import getChains from "./chains.js";
 export interface Options {
   privateKey: string;
   chain: ChainName;
-  alchemy: string | undefined;
-  infura: string | undefined;
-  etherscan: string | undefined;
+  providerUrl: string | undefined;
 }
 
 export function getLink(chain: ChainName, hash: string): string {
@@ -66,12 +64,10 @@ export function getSignerOnly({
   return signer;
 }
 
-export function getWallet({
+export function getWalletWithProvider({
   privateKey,
   chain,
-  alchemy,
-  infura,
-  etherscan,
+  providerUrl,
 }: Options): Wallet {
   if (!privateKey) {
     throw new Error("missing required flag (`-k` or `--privateKey`)");
@@ -82,18 +78,11 @@ export function getWallet({
   }
 
   const wallet = new Wallet(privateKey);
-  let provider: providers.BaseProvider | undefined;
-  if (chain === "local-tableland") {
-    provider = new providers.JsonRpcProvider({
-      url: "http://localhost:8545",
-    });
-  } else if (infura) {
-    provider = new providers.InfuraProvider(network, infura);
-  } else if (etherscan) {
-    provider = new providers.EtherscanProvider(network, etherscan);
-  } else if (alchemy) {
-    provider = new providers.AlchemyProvider(network, alchemy);
-  } else {
+  let provider: providers.BaseProvider = new providers.JsonRpcProvider(
+    chain === "local-tableland" ? undefined : providerUrl, // Defaults to localhost
+    network.name
+  );
+  if (!provider) {
     // This will be significantly rate limited, but we only need to run it once
     provider = getDefaultProvider(network);
   }
