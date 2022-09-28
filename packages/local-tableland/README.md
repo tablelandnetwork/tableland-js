@@ -1,45 +1,46 @@
 # Local Tableland
 
-This repo contains multiple scripts that will get all aspect of Tableland running locally, and potentialy aid in development of Tableland.
+## Overview
+
+This repo contains tooling to get a sandboxed single node Tableland Network running locally. This is under active developement and subject to breaking changes without warning.
+
 Potential uses include:
 
-- running a local instance of tableland for an app you are developing to connect to.
-- Running end to end tests to see if changes to one of the SDK, Smart Contract, and/or Validator will have unexpected consequences.
+- connecting to a local instance of tableland so initial testing and development doesn't need to rely on a testnet like Mumbai or Görli.
+- Running end to end tests while contributing changes to core Tableland products like the [JS SDK](https://github.com/tablelandnetwork/js-tableland), [Smart Contract](https://github.com/tablelandnetwork/evm-tableland), and/or the [Validator](https://github.com/tablelandnetwork/go-tableland).
 - Exploring, writing, and debuggin Policy Contracts.
+- Enabling automated tests that run against an actual Tableland Network
 
-## Running a local Tableland Validator
+## Requirements for a Tableland Network
 
-setup steps:
+A Tableland Network at it's most basic is made up of two parts. An EVM compatable Blockchain with the Tableland Registry contract deployed to it, and a Tableland Validator that can listen to events emitted from the contract.
+This repository does not contain either of those parts. It contains tooling to help automate setup, configuration, and running of a network. All of this requires that you have Node.js (including npm and npx), Docker, and Git installed.
 
-- the paths to the go-tableland and the evm-tableland repositories need to be available as env variables, VALIDATOR_DIR, and HARDHAT_DIR respectively.
-- you'll need docker running
-- finally run the Deno `up.ts` script. This is a Deno script that needs to runs with the `--allow-run` flag, and the `--allow-env` flag. **Warning** these flags will cause Deno to break out of the sandbox and read all of the available env vars.
+## Quick Start
 
-Example:
+Once Docker is running just do `npx local-tableland` and an interactive prompt will open and guide you through setting up your Tableland project. After setup is done you can do `npx local-tableland` again and a locally running tableland network will start. You can now connect your app, deploy contracts, and develop in a sandboxed environment without spending testnet coin.
+
+## Configuring Your Wallet to Connect
+
+Under the hood Local Tableland is running an in memory instance of Hardhat Network. When connecting a wallet the RPC URL is http://127.0.0.1:8545 and the chainId is 31337. Checkout the [Hardhat docs](https://hardhat.org/hardhat-runner/docs/getting-started#connecting-a-wallet-or-dapp-to-hardhat-network) for more details.
+
+## Connecting With The JS SDK
+
+Using the [JS SDK](https://github.com/tablelandnetwork/js-tableland) is very straight forward. In the connection options simply specify `chain: 'local-tableland'`. For example:
 
 ```
-export HARDHAT_DIR=<your path to the evm-tableland repo>
-export VALIDATOR_DIR=<your path to the go-tableland repo>/docker # <- notice the '/docker' !!
-deno run --allow-run --allow-env up.ts
+import { connect } from '@tableland/sdk';
+const tableland = connect({ chain: 'local-tableland' });
 ```
 
-If this repo has been cloned in the same directory as evm-tableland and go-tableland, you can avoid setting the env vars and just do `npm run up`
+## More Detailed Setups
 
-Now everything should be running and you are now free to develop your tableland app by connecting to the local validator at http://localhost:8080 and/or the local blockchain at http://localhost:8545, or run tests, or whatever.
+If you are using Local Tableland to run tests for your project
+TODO:
 
-## Running end-to-end tests
-
-First get a local Tableland Validator running as explained above, then you can do `npm test`. That's it! You should see passing tests.
-
-## Tips for how to use these scripts when building Tableland
-
-Make sure you have go-tableland, evm-tableland, and js-tableland repos cloned locally.
-If developing evm-tableland, js-tableland, or any app that uses js-tableland via npm you will want to make use of the `npm link` command.
-It's a good idea to get the [docs](https://docs.npmjs.com/cli/v6/commands/npm-link) for that if you haven't already.
-For an example, let's consider the case of wanting to test if updates to the SDK work with the Validator and Smart Contract
-With your changes to the SDK/SC in place you could do `npm link ../js-tableland ../evm-tableland` then `npm test`. This will run the end-to-end tests against which ever changes you've made locally.
+If you are using this while contributing to the JS SDK, the Validator, or the Registry contract
+TODO:
 
 ## Notes
 
-- Keep and eye out for Zombie processes. Killing the Deno process should kill all of the subprocesses, but this kind of script is prone to leaking zombies 🧟
-- There are default values for the registry contract address and the validator wallet address that should match what is in evm-tableland, but you can edit these in `go-tableland/local/config-dev.json`. If you have any issues with the Validator a good first place to check is the config-dev.json file.
+Keep and eye out for Zombie processes. Killing the process should kill all of the subprocesses, and cleanup everything Docker has done during startup. But it's still worth watching for zombies 🧟, if you find any problems or ways for this tooling to better manage cleanup please open an issue.

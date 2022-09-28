@@ -1,16 +1,61 @@
 {
+  "name": "@tableland/local",
+  "version": "0.0.0-pre11",
+  "description": "Tooling to start a sandboxed Tableland network.",
+  "repository": "https://github.com/tablelandnetwork/local-tableland",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "tableland",
+    "sql",
+    "ethereum"
+  ],
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "main": "./bin/cjs/main.js",
+  "module": "./bin/main.js",
+  "types": "./bin/main.d.ts",
+  "exports": {
+    ".": {
+      "require": "./bin/cjs/main.js",
+      "import": "./bin/main.js",
+      "default": "./bin/main.js"
+    }
+  },
+  "files": [
+    "bin/*",
+    "src/*"
+  ],
   "scripts": {
-    "test-js": "node --experimental-fetch --experimental-vm-modules node_modules/.bin/jest --verbose",
-    "lint-js": "eslint up.ts test/ --ext .js,.jsx,.ts,.tsx",
+    "test": "node --experimental-fetch --experimental-vm-modules node_modules/.bin/jest --verbose",
+    "lint": "eslint src/ test/ --ext .js,.jsx,.ts,.tsx",
+    "prepublishOnly": "npm run build",
     "prettier": "prettier '**/*.{ts,json,md}' --check",
     "prettier:fix": "npm run prettier -- --write",
-    "up": "HARDHAT_DIR=../evm-tableland VALIDATOR_DIR=../go-tableland/docker deno run --allow-run --allow-env --allow-read --allow-write up.ts"
+    "clean": "rm -rf bin/*",
+    "build:esm": "tsc -p tsconfig.json",
+    "build:cjs": "tsc -p tsconfig.cjs.json",
+    "build": "npm run clean && npm run build:esm && npm run build:cjs",
+    "up": "node bin/up.js --validator ../go-tableland --registry ../evm-tableland"
+  },
+  "bin": {
+    "local-tableland": "bin/up.js"
   },
   "type": "module",
+  "dependencies": {
+    "enquirer": "^2.3.6",
+    "sentencer": "^0.2.1",
+    "yargs": "^17.5.1"
+  },
   "devDependencies": {
-    "@tableland/sdk": "^3.1.1",
+    "@tableland/sdk": "^3.1.2",
     "@types/jest": "^27.5.1",
-    "@typescript-eslint/eslint-plugin": "^5.37.0",
+    "@types/sentencer": "^0.2.0",
+    "@types/yargs": "^17.0.12",
+    "@typescript-eslint/eslint-plugin": "^5.36.2",
     "@typescript-eslint/parser": "^5.36.2",
     "eslint": "^8.23.0",
     "eslint-config-prettier": "^8.5.0",
