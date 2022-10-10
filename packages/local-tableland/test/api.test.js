@@ -6,8 +6,8 @@ import {
   testHttpResponse,
   getTableland,
   loadSpecTestData,
-} from "./utils";
-import { getAccounts } from "../src/utils";
+} from "./util";
+import { getAccounts } from "../src/util";
 
 const __dirname = path.resolve(path.dirname(""));
 // TODO: we were using these tests to check the validator's OAS spec via

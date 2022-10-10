@@ -15,18 +15,18 @@
   "engines": {
     "node": ">=14.0.0"
   },
-  "main": "./bin/cjs/main.js",
-  "module": "./bin/main.js",
-  "types": "./bin/main.d.ts",
+  "main": "./dist/cjs/main.js",
+  "module": "./dist/main.js",
+  "types": "./dist/main.d.ts",
   "exports": {
     ".": {
-      "require": "./bin/cjs/main.js",
-      "import": "./bin/main.js",
-      "default": "./bin/main.js"
+      "require": "./dist/cjs/main.js",
+      "import": "./dist/main.js",
+      "default": "./dist/main.js"
     }
   },
   "files": [
-    "bin/*",
+    "dist/*",
     "src/*"
   ],
   "scripts": {
@@ -35,14 +35,14 @@
     "prepublishOnly": "npm run build",
     "prettier": "prettier '**/*.{ts,json,md}' --check",
     "prettier:fix": "npm run prettier -- --write",
-    "clean": "rm -rf bin/*",
+    "clean": "rm -rf dist/*",
     "build:esm": "tsc -p tsconfig.json",
     "build:cjs": "tsc -p tsconfig.cjs.json",
-    "build": "npm run clean && npm run build:esm && npm run build:cjs",
-    "up": "node bin/up.js --validator ../go-tableland --registry ../evm-tableland"
+    "build": "npm run clean && npm run build:esm && npm run build:cjs && chmod +x dist/up.js",
+    "up": "node dist/up.js --validator ../go-tableland --registry ../evm-tableland"
   },
   "bin": {
-    "local-tableland": "bin/up.js"
+    "local-tableland": "dist/up.js"
   },
   "type": "module",
   "dependencies": {

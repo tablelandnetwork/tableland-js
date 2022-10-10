@@ -1,8 +1,8 @@
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import path from "path";
-import { getTableland } from "./utils";
-import { getAccounts } from "../src/utils";
+import { getTableland } from "./util";
+import { getAccounts } from "../src/util";
 
 const __dirname = path.resolve(path.dirname(""));
 // TODO: we were using these tests to check the validator's OAS spec via

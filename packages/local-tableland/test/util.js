@@ -1,6 +1,6 @@
 import fs from "fs";
 import yaml from "js-yaml";
-import { connect } from "@tableland/sdk";
+import { connect, Connection } from "@tableland/sdk";
 
 export const HOST = "http://localhost:8080";
 
