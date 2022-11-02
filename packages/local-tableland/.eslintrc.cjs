@@ -1,8 +1,6 @@
 module.exports = {
   env: {
-    browser: true,
     es2021: true,
-    jest: true,
   },
   settings: {
     node: {
@@ -10,20 +8,11 @@ module.exports = {
     },
   },
   globals: {
-    fetch: false,
-    ethereum: false,
-    jest: true,
+    // mocha
+    before: true,
+    describe: true,
+    it: true
   },
-  overrides: [
-    {
-      files: ["*.spec.js"],
-
-      rules: {
-        "jest/valid-expect": 0,
-      },
-    },
-  ],
-  // plugins: ["@typescript-eslint", "jest"],
   extends: [
     "standard",
     "plugin:prettier/recommended",
@@ -41,6 +30,7 @@ module.exports = {
       "error",
       { ignores: ["modules"] },
     ],
+    "node/shebang": "off",
     "no-unused-vars": "off",
     "@typescript-eslint/no-unused-vars": "error",
   },

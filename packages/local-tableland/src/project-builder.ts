@@ -38,7 +38,7 @@ export const projectBuilder = async function () {
     const confirmer = new prompt.Confirm({
       name: "mkdirartifacts",
       message:
-        "Is it ok to create a directory for Tableland's Validator and Registry repositories?",
+        "Is it ok to create a directory for Tableland's Validator repository?",
     });
 
     mkdirArtifacts = await confirmer.run();
@@ -84,41 +84,13 @@ export const projectBuilder = async function () {
         }
       );
     }
-
-    let gitCloneEvm = true;
-    if (shouldCreate === choices[1]) {
-      // @ts-ignore https://github.com/enquirer/enquirer/issues/379
-      const confirmer = new prompt.Confirm({
-        name: "gitcloneevm",
-        message:
-          "Is it ok to use git to clone the Registry contract repository?",
-      });
-
-      gitCloneEvm = await confirmer.run();
-    }
-
-    if (!gitCloneEvm) {
-      console.log(
-        chalk.yellow(`${chalk.bold("Not")} cloning the Registry repository.`)
-      );
-    } else {
-      console.log(chalk.yellow("Cloning the Registry repository."));
-      // clone the validator
-      spawnSync(
-        "git",
-        ["clone", "git@github.com:tablelandnetwork/evm-tableland.git"],
-        {
-          cwd: "tableland-artifacts",
-        }
-      );
-    }
   }
 
   let createConfig = true;
   if (shouldCreate === choices[1]) {
     // @ts-ignore https://github.com/enquirer/enquirer/issues/379
     const confirmer = new prompt.Confirm({
-      name: "gitcloneevm",
+      name: "createconfig",
       message: "Is it ok to create a config file?",
     });
 

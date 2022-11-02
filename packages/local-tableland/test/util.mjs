@@ -1,11 +1,12 @@
 import fs from "fs";
+import { expect } from "chai";
 import yaml from "js-yaml";
-import { connect, Connection } from "@tableland/sdk";
+import { connect } from "@tableland/sdk";
 
 export const HOST = "http://localhost:8080";
 
-export const getTableland = async function (signer, options = {}) {
-  return await connect({
+export const getTableland = function (signer, options = {}) {
+  return connect({
     signer,
     chain: "custom",
     // default contract address on hardhat
@@ -38,8 +39,8 @@ const testHeaders = function (headers, expected) {
     // log in case someone wants to manually inspect
     console.log(`Header- ${headerName}: ${headerVal}`);
 
-    expect(typeof headerVal).not.toEqual("undefined");
-    expect(typeof headerVal).toEqual(expected[headerName].schema.type);
+    expect(typeof headerVal).not.to.eql("undefined");
+    expect(typeof headerVal).to.eql(expected[headerName].schema.type);
   }
 };
 
@@ -58,7 +59,7 @@ export const testSameTypes = function (res, expected) {
   console.log(res, expected);
   for (const prop in expected) {
     console.log(prop);
-    expect(typeof res[prop]).toEqual(typeof expected[prop]);
+    expect(typeof res[prop]).to.eql(typeof expected[prop]);
 
     if (expected[prop] && typeof expected[prop] === "object") {
       testSameTypes(res[prop], expected[prop]);

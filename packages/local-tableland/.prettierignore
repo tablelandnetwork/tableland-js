@@ -1,0 +1,4 @@
+node_modules
+dist
+registry/artifacts
+registry/cache

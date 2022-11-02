@@ -1,7 +1,8 @@
 const config = {
   validatorDir: "tableland-artifacts/go-tableland",
-  registryDir: "tableland-artifacts/evm-tableland",
+  registryDir: "",
   verbose: false,
+  silent: false,
 };
 
 export default config;

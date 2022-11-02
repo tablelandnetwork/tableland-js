@@ -9,11 +9,13 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { chalk } from "./chalk.js";
 import {
   buildConfig,
+  defaultRegistryDir,
   getConfigFile,
   Config,
   pipeNamedSubprocess,
   waitForReady,
   getAccounts,
+  logSync,
 } from "./util.js";
 
 // TODO: should this be a per instance value?
@@ -44,8 +46,11 @@ class LocalTableland {
 
     if (typeof config.validatorDir === "string")
       this.validatorDir = config.validatorDir;
-    if (typeof config.registryDir === "string")
+    if (typeof config.registryDir === "string" && config.registryDir) {
       this.registryDir = config.registryDir;
+    } else {
+      this.registryDir = defaultRegistryDir();
+    }
     if (typeof config.verbose === "boolean") this.verbose = config.verbose;
     if (typeof config.silent === "boolean") this.silent = config.silent;
 
@@ -63,7 +68,7 @@ class LocalTableland {
     this.#_cleanup();
 
     // Run a local hardhat node
-    this.registry = spawn("npm", ["run", "up"], {
+    this.registry = spawn("npx", ["hardhat", "node"], {
       detached: true,
       cwd: this.registryDir,
     });
@@ -88,12 +93,14 @@ class LocalTableland {
     await waitForReady(registryReadyEvent, this.initEmitter);
 
     // Deploy the Registry to the Hardhat node
-    spawnSync(
-      "npx",
-      ["hardhat", "run", "--network", "localhost", "scripts/deploy.ts"],
-      {
-        cwd: this.registryDir,
-      }
+    logSync(
+      spawnSync(
+        "npx",
+        ["hardhat", "run", "--network", "localhost", "scripts/deploy.ts"],
+        {
+          cwd: this.registryDir,
+        }
+      )
     );
 
     // Add an empty .env file to the validator. The Validator expects this to exist,
@@ -195,14 +202,7 @@ class LocalTableland {
   // cleanup should restore everything to the starting state.
   // e.g. remove docker images and database backups
   #_cleanup() {
-    const dockerContainer = spawnSync("docker", ["container", "prune", "-f"]);
-
-    // make sure this blows up if Docker isn't running
-    const dcError = dockerContainer.stderr && dockerContainer.stderr.toString();
-    if (dcError) {
-      console.log(chalk.red(dcError));
-      throw dcError;
-    }
+    logSync(spawnSync("docker", ["container", "prune", "-f"]));
 
     spawnSync("docker", ["image", "rm", "docker_api", "-f"]);
     spawnSync("docker", ["volume", "prune", "-f"]);

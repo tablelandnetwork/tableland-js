@@ -1,0 +1,14 @@
+{
+  "name": "hardhat-project",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^2.0.0",
+    "hardhat": "^2.12.0"
+  },
+  "dependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.2.0",
+    "@openzeppelin/contracts-upgradeable": "^4.8.0-rc.1",
+    "@openzeppelin/hardhat-upgrades": "^1.21.0",
+    "@tableland/evm": "3.0.1-next3.0.2",
+    "erc721a-upgradeable": "^4.2.2"
+  }
+}

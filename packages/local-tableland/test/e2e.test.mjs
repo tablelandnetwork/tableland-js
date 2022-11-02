@@ -1,8 +1,13 @@
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import path from "path";
-import { getTableland } from "./util";
-import { getAccounts } from "../src/util";
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
+import { getTableland } from "./util.mjs";
+import { getAccounts } from "../dist/esm/util.js";
+
+chai.use(chaiAsPromised);
+const expect = chai.expect;
 
 const __dirname = path.resolve(path.dirname(""));
 // TODO: we were using these tests to check the validator's OAS spec via
@@ -14,13 +19,13 @@ spawnSync("cp", [
   "./tmp",
 ]);
 
-// These tests take a bit longer than normal since we are usually waiting for blocks to finalize etc...
-jest.setTimeout(25000);
 const accounts = getAccounts();
 
 // NOTE: these tests require the a local Tableland is already running
 describe("Validator, Chain, and SDK work end to end", function () {
-  test("Create a table that can be read from", async function () {
+  // These tests take a bit longer than normal since we are usually waiting for blocks to finalize etc...
+  this.timeout(15000); // TODO: use a programatic instance of l.t.
+  it("Creates a table that can be read from", async function () {
     const signer = accounts[1];
     const tableland = await getTableland(signer);
 
@@ -35,10 +40,10 @@ describe("Validator, Chain, and SDK work end to end", function () {
     const data = await tableland.read(
       `SELECT * FROM ${prefix}_${chainId}_${tableId};`
     );
-    expect(data.rows).toEqual([]);
+    expect(data.rows).to.eql([]);
   });
 
-  test("Create a table that can be written to", async function () {
+  it("Create a table that can be written to", async function () {
     const signer = accounts[1];
 
     const tableland = await getTableland(signer);
@@ -57,11 +62,11 @@ describe("Validator, Chain, and SDK work end to end", function () {
 
     const data = await tableland.read(`SELECT * FROM ${queryableName};`);
 
-    await expect(typeof writeRes.hash).toEqual("string");
-    await expect(data.rows).toEqual([["tree", "aspen"]]);
+    expect(typeof writeRes.hash).to.eql("string");
+    expect(data.rows).to.eql([["tree", "aspen"]]);
   });
 
-  test("Table cannot be written to unless caller is allowed", async function () {
+  it("Table cannot be written to unless caller is allowed", async function () {
     const signer = accounts[1];
 
     const tableland = await getTableland(signer);
@@ -75,24 +80,26 @@ describe("Validator, Chain, and SDK work end to end", function () {
     const queryableName = `${prefix}_${chainId}_${tableId}`;
 
     const data = await tableland.read(`SELECT * FROM ${queryableName};`);
-    await expect(data.rows).toEqual([]);
+    expect(data.rows).to.eql([]);
 
     const signer2 = accounts[2];
     const tableland2 = await getTableland(signer2);
 
-    await expect(async function () {
-      await tableland2.write(
-        `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
-      );
-    }).rejects.toThrow(
+    await expect(
+      (async function () {
+        await tableland2.write(
+          `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
+        );
+      })()
+    ).to.be.rejectedWith(
       "db query execution failed (code: ACL, msg: not enough privileges)"
     );
 
     const data2 = await tableland2.read(`SELECT * FROM ${queryableName};`);
-    await expect(data2.rows).toEqual([]);
+    expect(data2.rows).to.eql([]);
   });
 
-  test("Create a table can have a row deleted", async function () {
+  it("Create a table can have a row deleted", async function () {
     const signer = accounts[1];
 
     const tableland = await getTableland(signer);
@@ -109,28 +116,28 @@ describe("Validator, Chain, and SDK work end to end", function () {
       `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
     );
 
-    expect(typeof write1.hash).toEqual("string");
+    expect(typeof write1.hash).to.eql("string");
 
     const write2 = await tableland.write(
       `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'pine')`
     );
 
-    expect(typeof write2.hash).toEqual("string");
+    expect(typeof write2.hash).to.eql("string");
 
     const data = await tableland.read(`SELECT * FROM ${queryableName};`);
-    await expect(data.rows.length).toEqual(2);
+    expect(data.rows.length).to.eql(2);
 
     const delete1 = await tableland.write(
       `DELETE FROM ${queryableName} WHERE val = 'pine';`
     );
 
-    expect(typeof delete1.hash).toEqual("string");
+    expect(typeof delete1.hash).to.eql("string");
 
     const data2 = await tableland.read(`SELECT * FROM ${queryableName};`);
-    await expect(data2.rows.length).toEqual(1);
+    await expect(data2.rows.length).to.eql(1);
   }, 30000);
 
-  test("Read a table with `table` output", async function () {
+  it("Read a table with `table` output", async function () {
     const signer = accounts[1];
 
     const tableland = await getTableland(signer);
@@ -151,11 +158,11 @@ describe("Validator, Chain, and SDK work end to end", function () {
       output: "table",
     });
 
-    await expect(data.columns).toEqual([{ name: "keyy" }, { name: "val" }]);
-    await expect(data.rows).toEqual([["tree", "aspen"]]);
+    expect(data.columns).to.eql([{ name: "keyy" }, { name: "val" }]);
+    expect(data.rows).to.eql([["tree", "aspen"]]);
   });
 
-  test("Read a table with `objects` output", async function () {
+  it("Read a table with `objects` output", async function () {
     const signer = accounts[1];
 
     const tableland = await getTableland(signer);
@@ -176,10 +183,10 @@ describe("Validator, Chain, and SDK work end to end", function () {
       output: "objects",
     });
 
-    await expect(data).toEqual([{ keyy: "tree", val: "aspen" }]);
+    expect(data).to.eql([{ keyy: "tree", val: "aspen" }]);
   });
 
-  test("Read a single row with `unwrap` option", async function () {
+  it("Read a single row with `unwrap` option", async function () {
     const signer = accounts[1];
 
     const tableland = await getTableland(signer);
@@ -201,10 +208,10 @@ describe("Validator, Chain, and SDK work end to end", function () {
       output: "objects",
     });
 
-    expect(data).toEqual({ keyy: "tree", val: "aspen" });
+    expect(data).to.eql({ keyy: "tree", val: "aspen" });
   });
 
-  test("Read two rows with `unwrap` option fails", async function () {
+  it("Read two rows with `unwrap` option fails", async function () {
     const signer = accounts[1];
 
     const tableland = await getTableland(signer);
@@ -224,17 +231,19 @@ describe("Validator, Chain, and SDK work end to end", function () {
       `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'pine')`
     );
 
-    await expect(async function () {
-      await tableland.read(`SELECT * FROM ${queryableName};`, {
-        unwrap: true,
-        output: "objects",
-      });
-    }).rejects.toThrow(
+    await expect(
+      (async function () {
+        await tableland.read(`SELECT * FROM ${queryableName};`, {
+          unwrap: true,
+          output: "objects",
+        });
+      })()
+    ).to.be.rejectedWith(
       "unwrapped results with more than one row aren't supported in JSON RPC API"
     );
   });
 
-  test("Read with `extract` option", async function () {
+  it("Read with `extract` option", async function () {
     const signer = accounts[1];
 
     const tableland = await getTableland(signer);
@@ -257,10 +266,10 @@ describe("Validator, Chain, and SDK work end to end", function () {
       output: "objects",
     });
 
-    await expect(data).toEqual(["aspen", "pine"]);
+    expect(data).to.eql(["aspen", "pine"]);
   });
 
-  test("Read table with two columns with `extract` option fails", async function () {
+  it("Read table with two columns with `extract` option fails", async function () {
     const signer = accounts[1];
 
     const tableland = await getTableland(signer);
@@ -277,17 +286,19 @@ describe("Validator, Chain, and SDK work end to end", function () {
       `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
     );
 
-    await expect(async function () {
-      await tableland.read(`SELECT * FROM ${queryableName};`, {
-        extract: true,
-        output: "objects",
-      });
-    }).rejects.toThrow(
+    await expect(
+      (async function () {
+        await tableland.read(`SELECT * FROM ${queryableName};`, {
+          extract: true,
+          output: "objects",
+        });
+      })()
+    ).to.be.rejectedWith(
       "can only extract values for result sets with one column but this has 2"
     );
   });
 
-  test("List an account's tables", async function () {
+  it("List an account's tables", async function () {
     const signer = accounts[1];
 
     const tableland = await getTableland(signer);
@@ -302,14 +313,14 @@ describe("Validator, Chain, and SDK work end to end", function () {
 
     const tablesMeta = await tableland.list();
 
-    await expect(Array.isArray(tablesMeta)).toEqual(true);
+    expect(Array.isArray(tablesMeta)).to.eql(true);
     const table = tablesMeta.find((table) => table.name === queryableName);
 
-    await expect(table).toBeDefined();
-    await expect(table.controller).toEqual(accounts[1].address);
+    expect(typeof table).to.equal("object");
+    expect(table.controller).to.eql(accounts[1].address);
   });
 
-  test("write to a table without using the relay", async function () {
+  it("write to a table without using the relay", async function () {
     const signer = accounts[1];
 
     const tableland = await getTableland(signer, { rpcRelay: false });
@@ -326,13 +337,13 @@ describe("Validator, Chain, and SDK work end to end", function () {
       `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
     );
 
-    expect(typeof writeRes.hash).toEqual("string");
+    expect(typeof writeRes.hash).to.eql("string");
 
     const data = await tableland.read(`SELECT * FROM ${queryableName};`);
-    expect(data.rows).toEqual([["tree", "aspen"]]);
+    expect(data.rows).to.eql([["tree", "aspen"]]);
   });
 
-  test("write without relay statement validates table name prefix", async function () {
+  it("write without relay statement validates table name prefix", async function () {
     const signer = accounts[1];
 
     const tableland = await getTableland(signer, { rpcRelay: false });
@@ -349,16 +360,18 @@ describe("Validator, Chain, and SDK work end to end", function () {
     // the prefix is for the first table, but id is for second table
     const queryableName = `${prefix}_31337_${tableId}`;
 
-    await expect(async function () {
-      await tableland.write(
-        `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
-      );
-    }).rejects.toThrow(
+    await expect(
+      (async function () {
+        await tableland.write(
+          `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
+        );
+      })()
+    ).to.be.rejectedWith(
       `table prefix doesn't match (exp ${prefix2}, got ${prefix})`
     );
   });
 
-  test("write without relay statement validates table ID", async function () {
+  it("write without relay statement validates table ID", async function () {
     const signer = accounts[1];
 
     const tableland = await getTableland(signer, { rpcRelay: false });
@@ -369,16 +382,18 @@ describe("Validator, Chain, and SDK work end to end", function () {
     // the tableId 0 does not exist since we start with tableId == 1
     const queryableName = `${prefix}_31337_0`;
 
-    await expect(async function () {
-      await tableland.write(
-        `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
-      );
-    }).rejects.toThrow(
+    await expect(
+      (async function () {
+        await tableland.write(
+          `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
+        );
+      })()
+    ).to.be.rejectedWith(
       `getting table: failed to get the table: sql: no rows in result set`
     );
   });
 
-  test("set controller without relay", async function () {
+  it("set controller without relay", async function () {
     const signer = accounts[1];
 
     const tableland = await getTableland(signer, { rpcRelay: false });
@@ -393,11 +408,11 @@ describe("Validator, Chain, and SDK work end to end", function () {
       name
     );
 
-    expect(typeof hash).toEqual("string");
-    expect(hash.length).toEqual(66);
+    expect(typeof hash).to.eql("string");
+    expect(hash.length).to.eql(66);
   });
 
-  test("set controller with relay", async function () {
+  it("set controller with relay", async function () {
     const signer = accounts[1];
 
     const tableland = await getTableland(signer, {
@@ -414,11 +429,11 @@ describe("Validator, Chain, and SDK work end to end", function () {
       name
     );
 
-    expect(typeof hash).toEqual("string");
-    expect(hash.length).toEqual(66);
+    expect(typeof hash).to.eql("string");
+    expect(hash.length).to.eql(66);
   });
 
-  test("get controller returns an address", async function () {
+  it("get controller returns an address", async function () {
     const signer = accounts[1];
 
     const tableland = await getTableland(signer);
@@ -432,15 +447,15 @@ describe("Validator, Chain, and SDK work end to end", function () {
 
     const { hash } = await tableland.setController(controllerAddress, name);
 
-    expect(typeof hash).toEqual("string");
-    expect(hash.length).toEqual(66);
+    expect(typeof hash).to.eql("string");
+    expect(hash.length).to.eql(66);
 
     const controller = await tableland.getController(name);
 
-    expect(controller).toEqual(controllerAddress);
+    expect(controller).to.eql(controllerAddress);
   });
 
-  test("lock controller without relay returns a transaction hash", async function () {
+  it("lock controller without relay returns a transaction hash", async function () {
     const signer = accounts[1];
 
     const tableland = await getTableland(signer, { rpcRelay: false });
@@ -454,15 +469,15 @@ describe("Validator, Chain, and SDK work end to end", function () {
 
     const { hash } = await tableland.setController(controllerAddress, name);
 
-    expect(typeof hash).toEqual("string");
-    expect(hash.length).toEqual(66);
+    expect(typeof hash).to.eql("string");
+    expect(hash.length).to.eql(66);
 
     const tx = await tableland.lockController(name);
 
-    expect(typeof tx.hash).toEqual("string");
+    expect(typeof tx.hash).to.eql("string");
   });
 
-  test("get the schema for a table", async function () {
+  it("get the schema for a table", async function () {
     const signer = accounts[1];
 
     const tableland = await getTableland(signer);
@@ -475,16 +490,16 @@ describe("Validator, Chain, and SDK work end to end", function () {
 
     const tableSchema = await tableland.schema(queryableName);
 
-    expect(typeof tableSchema.columns).toEqual("object");
-    expect(Array.isArray(tableSchema.table_constraints)).toEqual(true);
-    expect(tableSchema.columns.length).toEqual(1);
-    expect(tableSchema.columns[0].name).toEqual("a");
-    expect(tableSchema.columns[0].type).toEqual("int");
-    expect(Array.isArray(tableSchema.columns[0].constraints)).toEqual(true);
-    expect(tableSchema.columns[0].constraints[0]).toEqual("PRIMARY KEY");
+    expect(typeof tableSchema.columns).to.eql("object");
+    expect(Array.isArray(tableSchema.table_constraints)).to.eql(true);
+    expect(tableSchema.columns.length).to.eql(1);
+    expect(tableSchema.columns[0].name).to.eql("a");
+    expect(tableSchema.columns[0].type).to.eql("int");
+    expect(Array.isArray(tableSchema.columns[0].constraints)).to.eql(true);
+    expect(tableSchema.columns[0].constraints[0]).to.eql("PRIMARY KEY");
   });
 
-  test("get the structure for a hash", async function () {
+  it("get the structure for a hash", async function () {
     const signer = accounts[1];
 
     const tableland = await getTableland(signer);
@@ -504,16 +519,16 @@ describe("Validator, Chain, and SDK work end to end", function () {
 
     const tableStructure = await tableland.structure(structureHash);
 
-    expect(Array.isArray(tableStructure)).toEqual(true);
+    expect(Array.isArray(tableStructure)).to.eql(true);
 
     const lastStructure = tableStructure[tableStructure.length - 1];
 
-    expect(lastStructure.name).toEqual(queryableName);
-    expect(lastStructure.controller).toEqual(accounts[1].address);
-    expect(lastStructure.structure).toEqual(structureHash);
+    expect(lastStructure.name).to.eql(queryableName);
+    expect(lastStructure.controller).to.eql(accounts[1].address);
+    expect(lastStructure.structure).to.eql(structureHash);
   });
 
-  test("A write that violates table constraints throws error", async function () {
+  it("A write that violates table constraints throws error", async function () {
     const signer = accounts[1];
 
     const tableland = await getTableland(signer);
@@ -529,11 +544,13 @@ describe("Validator, Chain, and SDK work end to end", function () {
     const chainId = 31337;
     const queryableName = `${prefix}_${chainId}_${tableId}`;
 
-    await expect(async function () {
-      await tableland.write(
-        `INSERT INTO ${queryableName} VALUES (1, '1'), (1, '1')`
-      );
-    }).rejects.toThrow(
+    await expect(
+      (async function () {
+        await tableland.write(
+          `INSERT INTO ${queryableName} VALUES (1, '1'), (1, '1')`
+        );
+      })()
+    ).to.be.rejectedWith(
       `db query execution failed (code: SQLITE_UNIQUE constraint failed: ${queryableName}.id, msg: UNIQUE constraint failed: ${queryableName}.id)`
     );
   });

@@ -1,6 +1,6 @@
 {
   "name": "@tableland/local",
-  "version": "0.0.0-pre12",
+  "version": "0.0.1",
   "description": "Tooling to start a sandboxed Tableland network.",
   "repository": "https://github.com/tablelandnetwork/local-tableland",
   "license": "MIT",
@@ -27,11 +27,19 @@
   },
   "files": [
     "dist/*",
-    "src/*"
+    "src/*",
+    "registry/hardhat.config.ts",
+    "registry/package.json",
+    "registry/package-lock.json",
+    "registry/hardhat.config.js",
+    "registry/tsconfig.json",
+    "registry/contracts/*",
+    "registry/scripts/*"
   ],
   "scripts": {
-    "test": "node --experimental-fetch --experimental-vm-modules node_modules/.bin/jest --verbose",
-    "lint": "eslint src/ test/ --ext .js,.jsx,.ts,.tsx",
+    "postinstall": "mkdir -p registry && cd registry && npm install",
+    "test": "npm run build:esm && node --experimental-fetch --experimental-vm-modules ./node_modules/mocha/bin/mocha --bail",
+    "lint": "eslint src/ test/ --ext .js,.ts,.mjs",
     "prepublishOnly": "npm run build",
     "prettier": "prettier '**/*.{ts,json,md}' --check",
     "prettier:fix": "npm run prettier -- --write",
@@ -39,7 +47,7 @@
     "build:esm": "tsc -p tsconfig.json",
     "build:cjs": "tsc -p tsconfig.cjs.json",
     "build": "npm run clean && npm run build:esm && npm run build:cjs && ./fixup.sh",
-    "up": "node dist/up.js --validator ../go-tableland --registry ../evm-tableland"
+    "up": "node dist/esm/up.js --validator ../go-tableland --registry ../evm-tableland"
   },
   "bin": {
     "local-tableland": "dist/esm/up.js"
@@ -50,12 +58,14 @@
     "yargs": "^17.5.1"
   },
   "devDependencies": {
-    "@tableland/sdk": "^3.1.2",
-    "@types/jest": "^27.5.1",
+    "@tableland/sdk": "^3.1.4",
+    "@types/node": "^18.8.4",
     "@types/sentencer": "^0.2.0",
     "@types/yargs": "^17.0.12",
     "@typescript-eslint/eslint-plugin": "^5.36.2",
     "@typescript-eslint/parser": "^5.36.2",
+    "chai": "^4.3.6",
+    "chai-as-promised": "^7.1.1",
     "eslint": "^8.23.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-config-standard": "^17.0.0",
@@ -64,9 +74,9 @@
     "eslint-plugin-prettier": "^4.2.1",
     "eslint-plugin-promise": "^6.0.1",
     "ethers": "^5.7.1",
-    "jest": "^28.1.0",
+    "hardhat": "^2.12.0",
     "js-yaml": "^4.1.0",
-    "prettier": "^2.7.1",
-    "ts-jest": "^28.0.8"
+    "mocha": "^10.1.0",
+    "prettier": "^2.7.1"
   }
 }
