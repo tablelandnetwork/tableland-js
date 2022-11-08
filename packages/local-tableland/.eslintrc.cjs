@@ -10,6 +10,7 @@ module.exports = {
   globals: {
     // mocha
     before: true,
+    after: true,
     describe: true,
     it: true
   },

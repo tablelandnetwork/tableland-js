@@ -1,6 +1,3 @@
-import { spawnSync } from "node:child_process";
-import { join } from "node:path";
-import path from "path";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { getTableland } from "./util.mjs";
@@ -9,22 +6,11 @@ import { getAccounts } from "../dist/esm/util.js";
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 
-const __dirname = path.resolve(path.dirname(""));
-// TODO: we were using these tests to check the validator's OAS spec via
-// copy copying the file during local tableland startup. Now that is a dev
-// product, these kind of tests need to be separated
-spawnSync("mkdir", ["./tmp"]);
-spawnSync("cp", [
-  join(__dirname, "../go-tableland", "tableland-openapi-spec.yaml"),
-  "./tmp",
-]);
-
 const accounts = getAccounts();
 
-// NOTE: these tests require the a local Tableland is already running
 describe("Validator, Chain, and SDK work end to end", function () {
-  // These tests take a bit longer than normal since we are usually waiting for blocks to finalize etc...
-  this.timeout(15000); // TODO: use a programatic instance of l.t.
+  // These tests take a bit longer than normal since we are running them against an actual network
+  this.timeout(20000);
   it("Creates a table that can be read from", async function () {
     const signer = accounts[1];
     const tableland = await getTableland(signer);
@@ -160,6 +146,34 @@ describe("Validator, Chain, and SDK work end to end", function () {
 
     expect(data.columns).to.eql([{ name: "keyy" }, { name: "val" }]);
     expect(data.rows).to.eql([["tree", "aspen"]]);
+  });
+
+  // TODO: this test fails because validator has casing issue
+  // https://github.com/tablelandnetwork/go-tableland/issues/389
+  it.skip("Count rows in a table", async function () {
+    const signer = accounts[1];
+
+    const tableland = await getTableland(signer);
+
+    const prefix = "test_count";
+    const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
+      prefix,
+    });
+
+    const chainId = 31337;
+    const queryableName = `${prefix}_${chainId}_${tableId}`;
+
+    await tableland.write(
+      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
+    );
+
+    await tableland.write(
+      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'pine')`
+    );
+
+    const data = await tableland.read(`SELECT COUNT(*) FROM ${queryableName};`);
+
+    expect(data).to.eql({ columns: [{ name: "COUNT(*)" }], rows: [[2]] });
   });
 
   it("Read a table with `objects` output", async function () {

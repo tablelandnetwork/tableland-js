@@ -4,12 +4,20 @@ node_modules
 .envrc
 dist/
 
+# There is a prebuild step that creates this file,
+# it should not be committed to version control
+src/get-dirname.ts
+
 node_modules
 .env
 coverage
 coverage.json
 typechain
 typechain-types
+
+# Validator artifacts
+validator/*.db
+validator/backups
 
 #Hardhat files
 cache

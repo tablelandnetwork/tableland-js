@@ -3,10 +3,9 @@
  **/
 
 import { spawn, spawnSync, ChildProcess } from "node:child_process";
-import { join } from "node:path";
 import { EventEmitter } from "node:events";
-import { readFileSync, writeFileSync } from "node:fs";
 import { chalk } from "./chalk.js";
+import { ValidatorDev, ValidatorPkg } from "./validators.js";
 import {
   buildConfig,
   defaultRegistryDir,
@@ -18,15 +17,13 @@ import {
   logSync,
 } from "./util.js";
 
-// TODO: should this be a per instance value?
-// store the Validator config file in memory, so we can restore it during cleanup
-let ORIGINAL_VALIDATOR_CONFIG: string | undefined;
-
 class LocalTableland {
   config;
   initEmitter;
+  ready: boolean = false;
+  #_readyResolves: Function[] = [];
   registry?: ChildProcess;
-  validator?: ChildProcess;
+  validator?: ValidatorDev | ValidatorPkg;
 
   validatorDir?: string;
   registryDir?: string;
@@ -49,7 +46,7 @@ class LocalTableland {
     if (typeof config.registryDir === "string" && config.registryDir) {
       this.registryDir = config.registryDir;
     } else {
-      this.registryDir = defaultRegistryDir();
+      this.registryDir = await defaultRegistryDir();
     }
     if (typeof config.verbose === "boolean") this.verbose = config.verbose;
     if (typeof config.silent === "boolean") this.silent = config.silent;
@@ -58,13 +55,12 @@ class LocalTableland {
   }
 
   async #_start() {
-    if (!(this.validatorDir && this.registryDir)) {
-      throw new Error(
-        "cannot start a local network without Validator and Registry"
-      );
+    if (!this.registryDir) {
+      throw new Error("cannot start a local network without Registry");
     }
 
     // make sure we are starting fresh
+    // TODO: I don't think this is doing anything anymore...
     this.#_cleanup();
 
     // Run a local hardhat node
@@ -103,59 +99,49 @@ class LocalTableland {
       )
     );
 
-    // Add an empty .env file to the validator. The Validator expects this to exist,
-    // but doesn't need any of the values when running a local instance
-    writeFileSync(
-      join(this.validatorDir, "/docker/local/api/.env_validator"),
-      " "
-    );
+    // TODO: need to determine if we are starting the validator via docker
+    // and a local repo, or if are running a binary etc...
 
-    // Add the registry address to the Validator config
-    const configFilePath = join(
-      this.validatorDir,
-      "/docker/local/api/config.json"
-    );
-    const configFileStr = readFileSync(configFilePath).toString();
-    const validatorConfig = JSON.parse(configFileStr);
+    const ValidatorClass = this.validatorDir ? ValidatorDev : ValidatorPkg;
 
-    // save the validator config state before this script modifies it
-    ORIGINAL_VALIDATOR_CONFIG = JSON.stringify(validatorConfig, null, 2);
+    this.validator = new ValidatorClass(this.validatorDir);
 
-    // TODO: this could be parsed out of the deploy process, but since
-    //       it's always the same address just hardcoding it here
-    validatorConfig.Chains[0].Registry.ContractAddress =
-      "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512";
+    // run this before starting in case the last instance of the validator didn't get cleanup after
+    // this might be needed if a test runner force quits the parent local-tableland process
+    this.validator.cleanup();
+    this.validator.start();
 
-    writeFileSync(configFilePath, JSON.stringify(validatorConfig, null, 2));
+    if (!this.validator.process) {
+      throw new Error("could not start Validator process");
+    }
 
-    // start the validator
-    this.validator = spawn("make", ["local-up"], {
-      detached: true,
-      cwd: join(this.validatorDir, "docker"),
-    });
-
-    this.validator.on("error", (err) => {
+    this.validator.process.on("error", (err) => {
       throw new Error(`validator errored with: ${err}`);
     });
 
     const validatorReadyEvent = "validator ready";
     // this process should keep running until we kill it
-    pipeNamedSubprocess(chalk.yellow.bold("Validator"), this.validator, {
-      // use events to indicate when the underlying process is finished
-      // initializing and is ready to participate in the Tableland network
-      readyEvent: validatorReadyEvent,
-      emitter: this.initEmitter,
-      message: "processing height",
-      verbose: this.verbose,
-      silent: this.silent,
-      fails: {
-        message: "Cannot connect to the Docker daemon",
-        hint: "Looks like we cannot connect to Docker.  Do you have the Docker running?",
-      },
-    });
+    pipeNamedSubprocess(
+      chalk.yellow.bold("Validator"),
+      this.validator.process,
+      {
+        // use events to indicate when the underlying process is finished
+        // initializing and is ready to participate in the Tableland network
+        readyEvent: validatorReadyEvent,
+        emitter: this.initEmitter,
+        message: "processing height",
+        verbose: this.verbose,
+        silent: this.silent,
+        fails: {
+          message: "Cannot connect to the Docker daemon",
+          hint: "Looks like we cannot connect to Docker.  Do you have the Docker running?",
+        },
+      }
+    );
 
     // wait until initialization is done
     await waitForReady(validatorReadyEvent, this.initEmitter);
+    await this.#_setReady();
 
     if (this.silent) return;
 
@@ -165,6 +151,28 @@ class LocalTableland {
     console.log("        /              \\");
     console.log("       /                \\");
     console.log("______/                  \\______\n\n");
+  }
+
+  async #_setReady() {
+    this.ready = true;
+    while (this.#_readyResolves.length) {
+      // readyResolves is an array of the resolve functions for all registered
+      // promises we want to pop and call each of them synchronously
+      const resolve = this.#_readyResolves.pop();
+      if (typeof resolve === "function") resolve();
+    }
+  }
+
+  // module consumers can await this method if they want to
+  // wait until the network fully started to do something
+  isReady() {
+    if (this.ready) return Promise.resolve();
+
+    const prom = new Promise((resolve) => {
+      this.#_readyResolves.push(resolve);
+    });
+
+    return prom;
   }
 
   async shutdown() {
@@ -188,47 +196,26 @@ class LocalTableland {
 
   shutdownValidator(): Promise<void> {
     return new Promise((resolve) => {
-      if (!this.validator) return resolve();
+      if (!(this.validator && this.validator.process)) return resolve();
 
-      this.validator.on("close", () => resolve());
+      this.validator.process.on("close", () => resolve());
       // If this Class is imported and run by a test runner then the ChildProcess instances are
       // sub-processes of a ChildProcess instance which means in order to kill them in a way that
       // enables graceful shut down they have to run in detached mode and be killed by the pid
       // @ts-ignore
-      process.kill(-this.validator.pid);
+      process.kill(-this.validator.process.pid);
     });
   }
 
   // cleanup should restore everything to the starting state.
   // e.g. remove docker images and database backups
   #_cleanup() {
-    logSync(spawnSync("docker", ["container", "prune", "-f"]));
-
-    spawnSync("docker", ["image", "rm", "docker_api", "-f"]);
-    spawnSync("docker", ["volume", "prune", "-f"]);
     spawnSync("rm", ["-rf", "./tmp"]);
 
     // If the directory hasn't been specified there isn't anything to clean up
-    if (!this.validatorDir) return;
+    if (!this.validator) return;
 
-    const dbFiles = [
-      join(this.validatorDir, "/docker/local/api/database.db"),
-      join(this.validatorDir, "/docker/local/api/database.db-shm"),
-      join(this.validatorDir, "/docker/local/api/database.db-wal"),
-    ];
-
-    for (const filepath of dbFiles) {
-      spawnSync("rm", ["-f", filepath]);
-    }
-
-    // reset the Validator config file that is modified on startup
-    if (ORIGINAL_VALIDATOR_CONFIG) {
-      const configFilePath = join(
-        this.validatorDir,
-        "/docker/local/api/config.json"
-      );
-      writeFileSync(configFilePath, ORIGINAL_VALIDATOR_CONFIG);
-    }
+    this.validator.cleanup();
   }
 }
 

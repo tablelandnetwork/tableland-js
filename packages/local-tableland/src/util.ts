@@ -1,16 +1,13 @@
-import { isAbsolute, join, resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { isAbsolute, join, resolve } from "node:path";
 import { EventEmitter } from "node:events";
 import { Readable } from "node:stream";
 import { ChildProcess, SpawnSyncReturns } from "node:child_process";
 import { ethers } from "ethers";
 import { chalk } from "./chalk.js";
 
-const _dirname =
-  typeof __dirname !== "undefined"
-    ? __dirname
-    : // @ts-ignore
-      dirname(fileURLToPath(import.meta.url));
+// NOTE: We are creating this file in the prebuild.sh script so that we can support cjs and esm
+import { getDirname } from "./get-dirname.js";
+const _dirname = getDirname();
 
 export type ConfigDescriptor = {
   name: string;
@@ -238,8 +235,8 @@ export const waitForReady = function (
   });
 };
 
-export const defaultRegistryDir = function () {
-  return resolve(_dirname, "../../registry");
+export const defaultRegistryDir = async function () {
+  return resolve(_dirname, "..", "..", "registry");
 };
 
 const defaultProvider = ethers.getDefaultProvider("http://localhost:8545");
