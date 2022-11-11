@@ -1,6 +1,12 @@
 import { Wallet, providers, getDefaultProvider } from "ethers";
-import { ChainName } from "@tableland/sdk";
-import getChains from "./chains.js";
+import { ChainName, SUPPORTED_CHAINS } from "@tableland/sdk";
+
+export const getChains = () =>
+  Object.fromEntries(
+    Object.entries(SUPPORTED_CHAINS).filter(
+      ([name]) => !name.includes("staging")
+    )
+  );
 
 export interface Options {
   privateKey: string;
@@ -8,10 +14,11 @@ export interface Options {
   providerUrl: string | undefined;
 }
 
+export const wait = (timeout: number) =>
+  new Promise((resolve) => setTimeout(resolve, timeout));
+
 export function getLink(chain: ChainName, hash: string): string {
-  if (!hash) {
-    return "";
-  }
+  /* c8 ignore start */
   if (chain.includes("ethereum")) {
     if (chain.includes("goerli")) {
       return `https://goerli.etherscan.io/tx/${hash}`;
@@ -23,9 +30,7 @@ export function getLink(chain: ChainName, hash: string): string {
     }
     return `https://polygonscan.com/tx/${hash}`;
   } else if (chain.includes("optimism")) {
-    if (chain.includes("kovan")) {
-      return `https://kovan-optimistic.etherscan.io/tx/${hash}`;
-    } else if (chain.includes("goerli")) {
+    if (chain.includes("goerli")) {
       return `https://blockscout.com/optimism/goerli/tx/${hash}`;
     }
     return `https://optimistic.etherscan.io/tx/${hash}`;
@@ -36,6 +41,7 @@ export function getLink(chain: ChainName, hash: string): string {
     return `https://arbiscan.io/tx/${hash}`;
   }
   return "";
+  /* c8 ignore stop */
 }
 
 export function getSignerOnly({
@@ -45,11 +51,11 @@ export function getSignerOnly({
   privateKey: string;
   chain: ChainName;
 }): Wallet {
-  if (!privateKey) {
+  if (privateKey == null) {
     throw new Error("missing required flag (`-k` or `--privateKey`)");
   }
   const network = getChains()[chain];
-  if (!network) {
+  if (network == null) {
     throw new Error("unsupported chain (see `chains` command for details)");
   }
 
@@ -60,7 +66,7 @@ export function getSignerOnly({
       return network;
     },
     _isProvider: true,
-  } as providers.Provider);
+  } as unknown as providers.Provider);
   return signer;
 }
 
@@ -69,19 +75,20 @@ export function getWalletWithProvider({
   chain,
   providerUrl,
 }: Options): Wallet {
-  if (!privateKey) {
+  if (privateKey == null) {
     throw new Error("missing required flag (`-k` or `--privateKey`)");
   }
   const network = getChains()[chain];
-  if (!network) {
+  if (network == null) {
     throw new Error("unsupported chain (see `chains` command for details)");
   }
 
   const wallet = new Wallet(privateKey);
   let provider: providers.BaseProvider = new providers.JsonRpcProvider(
     chain === "local-tableland" ? undefined : providerUrl, // Defaults to localhost
-    network.name
+    network.name === "localhost" ? undefined : network.name
   );
+  /* c8 ignore start */
   if (!provider) {
     // This will be significantly rate limited, but we only need to run it once
     provider = getDefaultProvider(network);
@@ -89,5 +96,6 @@ export function getWalletWithProvider({
   if (!provider) {
     throw new Error("unable to create ETH API provider");
   }
+  /* c8 ignore stop */
   return wallet.connect(provider);
 }

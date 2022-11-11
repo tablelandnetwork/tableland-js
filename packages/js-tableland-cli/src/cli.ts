@@ -51,11 +51,6 @@ const _argv = yargs(hideBin(process.argv))
     description: "The EVM chain to target",
     default: "polygon-mumbai",
   })
-  .option("rpcRelay", {
-    alias: "r",
-    type: "boolean",
-    description: "Whether writes should be relayed via a validator",
-  })
   .options("providerUrl", {
     alias: "p",
     type: "string",

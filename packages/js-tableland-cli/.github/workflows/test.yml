@@ -1,4 +1,4 @@
-name: Review
+name: Test
 on:
   push:
     branches:
@@ -6,11 +6,11 @@ on:
   pull_request:
 
 concurrency:
-  group: review-${{github.ref}}
+  group: test-${{github.ref}}
   cancel-in-progress: true
 
 jobs:
-  lint:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 🛎️
@@ -36,5 +36,8 @@ jobs:
       - name: Install 🔧
         run: npm install
 
-      - name: Lint/Format 🙈
-        run: npm run prettier && npm run lint
+      - name: Build 🛠
+        run: npm run build
+
+      - name: Test/Coverage 🧪
+        run: npm test

@@ -3,9 +3,9 @@ import type { Arguments, CommandBuilder } from "yargs";
 import { Wallet } from "ethers";
 import fetch from "node-fetch";
 import { ChainName } from "@tableland/sdk";
-import getChains from "../chains.js";
+import { getChains } from "../utils.js";
 
-type Options = {
+export type Options = {
   // Local
   address: string;
 
@@ -17,7 +17,7 @@ type Options = {
 export const command = "list [address]";
 export const desc = "List tables by address";
 
-export const builder: CommandBuilder<Options, Options> = (yargs) => {
+export const builder: CommandBuilder<{}, Options> = (yargs) => {
   return yargs.positional("address", {
     type: "string",
     description: "The target address",
@@ -33,13 +33,13 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       address = new Wallet(privateKey).address;
     } else {
       console.error("must supply `--privateKey` or `address` positional");
-      process.exit(1);
+      return;
     }
   }
   const network = getChains()[chain];
   if (!network) {
     console.error("unsupported chain (see `chains` command for details)");
-    process.exit(1);
+    return;
   }
 
   try {
@@ -48,9 +48,8 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     );
     const out = JSON.stringify(await res.json(), null, 2);
     console.log(out);
-    process.exit(0);
+    /* c8 ignore next 3 */
   } catch (err: any) {
     console.error(err.message);
-    process.exit(1);
   }
 };

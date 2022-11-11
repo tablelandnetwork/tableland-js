@@ -2,67 +2,73 @@
   "name": "@tableland/cli",
   "version": "4.0.0-rc1.0",
   "description": "Tableland command line tools",
-  "main": "./dist/cli.js",
-  "files": [
-    "dist/**/*.js"
-  ],
-  "type": "module",
+  "repository": "https://github.com/tablelandnetwork/js-tableland-cli",
   "publishConfig": {
     "access": "public"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/tablelandnetwork/js-tableland-cli.git"
+  "keywords": [
+    "tableland",
+    "sql",
+    "ethereum",
+    "cli",
+    "database"
+  ],
+  "type": "module",
+  "main": "./dist/cli.js",
+  "module": "./dist/cli.js",
+  "bin": {
+    "tableland": "./dist/cli.js"
   },
+  "files": [
+    "dist/**/*.js"
+  ],
   "scripts": {
-    "build": "npx tsc && chmod +x dist/cli.js",
-    "clean": "rm -rf dist",
-    "package": "pkg . --targets node18-macos-x64 --output tableland",
     "lint": "eslint '**/*.{js,ts}'",
     "lint:fix": "npm run lint -- --fix",
     "prettier": "prettier '**/*.{ts,json,sol,md}' --check",
     "prettier:fix": "npm run prettier -- --write",
     "format": "npm run prettier:fix && npm run lint:fix",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "test": "mocha",
+    "coverage": "c8 mocha",
+    "clean": "rm -rf dist",
+    "build": "npx tsc && chmod +x dist/cli.js"
   },
-  "bin": {
-    "tableland": "./dist/cli.js"
-  },
-  "pkg": {
-    "scripts": "./dist/**/*.js"
-  },
-  "keywords": [
-    "cli",
-    "tableland",
-    "sql",
-    "ethereum"
-  ],
   "license": "MIT AND Apache-2.0",
   "devDependencies": {
+    "@tableland/local": "^0.0.0-pre13.9",
     "@types/cosmiconfig": "^6.0.0",
-    "@types/inquirer": "^9.0.1",
+    "@types/inquirer": "^9.0.2",
     "@types/js-yaml": "^4.0.5",
-    "@types/node": "^18.8.1",
+    "@types/mocha": "^10.0.0",
+    "@types/node": "^18.11.9",
     "@types/node-fetch": "^2.6.2",
+    "@types/sinon": "^10.0.13",
     "@types/yargs": "^17.0.13",
     "@typescript-eslint/eslint-plugin": "^5.39.0",
     "@typescript-eslint/parser": "^5.39.0",
+    "c8": "^7.12.0",
     "eslint": "^8.24.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-config-standard": "^17.0.0",
     "eslint-plugin-import": "^2.26.0",
-    "pkg": "^5.7.0",
+    "mocha": "^10.0.0",
+    "mock-stdin": "^1.0.0",
     "prettier": "^2.7.1",
-    "typescript": "^4.8.3"
+    "sinon": "^14.0.1",
+    "tempy": "^3.0.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.8.4"
   },
   "dependencies": {
     "@tableland/sdk": "^3.1.2",
+    "@tableland/sqlparser": "^0.0.3-0",
     "cosmiconfig": "^7.0.1",
-    "dotenv": "^16.0.2",
+    "dotenv": "^16.0.3",
     "ethers": "^5.7.1",
     "inquirer": "^9.1.2",
     "js-yaml": "^4.1.0",
     "node-fetch": "^3.2.10",
-    "yargs": "^17.5.1"
+    "yargs": "^17.6.2"
   }
 }

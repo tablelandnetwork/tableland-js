@@ -2,9 +2,9 @@ import type yargs from "yargs";
 import type { Arguments, CommandBuilder } from "yargs";
 import fetch from "node-fetch";
 import { ChainName } from "@tableland/sdk";
-import getChains from "../chains.js";
+import { getChains } from "../utils.js";
 
-type Options = {
+export type Options = {
   // Local
   hash: string;
 
@@ -15,7 +15,7 @@ type Options = {
 export const command = "structure <hash>";
 export const desc = "Get table name(s) by schema structure hash";
 
-export const builder: CommandBuilder = (yargs) =>
+export const builder: CommandBuilder<{}, Options> = (yargs) =>
   yargs.positional("hash", {
     type: "string",
     description: "The schema structure hash",
@@ -26,8 +26,8 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
 
   const network = getChains()[chain];
   if (!network) {
-    console.error("unsupported chain (see `chains` command for details)\n");
-    process.exit(1);
+    console.error("unsupported chain (see `chains` command for details)");
+    return;
   }
 
   try {
@@ -36,9 +36,8 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     );
     const out = JSON.stringify(await res.json(), null, 2);
     console.log(out);
-    process.exit(0);
+    /* c8 ignore next 3 */
   } catch (err: any) {
     console.error(err.message);
-    process.exit(1);
   }
 };

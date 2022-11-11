@@ -4,9 +4,9 @@ import yaml from "js-yaml";
 import { resolve, dirname } from "path";
 import { mkdirSync, createWriteStream, WriteStream } from "fs";
 import inquirer from "inquirer";
-import getChains from "../chains.js";
+import { getChains } from "../utils.js";
 
-type Options = {
+export type Options = {
   // Local
   yes: boolean;
   format: "json" | "yaml" | "yml";
@@ -20,24 +20,25 @@ const defaults = {
 
 const moduleName = "tableland";
 
-export const command = "init [format, path, yes]";
+export const command = "init";
 export const desc = "Create config file";
+export const aliases = ["i"];
 
 export const builder: CommandBuilder<Options, Options> = (yargs) => {
   return yargs
     .option("yes", {
       type: "boolean",
       alias: "y",
-      description: "Skip the interactive prompts and use default values.",
+      description: "Skip the interactive prompts and use default values",
       default: false,
     })
     .option("path", {
       type: "string",
-      description: "The path at which to create the config file.",
+      description: "The path at which to create the config file",
     })
     .option("format", {
       type: "string",
-      description: "The output config file format.",
+      description: "The output config file format",
       choices: ["json", "yaml"],
     }) as yargs.Argv<Options>;
 };
@@ -60,12 +61,6 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
         type: "password",
         name: "privateKey",
         message: "Enter your private key (optional)",
-      },
-      {
-        type: "confirm",
-        name: "rpcRelay",
-        message: "Should writes be relayed via a validator?",
-        default: false,
       },
       {
         type: "input",
@@ -120,7 +115,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     }
   } catch (err: any) {
     console.error(err.message);
-    process.exit(1);
+    return;
   } finally {
     stream.end("\n");
   }
