@@ -1,6 +1,6 @@
 const config = {
-  validatorDir: "tableland-artifacts/go-tableland",
-  registryDir: "",
+  validatorDir: "../go-tableland",
+  registryDir: "../evm-tableland",
   verbose: false,
   silent: false,
 };

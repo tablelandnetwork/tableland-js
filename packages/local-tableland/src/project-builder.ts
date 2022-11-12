@@ -1,11 +1,10 @@
-import { spawnSync } from "node:child_process";
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { chalk } from "./chalk.js";
 import prompt from "enquirer";
 import exampleConfig from "./tableland.config.example.js";
 
 const docsLink = "https://docs.tableland.xyz";
-const githubLink = "https://github.com/tablelandnetwork";
+const githubLink = "https://github.com/tablelandnetwork/local-tableland";
 
 export const projectBuilder = async function () {
   const choices = ["No", "Yes"];
@@ -29,33 +28,12 @@ export const projectBuilder = async function () {
     return;
   }
 
-  // @ts-ignore https://github.com/enquirer/enquirer/issues/379
-  const confirmer = new prompt.Confirm({
-    name: "mkdirartifacts",
-    message: "Do you want to clone Tableland's Validator repository?",
-  });
-
-  const mkdirArtifacts = await confirmer.run();
-
-  if (!mkdirArtifacts) {
+  // check for existing config and bail if it exists
+  if (configExists()) {
     console.log(
-      chalk.yellow(`${chalk.bold("Not")} cloning the Validator repo.`)
+      `${chalk.red.bold("Config file already exists, nothing to do.")}`
     );
-  } else {
-    console.log(
-      chalk.yellow(`Creating a ${chalk.bold("tableland-artifacts")} directory.`)
-    );
-    // make an artifacts directory
-    spawnSync("mkdir", ["tableland-artifacts"]);
-
-    console.log(chalk.yellow("Cloning the Validator repository."));
-    spawnSync(
-      "git",
-      ["clone", "git@github.com:tablelandnetwork/go-tableland.git"],
-      {
-        cwd: "tableland-artifacts",
-      }
-    );
+    return;
   }
 
   console.log(chalk.yellow(`Creating a config file.`));
@@ -73,4 +51,16 @@ export const projectBuilder = async function () {
   Checkout our docs at ${chalk.cyan(docsLink)}
   All the source is on github at ${chalk.cyan(githubLink)}`
   );
+};
+
+const configExists = function () {
+  let exists;
+
+  try {
+    exists = readFileSync("tableland.config.js");
+  } catch (err) {
+    // if the file doesn't exist there will be an error, and we can ignore it
+  }
+
+  return !!exists;
 };

@@ -1,16 +1,25 @@
 import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
 import { getTableland } from "./util.mjs";
 import { getAccounts } from "../dist/esm/util.js";
+import { LocalTableland } from "../dist/esm/main.js";
 
-chai.use(chaiAsPromised);
 const expect = chai.expect;
 
-const accounts = getAccounts();
-
 describe("Validator, Chain, and SDK work end to end", function () {
+  const accounts = getAccounts();
+  const lt = new LocalTableland({ silent: true });
+
   // These tests take a bit longer than normal since we are running them against an actual network
   this.timeout(20000);
+  before(async function () {
+    lt.start();
+    await lt.isReady();
+  });
+
+  after(async function () {
+    await lt.shutdown();
+  });
+
   it("Creates a table that can be read from", async function () {
     const signer = accounts[1];
     const tableland = await getTableland(signer);

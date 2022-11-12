@@ -1,12 +1,4 @@
-import { LocalTableland } from "../dist/esm/main.js";
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
 
-const lt = new LocalTableland({ silent: true });
-before(async function () {
-  this.timeout(15000);
-  lt.start();
-  await lt.isReady();
-});
-
-after(async function () {
-  await lt.shutdown();
-});
+chai.use(chaiAsPromised);
