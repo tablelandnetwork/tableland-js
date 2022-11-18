@@ -23,3 +23,7 @@ validator/backups
 cache
 artifacts
 
+#IDE
+.vscode
+.idea
+

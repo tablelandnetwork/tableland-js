@@ -1,17 +1,8 @@
 import fs from "fs";
 import { expect } from "chai";
 import yaml from "js-yaml";
-import { connect } from "@tableland/sdk";
 
 export const HOST = "http://localhost:8080";
-
-export const getTableland = function (signer, options = {}) {
-  return connect({
-    signer,
-    chain: "local-tableland",
-    ...options,
-  });
-};
 
 export const testRpcResponse = async function (res, expected) {
   if (!res.ok) throw new Error(res.statusText);

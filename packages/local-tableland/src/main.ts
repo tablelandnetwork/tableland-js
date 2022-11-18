@@ -14,6 +14,7 @@ import {
   pipeNamedSubprocess,
   waitForReady,
   getAccounts,
+  getConnection,
   logSync,
 } from "./util.js";
 
@@ -219,4 +220,4 @@ class LocalTableland {
   }
 }
 
-export { LocalTableland, getAccounts };
+export { LocalTableland, getAccounts, getConnection };

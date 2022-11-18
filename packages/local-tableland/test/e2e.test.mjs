@@ -1,6 +1,6 @@
 import chai from "chai";
-import { getTableland } from "./util.mjs";
-import { getAccounts } from "../dist/esm/util.js";
+import { connect } from "@tableland/sdk";
+import { getAccounts, getConnection } from "../dist/esm/util.js";
 import { LocalTableland } from "../dist/esm/main.js";
 
 const expect = chai.expect;
@@ -22,7 +22,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
 
   it("Creates a table that can be read from", async function () {
     const signer = accounts[1];
-    const tableland = await getTableland(signer);
+    const tableland = getConnection(signer);
 
     const prefix = "test_create_read";
     // `key` is a reserved word in sqlite
@@ -41,7 +41,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
   it("Create a table that can be written to", async function () {
     const signer = accounts[1];
 
-    const tableland = await getTableland(signer);
+    const tableland = getConnection(signer);
 
     const prefix = "test_create_write";
     const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
@@ -64,7 +64,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
   it("Table cannot be written to unless caller is allowed", async function () {
     const signer = accounts[1];
 
-    const tableland = await getTableland(signer);
+    const tableland = getConnection(signer);
 
     const prefix = "test_not_allowed";
     const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
@@ -78,7 +78,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     expect(data.rows).to.eql([]);
 
     const signer2 = accounts[2];
-    const tableland2 = await getTableland(signer2);
+    const tableland2 = getConnection(signer2);
 
     await expect(
       (async function () {
@@ -97,7 +97,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
   it("Create a table can have a row deleted", async function () {
     const signer = accounts[1];
 
-    const tableland = await getTableland(signer);
+    const tableland = getConnection(signer);
 
     const prefix = "test_create_delete";
     const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
@@ -135,7 +135,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
   it("Read a table with `table` output", async function () {
     const signer = accounts[1];
 
-    const tableland = await getTableland(signer);
+    const tableland = getConnection(signer);
 
     const prefix = "test_read";
     const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
@@ -162,7 +162,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
   it.skip("Count rows in a table", async function () {
     const signer = accounts[1];
 
-    const tableland = await getTableland(signer);
+    const tableland = getConnection(signer);
 
     const prefix = "test_count";
     const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
@@ -188,7 +188,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
   it("Read a table with `objects` output", async function () {
     const signer = accounts[1];
 
-    const tableland = await getTableland(signer);
+    const tableland = getConnection(signer);
 
     const prefix = "test_read";
     const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
@@ -212,7 +212,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
   it("Read a single row with `unwrap` option", async function () {
     const signer = accounts[1];
 
-    const tableland = await getTableland(signer);
+    const tableland = getConnection(signer);
 
     const prefix = "test_read";
     const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
@@ -237,7 +237,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
   it("Read two rows with `unwrap` option fails", async function () {
     const signer = accounts[1];
 
-    const tableland = await getTableland(signer);
+    const tableland = getConnection(signer);
 
     const prefix = "test_read";
     const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
@@ -269,7 +269,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
   it("Read with `extract` option", async function () {
     const signer = accounts[1];
 
-    const tableland = await getTableland(signer);
+    const tableland = getConnection(signer);
 
     const prefix = "test_read_extract";
     const { tableId } = await tableland.create("val TEXT", {
@@ -295,7 +295,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
   it("Read table with two columns with `extract` option fails", async function () {
     const signer = accounts[1];
 
-    const tableland = await getTableland(signer);
+    const tableland = getConnection(signer);
 
     const prefix = "test_read";
     const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
@@ -324,7 +324,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
   it("List an account's tables", async function () {
     const signer = accounts[1];
 
-    const tableland = await getTableland(signer);
+    const tableland = getConnection(signer);
 
     const prefix = "test_create_list";
     const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
@@ -346,7 +346,12 @@ describe("Validator, Chain, and SDK work end to end", function () {
   it("write to a table without using the relay", async function () {
     const signer = accounts[1];
 
-    const tableland = await getTableland(signer, { rpcRelay: false });
+    // Note: options can be removed when rpcRelay is removed
+    const tableland = connect({
+      signer,
+      chain: "local-tableland",
+      rpcRelay: false,
+    });
 
     const prefix = "test_direct_write";
     const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
@@ -369,7 +374,12 @@ describe("Validator, Chain, and SDK work end to end", function () {
   it("write without relay statement validates table name prefix", async function () {
     const signer = accounts[1];
 
-    const tableland = await getTableland(signer, { rpcRelay: false });
+    // Note: use `getConnection` when rpcRelay is removed
+    const tableland = connect({
+      signer,
+      chain: "local-tableland",
+      rpcRelay: false,
+    });
 
     const prefix = "test_direct_invalid_write";
     await tableland.create("keyy TEXT, val TEXT", { prefix });
@@ -390,14 +400,19 @@ describe("Validator, Chain, and SDK work end to end", function () {
         );
       })()
     ).to.be.rejectedWith(
-      `table prefix doesn't match (exp ${prefix2}, got ${prefix})`
+      `calling ValidateWriteQuery: table prefix doesn't match (exp ${prefix2}, got ${prefix})`
     );
   });
 
   it("write without relay statement validates table ID", async function () {
     const signer = accounts[1];
 
-    const tableland = await getTableland(signer, { rpcRelay: false });
+    // Note: use `getConnection` when rpcRelay is removed
+    const tableland = connect({
+      signer,
+      chain: "local-tableland",
+      rpcRelay: false,
+    });
 
     const prefix = "test_direct_invalid_id_write";
     await tableland.create("keyy TEXT, val TEXT", { prefix });
@@ -419,7 +434,12 @@ describe("Validator, Chain, and SDK work end to end", function () {
   it("set controller without relay", async function () {
     const signer = accounts[1];
 
-    const tableland = await getTableland(signer, { rpcRelay: false });
+    // Note: use `getConnection` when rpcRelay is removed
+    const tableland = connect({
+      signer,
+      chain: "local-tableland",
+      rpcRelay: false,
+    });
 
     const prefix = "test_create_setcontroller_norelay";
     // `key` is a reserved word in sqlite
@@ -438,7 +458,10 @@ describe("Validator, Chain, and SDK work end to end", function () {
   it("set controller with relay", async function () {
     const signer = accounts[1];
 
-    const tableland = await getTableland(signer, {
+    // Note: we can remove this test when rpcRelay is removed
+    const tableland = connect({
+      signer,
+      chain: "local-tableland",
       rpcRelay: true /* this is default `true`, just being explicit */,
     });
 
@@ -459,7 +482,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
   it("get controller returns an address", async function () {
     const signer = accounts[1];
 
-    const tableland = await getTableland(signer);
+    const tableland = getConnection(signer);
 
     const prefix = "test_create_getcontroller";
     // `key` is a reserved word in sqlite
@@ -481,7 +504,12 @@ describe("Validator, Chain, and SDK work end to end", function () {
   it("lock controller without relay returns a transaction hash", async function () {
     const signer = accounts[1];
 
-    const tableland = await getTableland(signer, { rpcRelay: false });
+    // Note: use `getConnection` when rpcRelay is removed
+    const tableland = connect({
+      signer,
+      chain: "local-tableland",
+      rpcRelay: false,
+    });
 
     const prefix = "test_create_lockcontroller";
     // `key` is a reserved word in sqlite
@@ -503,7 +531,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
   it("get the schema for a table", async function () {
     const signer = accounts[1];
 
-    const tableland = await getTableland(signer);
+    const tableland = getConnection(signer);
 
     const prefix = "test_get_schema";
     const { tableId } = await tableland.create("a INT PRIMARY KEY", { prefix });
@@ -525,7 +553,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
   it("get the structure for a hash", async function () {
     const signer = accounts[1];
 
-    const tableland = await getTableland(signer);
+    const tableland = getConnection(signer);
 
     const prefix = "test_get_structure";
     const { tableId } = await tableland.create("a TEXT, b INT PRIMARY KEY", {
@@ -554,7 +582,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
   it("A write that violates table constraints throws error", async function () {
     const signer = accounts[1];
 
-    const tableland = await getTableland(signer);
+    const tableland = getConnection(signer);
 
     const prefix = "test_create_tc_violation";
     const { tableId } = await tableland.create(
