@@ -30,15 +30,7 @@
     "FetchExtraBlockInfo": true
   },
   "Backup": {
-    "Enabled": true,
-    "Dir": "backups",
-    "Frequency": 240,
-    "EnableVacuum": true,
-    "EnableCompression": true,
-    "Pruning": {
-      "Enabled": true,
-      "KeepFiles": 5
-    }
+    "Enabled": false
   },
   "TelemetryPublisher": {
     "Enabled": false

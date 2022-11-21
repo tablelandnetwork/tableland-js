@@ -12,8 +12,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
   // These tests take a bit longer than normal since we are running them against an actual network
   this.timeout(20000);
   before(async function () {
-    lt.start();
-    await lt.isReady();
+    await lt.start();
   });
 
   after(async function () {

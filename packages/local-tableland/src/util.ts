@@ -124,6 +124,10 @@ const isExtraneousLog = function (log: string) {
   return false;
 };
 
+export const isWindows = function () {
+  return process.platform === "win32";
+};
+
 export const logSync = function (
   prcss: SpawnSyncReturns<Buffer>,
   shouldThrow = true

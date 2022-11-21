@@ -1,9 +1,10 @@
 /**
  *  Run end to end Tableland
  **/
-
-import { spawn, spawnSync, ChildProcess } from "node:child_process";
+import spawn from "cross-spawn";
+import { ChildProcess } from "node:child_process";
 import { EventEmitter } from "node:events";
+import shell from "shelljs";
 import { chalk } from "./chalk.js";
 import { ValidatorDev, ValidatorPkg } from "./validators.js";
 import {
@@ -16,7 +17,10 @@ import {
   getAccounts,
   getConnection,
   logSync,
+  isWindows,
 } from "./util.js";
+
+const spawnSync = spawn.sync;
 
 class LocalTableland {
   config;
@@ -65,10 +69,15 @@ class LocalTableland {
     this.#_cleanup();
 
     // Run a local hardhat node
-    this.registry = spawn("npx", ["hardhat", "node"], {
-      detached: true,
-      cwd: this.registryDir,
-    });
+    this.registry = spawn(
+      isWindows() ? "npx.cmd" : "npx",
+      ["hardhat", "node"],
+      {
+        // we can't run in windows if we use detached mode
+        detached: !isWindows(),
+        cwd: this.registryDir,
+      }
+    );
 
     this.registry.on("error", (err) => {
       throw new Error(`registry errored with: ${err}`);
@@ -92,7 +101,7 @@ class LocalTableland {
     // Deploy the Registry to the Hardhat node
     logSync(
       spawnSync(
-        "npx",
+        isWindows() ? "npx.cmd" : "npx",
         ["hardhat", "run", "--network", "localhost", "scripts/deploy.ts"],
         {
           cwd: this.registryDir,
@@ -112,6 +121,8 @@ class LocalTableland {
     this.validator.cleanup();
     this.validator.start();
 
+    // TODO: It seems like this check isn't sufficient to see if the process is gonna get to a point
+    //       where the on error listener can be attached.
     if (!this.validator.process) {
       throw new Error("could not start Validator process");
     }
@@ -211,7 +222,7 @@ class LocalTableland {
   // cleanup should restore everything to the starting state.
   // e.g. remove docker images and database backups
   #_cleanup() {
-    spawnSync("rm", ["-rf", "./tmp"]);
+    shell.rm("-rf", "./tmp");
 
     // If the directory hasn't been specified there isn't anything to clean up
     if (!this.validator) return;

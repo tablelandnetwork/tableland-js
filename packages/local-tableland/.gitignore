@@ -17,6 +17,7 @@ typechain-types
 
 # Validator artifacts
 validator/*.db
+validator/*.db*
 validator/backups
 
 #Hardhat files
@@ -27,3 +28,5 @@ artifacts
 .vscode
 .idea
 
+# Openzeppelin files
+registry/.openzeppelin/*

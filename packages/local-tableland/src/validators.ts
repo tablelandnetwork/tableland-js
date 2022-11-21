@@ -1,11 +1,15 @@
-import { spawn, spawnSync, ChildProcess } from "node:child_process";
+import spawn from "cross-spawn";
+import { ChildProcess } from "node:child_process";
 import { join, resolve } from "node:path";
 import { readFileSync, writeFileSync } from "node:fs";
-import { logSync } from "./util.js";
+import shell from "shelljs";
+import { logSync, isWindows } from "./util.js";
 
 // NOTE: We are creating this file in the prebuild.sh script so that we can support cjs and esm
 import { getDirname } from "./get-dirname.js";
 const _dirname = getDirname();
+
+const spawnSync = spawn.sync;
 
 // TODO: should this be a per instance value?
 // store the Validator config file in memory, so we can restore it during cleanup
@@ -29,7 +33,19 @@ const platformMap = {
 // TODO: what combos do we want to support here? Seems like 5 or 6 might cover pretty much everyone.
 const archMap = {
   arm: platformMap, // TODO: not supported yet,
-  arm64: platformMap, // TODO: not supported yet,
+  arm64: {
+    aix: "",
+    darwin: "darwin-arm64",
+    freebsd: "linux-arm64",
+    linux: "linux-arm64",
+    openbsd: "linux-arm64",
+    netbsd: "linux-arm64",
+    sunos: "",
+    win32: "windows-arm64.exe",
+    cygwin: "",
+    android: "",
+    haiku: "",
+  },
   ia32: platformMap, // TODO: not supported yet,
   mips: platformMap, // TODO: not supported yet,
   mipsel: platformMap, // TODO: not supported yet,
@@ -41,14 +57,14 @@ const archMap = {
   // a.k.a. amd64
   x64: {
     aix: "",
-    darwin: "darwin",
-    freebsd: "linux",
-    linux: "linux",
-    openbsd: "linux",
-    netbsd: "linux",
+    darwin: "darwin-amd64",
+    freebsd: "linux-amd64",
+    linux: "linux-amd64",
+    openbsd: "linux-amd64",
+    netbsd: "linux-amd64",
     sunos: "",
-    win32: "windows",
-    cygwin: "windows",
+    win32: "windows-amd64.exe",
+    cygwin: "",
     android: "",
     haiku: "",
   },
@@ -70,26 +86,41 @@ class ValidatorPkg {
         `cannot start with: arch ${process.arch}, platform ${process.platform}`
       );
     }
+    // Windows looks like C:\Users\tester\Workspaces\test-loc\node_modules\@tableland\local\validator
+    // unix looks like    /Users/jwagner/Workspaces/textile/github/local-tableland/validator
+    // We have to convert the windows path to a valid URI so that the validator can
+    // use it to create a connection string, basically make windows act like unix.
+    let validatorUri = "";
+    if (isWindows()) {
+      // remove the C:
+      if (this.validatorDir.indexOf("C:") === 0) {
+        validatorUri = this.validatorDir.slice(2);
+      }
+      validatorUri = validatorUri.replace("\\", "/");
+    } else {
+      validatorUri = this.validatorDir;
+    }
 
     this.process = spawn(
       `${resolve(this.validatorDir, "bin", binName)}`,
-      ["--dir", this.validatorDir],
+      ["--dir", validatorUri],
       {
-        detached: true,
+        // we can't run in windows if we use detached mode
+        detached: !isWindows(),
       }
     );
   }
 
   // fully nuke the database
   cleanup() {
-    spawnSync("rm", ["-rf", resolve(this.validatorDir, "backups")]);
+    shell.rm("-rf", resolve(this.validatorDir, "backups"));
 
     const dbFiles = [
       resolve(this.validatorDir, "database.db"),
       resolve(this.validatorDir, "metrics.db"),
     ];
     for (const filepath of dbFiles) {
-      spawnSync("rm", ["-f", filepath]);
+      shell.rm("-f", filepath);
     }
   }
 }
@@ -98,9 +129,9 @@ class ValidatorDev {
   validatorDir: string;
   process?: ChildProcess;
 
-  constructor(validatorPath?: string) {
-    if (!validatorPath) throw new Error("must supply path to validator");
-    this.validatorDir = validatorPath;
+  constructor(validatorDir?: string) {
+    if (!validatorDir) throw new Error("must supply path to validator");
+    this.validatorDir = validatorDir;
   }
 
   start() {
@@ -136,7 +167,8 @@ class ValidatorDev {
 
     // start the validator
     this.process = spawn("make", ["local-up"], {
-      detached: true,
+      // we can't run in windows if we use detached mode
+      detached: !isWindows(),
       cwd: join(this.validatorDir, "docker"),
     });
   }
