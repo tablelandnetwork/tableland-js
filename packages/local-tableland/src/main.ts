@@ -18,6 +18,7 @@ import {
   getConnection,
   logSync,
   isWindows,
+  inDebugMode,
 } from "./util.js";
 
 const spawnSync = spawn.sync;
@@ -106,7 +107,8 @@ class LocalTableland {
         {
           cwd: this.registryDir,
         }
-      )
+      ),
+      !inDebugMode()
     );
 
     // TODO: need to determine if we are starting the validator via docker

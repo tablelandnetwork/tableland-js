@@ -1,3 +1,4 @@
+import inspector from "node:inspector";
 import { isAbsolute, join, resolve } from "node:path";
 import { EventEmitter } from "node:events";
 import { Readable } from "node:stream";
@@ -126,6 +127,12 @@ const isExtraneousLog = function (log: string) {
 
 export const isWindows = function () {
   return process.platform === "win32";
+};
+
+export const inDebugMode = function () {
+  // This seems to be the only relyable way to determine if the process
+  // is being debugged either at startup, or during runtime (e.g. vscode)
+  return inspector.url() !== undefined;
 };
 
 export const logSync = function (
