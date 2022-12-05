@@ -111,6 +111,15 @@ class ValidatorPkg {
     );
   }
 
+  shutdown() {
+    if (!this.process) throw new Error("Cannot find validator process");
+    // If this Class is imported and run by a test runner then the ChildProcess instances are
+    // sub-processes of a ChildProcess instance which means in order to kill them in a way that
+    // enables graceful shut down they have to run in detached mode and be killed by the pid
+    // @ts-ignore
+    process.kill(-this.process.pid);
+  }
+
   // fully nuke the database
   cleanup() {
     shell.rm("-rf", resolve(this.validatorDir, "backups"));
@@ -135,13 +144,6 @@ class ValidatorDev {
   }
 
   start() {
-    // Add an empty .env file to the validator. The Validator expects this to exist,
-    // but doesn't need any of the values when running a local instance
-    writeFileSync(
-      join(this.validatorDir, "docker", "local", "api", ".env_validator"),
-      " "
-    );
-
     // Add the registry address to the Validator config
     // TODO: when https://github.com/tablelandnetwork/go-tableland/issues/317 is
     //       resolved we may be able to refactor alot of this
@@ -173,10 +175,17 @@ class ValidatorDev {
     });
   }
 
+  shutdown() {
+    // The validator uses make to shutdown when run via docker
+    spawnSync("make", ["local-down"], {
+      cwd: join(this.validatorDir, "docker"),
+    });
+  }
+
   cleanup() {
     logSync(spawnSync("docker", ["container", "prune", "-f"]));
 
-    spawnSync("docker", ["image", "rm", "docker_api", "-f"]);
+    spawnSync("docker", ["image", "rm", "docker-api", "-f"]);
     spawnSync("docker", ["volume", "prune", "-f"]);
 
     const dbFiles = [

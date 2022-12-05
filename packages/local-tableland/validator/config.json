@@ -7,7 +7,7 @@
   },
   "Gateway": {
     "ExternalURIPrefix": "http://localhost:8080",
-    "MetadataRendererURI": "https://render.tableland.xyz"
+    "AnimationRendererURI": "https://render.tableland.xyz"
   },
   "DB": {
     "Port": "5432"

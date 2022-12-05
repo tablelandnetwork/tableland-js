@@ -213,11 +213,7 @@ class LocalTableland {
       if (!(this.validator && this.validator.process)) return resolve();
 
       this.validator.process.on("close", () => resolve());
-      // If this Class is imported and run by a test runner then the ChildProcess instances are
-      // sub-processes of a ChildProcess instance which means in order to kill them in a way that
-      // enables graceful shut down they have to run in detached mode and be killed by the pid
-      // @ts-ignore
-      process.kill(-this.validator.process.pid);
+      this.validator.shutdown();
     });
   }
 

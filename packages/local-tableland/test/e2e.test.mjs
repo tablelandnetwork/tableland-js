@@ -157,7 +157,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
   });
 
   // TODO: this test fails because validator has casing issue
-  // https://github.com/tablelandnetwork/go-tableland/issues/389
+  // https://github.com/tablelandnetwork/go-tableland/issues/393
   it.skip("Count rows in a table", async function () {
     const signer = accounts[1];
 
