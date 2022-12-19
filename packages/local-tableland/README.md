@@ -2,19 +2,17 @@
 
 ## Overview
 
-This repo contains tooling to get a sandboxed single node Tableland Network running locally. This is under active development and subject to breaking changes without warning.
-
-**Currently working with Mac and Linux, windows support coming soon.**
+This repo contains tooling to get a sandboxed single node Tableland Network running locally. This is useful for local only development, removing the need for testnet faucets and giving you easy access to logs of everything that is happening on the tableland network during development. You can also use this repo to setup end to end tests with most popular testing frameworks.
 
 ## Requirements for a Tableland Network
 
 A Tableland Network at it's most basic is made up of two parts. An EVM compatible Blockchain with the Tableland Registry contract deployed to it, and a Tableland Validator that can listen to events emitted from the contract and materialize tables.
-This repo contains tooling to help automate setup, configuration, and running of a network.
+This repo helps automate setup, configuration, and running of a network.
 
 There are two potential paths to running a local network with this repo:
 
-1. This repo contains the Registry contract as an npm dependency and a binary release of the Validator. This will be most useful for developers who want to have a local sandbox to build against, or setup CI tests that run against an actual network.
-2. This repo can be part of a workspace that also has the [evm-tableland](https://github.com/tablelandnetwork/evm-tableland) and [go-tableland](https://github.com/tablelandnetwork/go-tableland) repos in it. This will be most useful for working on contributing changes to tableland core. If using this setup you will probably want to create a tableland.config.js file via the cli `npx local-tableland --init`
+1. Use the Registry contract as an npm dependency and run a binary release of the Validator. This will be most useful for developers who want to have a local sandbox to build against, or setup automated tests that run against an actual network.
+2. Use this as part of a workspace that also has the [evm-tableland](https://github.com/tablelandnetwork/evm-tableland) and [go-tableland](https://github.com/tablelandnetwork/go-tableland) repos in it. This will be most useful for working on contributing changes to tableland core. If using this setup you will probably want to create a tableland.config.js file via the cli `npx local-tableland --init`
 
 ## Quick Start
 
@@ -61,7 +59,57 @@ const stop = async function () {
 go().catch(err => console.log(err));
 ```
 
-**Best practice for this repo is to start a single network to run all of your tests against, don't create an instance for each test.**
+**Best practices for testing is to start a single local network and run all of your tests against it, i.e. don't create an instance for each test. Doing this will speed up test execution significantly.**
+
+## Writing tests for a Hardhat Project
+
+Using Local Tableland to test a Hardhat project is straight forward. The one key point is that instead of letting hardhat automatically start a node for you, you will be letting Local Tableland start the node. To do this you simply have to include the network flag with the value `localhost`. For example, instead of running `npx hardhat test`, you should run `npx hardhat --network localhost test`
+
+Consider the basic example below
+
+```
+import { after, before, describe, test } from "mocha";
+import { LocalTableland, getAccounts } from "@tableland/local";
+
+const lt = new LocalTableland({
+  // use the silent option to avoid cluttering the test output
+  silent: true
+});
+const accounts = getAccounts();
+
+before(async function () {
+  this.timeout(25000);
+  lt.start();
+  await lt.isReady();
+
+  // Deploy a contract to the Local Tableland Network.
+  // This contract might create tables do inserts, etc...
+  const Factory = await ethers.getContractFactory(
+    "myContract"
+  );
+  const myContractInstance = (await Factory.deploy()) as myContract;
+  await myContractInstance.deployed();
+
+  // If your Contract creates tables you will have to optimistically wait to allow
+  // the Validator to materialize the tables.
+  // NOTE: to determine if a table has been materialized using the transaction hash
+  //       you can use the REST API endpoint /receipt/{chainId}/{transactionHash}
+  await new Promise(resolve => setTimeout(() => resolve(), 5000));
+});
+
+after(async function () {
+  await lt.shutdown();
+});
+
+describe("Tests of myContract and associated Apps", function () {
+  test("Should work end to end", async function () {
+    // TODO: make first test...
+  });
+
+  // more tests...
+```
+
+There is a full working example of testing a hardhat project here: https://github.com/tablelandnetwork/example-voter/tree/joe/tests/test
 
 ## Setup as a Workspace for Tableland Core Contributing
 
