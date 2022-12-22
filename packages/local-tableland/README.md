@@ -109,7 +109,7 @@ describe("Tests of myContract and associated Apps", function () {
   // more tests...
 ```
 
-There is a full working example of testing a hardhat project here: https://github.com/tablelandnetwork/example-voter/tree/joe/tests/test
+There is a full working example of testing a hardhat project here: https://github.com/tablelandnetwork/example-voter/tree/main/test
 
 ## Setup as a Workspace for Tableland Core Contributing
 
