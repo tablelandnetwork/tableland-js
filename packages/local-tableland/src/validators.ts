@@ -2,6 +2,7 @@ import spawn from "cross-spawn";
 import { ChildProcess } from "node:child_process";
 import { join, resolve } from "node:path";
 import { readFileSync, writeFileSync } from "node:fs";
+import { getBinPath } from "@tableland/validator";
 import shell from "shelljs";
 import { logSync, isWindows } from "./util.js";
 
@@ -15,81 +16,23 @@ const spawnSync = spawn.sync;
 // store the Validator config file in memory, so we can restore it during cleanup
 let ORIGINAL_VALIDATOR_CONFIG: string | undefined;
 
-// ref for all possilbe values of process.platform
-const platformMap = {
-  aix: "",
-  darwin: "",
-  freebsd: "",
-  linux: "",
-  openbsd: "",
-  netbsd: "",
-  sunos: "",
-  win32: "",
-  cygwin: "",
-  android: "",
-  haiku: "",
-};
-
-// TODO: what combos do we want to support here? Seems like 5 or 6 might cover pretty much everyone.
-const archMap = {
-  arm: platformMap, // TODO: not supported yet,
-  arm64: {
-    aix: "",
-    darwin: "darwin-arm64",
-    freebsd: "linux-arm64",
-    linux: "linux-arm64",
-    openbsd: "linux-arm64",
-    netbsd: "linux-arm64",
-    sunos: "",
-    win32: "windows-arm64.exe",
-    cygwin: "",
-    android: "",
-    haiku: "",
-  },
-  ia32: platformMap, // TODO: not supported yet,
-  mips: platformMap, // TODO: not supported yet,
-  mipsel: platformMap, // TODO: not supported yet,
-  ppc: platformMap, // TODO: not supported yet,
-  ppc64: platformMap, // TODO: not supported yet,
-  s390: platformMap, // TODO: not supported yet,
-  s390x: platformMap, // TODO: not supported yet,
-
-  // a.k.a. amd64
-  x64: {
-    aix: "",
-    darwin: "darwin-amd64",
-    freebsd: "linux-amd64",
-    linux: "linux-amd64",
-    openbsd: "linux-amd64",
-    netbsd: "linux-amd64",
-    sunos: "",
-    win32: "windows-amd64.exe",
-    cygwin: "",
-    android: "",
-    haiku: "",
-  },
-};
-
 class ValidatorPkg {
   process?: ChildProcess;
   validatorDir = resolve(_dirname, "..", "..", "validator");
 
   start() {
-    const arch = archMap[process.arch];
-    if (!arch) {
-      throw new Error(`cannot start with: arch ${process.arch}`);
-    }
-
-    const binName = arch[process.platform];
-    if (!binName) {
+    const binPath = getBinPath();
+    if (!binPath) {
       throw new Error(
         `cannot start with: arch ${process.arch}, platform ${process.platform}`
       );
     }
+
+    // Get the path to the directory holding the validator config we want to use.
     // Windows looks like C:\Users\tester\Workspaces\test-loc\node_modules\@tableland\local\validator
-    // unix looks like    /Users/jwagner/Workspaces/textile/github/local-tableland/validator
+    // unix looks like      /Users/tester/Workspaces/test-loc/node_modules/@tableland/local/validator
     // We have to convert the windows path to a valid URI so that the validator can
-    // use it to create a connection string, basically make windows act like unix.
+    // use it to create a sqlite connection string, basically make windows act like unix.
     let validatorUri = "";
     if (isWindows()) {
       // remove the C:
@@ -101,14 +44,10 @@ class ValidatorPkg {
       validatorUri = this.validatorDir;
     }
 
-    this.process = spawn(
-      `${resolve(this.validatorDir, "bin", binName)}`,
-      ["--dir", validatorUri],
-      {
-        // we can't run in windows if we use detached mode
-        detached: !isWindows(),
-      }
-    );
+    this.process = spawn(binPath, ["--dir", validatorUri], {
+      // we can't run in windows if we use detached mode
+      detached: !isWindows(),
+    });
   }
 
   shutdown() {

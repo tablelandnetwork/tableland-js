@@ -546,7 +546,9 @@ describe("Validator, Chain, and SDK work end to end", function () {
     expect(tableSchema.columns[0].name).to.eql("a");
     expect(tableSchema.columns[0].type).to.eql("int");
     expect(Array.isArray(tableSchema.columns[0].constraints)).to.eql(true);
-    expect(tableSchema.columns[0].constraints[0]).to.eql("PRIMARY KEY");
+    expect(tableSchema.columns[0].constraints[0].toLowerCase()).to.eql(
+      "primary key"
+    );
   });
 
   it("get the structure for a hash", async function () {

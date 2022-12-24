@@ -1,6 +1,6 @@
 {
   "name": "@tableland/local",
-  "version": "0.0.4",
+  "version": "0.0.5-pre.2",
   "description": "Tooling to start a sandboxed Tableland network.",
   "repository": "https://github.com/tablelandnetwork/local-tableland",
   "license": "MIT",
@@ -56,6 +56,7 @@
   },
   "dependencies": {
     "@tableland/sdk": "^3.1.5",
+    "@tableland/validator": "^0.0.0-pre.4",
     "cross-spawn": "^7.0.3",
     "enquirer": "^2.3.6",
     "ethers": "^5.7.2",
