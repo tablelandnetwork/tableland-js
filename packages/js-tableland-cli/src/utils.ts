@@ -85,7 +85,9 @@ export function getWalletWithProvider({
 
   const wallet = new Wallet(privateKey);
   let provider: providers.BaseProvider = new providers.JsonRpcProvider(
-    chain === "local-tableland" ? undefined : providerUrl, // Defaults to localhost
+    chain === "local-tableland" && !providerUrl
+      ? "http://127.0.0.1:8545"
+      : providerUrl,
     network.name === "localhost" ? undefined : network.name
   );
   /* c8 ignore start */
