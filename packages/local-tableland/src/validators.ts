@@ -101,6 +101,7 @@ class ValidatorDev {
 
     // TODO: this could be parsed out of the deploy process, but since
     //       it's always the same address just hardcoding it here
+    // TODO: maybe we can get this from evm-tableland?
     validatorConfig.Chains[0].Registry.ContractAddress =
       "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512";
 

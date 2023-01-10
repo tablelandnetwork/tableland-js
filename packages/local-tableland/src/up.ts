@@ -13,17 +13,14 @@ const argv = yargs(hideBin(process.argv)).options({
   },
   registry: {
     type: "string",
-    default: "",
     description: "Path the the Tableland Registry contract repository",
   },
   verbose: {
     type: "boolean",
-    default: false,
     description: "Output verbose logs to stdout",
   },
   silent: {
     type: "boolean",
-    default: false,
     description: "Silence all output to stdout",
   },
   init: {
@@ -34,30 +31,23 @@ const argv = yargs(hideBin(process.argv)).options({
 }).argv;
 
 const go = async function () {
-  // using these argv ts ignores for the reasons explained in the yargs readme.
+  // casting argv to `any` for the reasons explained in the yargs readme.
   // https://github.com/yargs/yargs/blob/main/docs/typescript.md#typescript-usage-examples
   // TODO: try `parseSync`
-  // @ts-ignore
-  if (argv.init) {
-    // If these aren't specified then we want to open a terminal prompt that
-    // will help the user setup their project directory then exit when finished
+  const tsArgv = argv as any;
+  if (tsArgv.init) {
+    // If init arg is given we want to open a terminal prompt that will
+    // help the user setup their project directory then exit when finished
     await projectBuilder();
     return;
   }
 
-  // @ts-ignore
-  const argvValidator = argv.validator;
-  // @ts-ignore
-  const argvRegistry = argv.registry;
+  const opts: Config = {};
 
-  const opts: Config = {
-    validator: argvValidator,
-    registry: argvRegistry,
-    // @ts-ignore
-    verbose: argv.verbose,
-    // @ts-ignore
-    silent: argv.silent,
-  };
+  if (tsArgv.validator) opts.validator = tsArgv.validator;
+  if (tsArgv.registry) opts.registry = tsArgv.registry;
+  if (typeof tsArgv.verbose === "boolean") opts.verbose = tsArgv.verbose;
+  if (typeof tsArgv.silent === "boolean") opts.silent = tsArgv.silent;
 
   const tableland = new LocalTableland(opts);
 

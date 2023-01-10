@@ -57,10 +57,10 @@ class LocalTableland {
     if (typeof config.verbose === "boolean") this.verbose = config.verbose;
     if (typeof config.silent === "boolean") this.silent = config.silent;
 
-    await this.#_start();
+    await this.#_start(config);
   }
 
-  async #_start() {
+  async #_start(config: Config = {}) {
     if (!this.registryDir) {
       throw new Error("cannot start a local network without Registry");
     }
@@ -112,9 +112,8 @@ class LocalTableland {
       !inDebugMode()
     );
 
-    // TODO: need to determine if we are starting the validator via docker
+    // need to determine if we are starting the validator via docker
     // and a local repo, or if are running a binary etc...
-
     const ValidatorClass = this.validatorDir ? ValidatorDev : ValidatorPkg;
 
     this.validator = new ValidatorClass(this.validatorDir);
@@ -166,6 +165,8 @@ class LocalTableland {
     console.log("        /              \\");
     console.log("       /                \\");
     console.log("______/                  \\______\n\n");
+    console.log("Using Configuration:\n" + JSON.stringify(config, null, 4));
+    console.log("\n\n*************************************\n");
   }
 
   async #_setReady() {
