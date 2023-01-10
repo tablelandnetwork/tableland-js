@@ -1,7 +1,6 @@
 import type yargs from "yargs";
 import type { Arguments, CommandBuilder } from "yargs";
-import fetch from "node-fetch";
-import { getChains } from "../utils.js";
+import { getChainInfo, Validator } from "@tableland/sdk";
 
 export type Options = {
   // Local
@@ -21,6 +20,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
   const { name } = argv;
 
   const parts = name.split("_");
+  const [tableId, chainId] = name.split("_").reverse();
   if (parts.length < 3) {
     console.error(
       "invalid table name (name format is `{prefix}_{chainId}_{tableId}`)"
@@ -28,27 +28,23 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     return;
   }
 
-  const id = parts.pop()!;
-  const chain = parseInt(parts.pop()!);
-  const network = Object.values(getChains()).find(
-    ({ chainId }) => chainId === chain
-  );
+  const chain = parseInt(chainId);
+  const network = getChainInfo(chain);
+
   if (!network) {
     console.error("unsupported chain (see `chains` command for details)");
     return;
   }
 
   try {
-    const res = await fetch(`${network.host}/chain/${chain}/tables/${id}`);
-    const body: any = await res.json();
-    if (body.message) {
-      console.error(body.message);
-    } else {
-      const out = JSON.stringify(body, null, 2);
-      console.log(out);
-    }
+    const validator = Validator.forChain(parseInt(chainId));
+    const res = await validator.getTableById({
+      tableId,
+      chainId: parseInt(chainId),
+    });
+    console.log(res);
     /* c8 ignore next 3 */
   } catch (err: any) {
-    console.error(err.message);
+    console.error(err?.cause?.message || err.message);
   }
 };

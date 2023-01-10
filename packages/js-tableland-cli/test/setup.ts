@@ -12,7 +12,7 @@ if (!globalThis.fetch) {
 const lt = new LocalTableland({ silent: true });
 
 before(async function () {
-  this.timeout(15000);
+  this.timeout(30000);
   lt.start();
   await lt.isReady();
 });

@@ -49,7 +49,7 @@ const _argv = yargs(hideBin(process.argv))
     alias: "c",
     type: "string",
     description: "The EVM chain to target",
-    default: "polygon-mumbai",
+    default: "maticmum",
   })
   .options("providerUrl", {
     alias: "p",

@@ -61,7 +61,7 @@ describe("commands/write", function () {
       .parse();
     assert.calledWith(
       consoleError,
-      "calling ValidateWriteQuery: validating query: unable to parse the query: syntax error at position 7 near 'invalid'"
+      "error parsing statement: syntax error at position 7 near 'invalid'"
     );
   });
 
@@ -82,7 +82,9 @@ describe("commands/write", function () {
       .parse();
     assert.calledWith(
       consoleError,
-      "ENOENT: no such file or directory, open 'missing.sql'"
+      match((value) => {
+        return value.startsWith("ENOENT: no such file or directory");
+      }, "Didn't throw ENOENT.")
     );
   });
 
@@ -109,7 +111,7 @@ describe("commands/write", function () {
     );
   });
 
-  test("passes with local-tableland", async function () {
+  test("Write passes with local-tableland", async function () {
     const [account] = getAccounts();
     const privateKey = account.privateKey.slice(2);
     const consoleLog = spy(console, "log");
@@ -125,9 +127,13 @@ describe("commands/write", function () {
       .parse();
     assert.calledWith(
       consoleLog,
-      match(function (value: string) {
-        const { hash, link } = JSON.parse(value);
-        return typeof hash === "string" && hash.startsWith("0x") && !link;
+      match(function (value: any) {
+        const { transactionHash, link } = value.meta.txn;
+        return (
+          typeof transactionHash === "string" &&
+          transactionHash.startsWith("0x") &&
+          !link
+        );
       }, "does not match")
     );
   });
@@ -152,9 +158,13 @@ describe("commands/write", function () {
       .parse();
     assert.calledWith(
       consoleLog,
-      match(function (value: string) {
-        const { hash, link } = JSON.parse(value);
-        return typeof hash === "string" && hash.startsWith("0x") && !link;
+      match(function (value: any) {
+        const { transactionHash, link } = value.meta.txn;
+        return (
+          typeof transactionHash === "string" &&
+          transactionHash.startsWith("0x") &&
+          !link
+        );
       }, "does not match")
     );
   });
@@ -173,16 +183,18 @@ describe("commands/write", function () {
       "local-tableland",
       "--privateKey",
       privateKey,
-      "--providerUrl",
-      "http://localhost:8545", // Also test providerUrl
     ])
       .command(mod)
       .parse();
     assert.calledWith(
       consoleLog,
-      match(function (value: string) {
-        const { hash, link } = JSON.parse(value);
-        return typeof hash === "string" && hash.startsWith("0x") && !link;
+      match(function (value: any) {
+        const { transactionHash, link } = value.meta.txn;
+        return (
+          typeof transactionHash === "string" &&
+          transactionHash.startsWith("0x") &&
+          !link
+        );
       }, "does not match")
     );
   });

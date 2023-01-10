@@ -1,9 +1,9 @@
 import { Wallet, providers, getDefaultProvider } from "ethers";
-import { ChainName, SUPPORTED_CHAINS } from "@tableland/sdk";
+import { ChainName, getChainInfo, supportedChains } from "@tableland/sdk";
 
 export const getChains = () =>
   Object.fromEntries(
-    Object.entries(SUPPORTED_CHAINS).filter(
+    Object.entries(supportedChains).filter(
       ([name]) => !name.includes("staging")
     )
   );
@@ -44,32 +44,6 @@ export function getLink(chain: ChainName, hash: string): string {
   /* c8 ignore stop */
 }
 
-export function getSignerOnly({
-  privateKey,
-  chain,
-}: {
-  privateKey: string;
-  chain: ChainName;
-}): Wallet {
-  if (privateKey == null) {
-    throw new Error("missing required flag (`-k` or `--privateKey`)");
-  }
-  const network = getChains()[chain];
-  if (network == null) {
-    throw new Error("unsupported chain (see `chains` command for details)");
-  }
-
-  // FIXME: This is a hack due to a regression in js-tableland
-  // See: https://github.com/tablelandnetwork/js-tableland/issues/22
-  const signer = new Wallet(privateKey, {
-    getNetwork: async () => {
-      return network;
-    },
-    _isProvider: true,
-  } as unknown as providers.Provider);
-  return signer;
-}
-
 export function getWalletWithProvider({
   privateKey,
   chain,
@@ -78,7 +52,7 @@ export function getWalletWithProvider({
   if (privateKey == null) {
     throw new Error("missing required flag (`-k` or `--privateKey`)");
   }
-  const network = getChains()[chain];
+  const network: any = getChainInfo(chain);
   if (network == null) {
     throw new Error("unsupported chain (see `chains` command for details)");
   }

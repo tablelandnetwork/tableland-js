@@ -1,9 +1,8 @@
 import type yargs from "yargs";
 import type { Arguments, CommandBuilder } from "yargs";
 import { Wallet } from "ethers";
-import fetch from "node-fetch";
-import { ChainName } from "@tableland/sdk";
-import { getChains } from "../utils.js";
+import { ChainName, Registry } from "@tableland/sdk";
+import { getChains, getWalletWithProvider } from "../utils.js";
 
 export type Options = {
   // Local
@@ -12,6 +11,7 @@ export type Options = {
   // Global
   privateKey: string;
   chain: ChainName;
+  providerUrl: string;
 };
 
 export const command = "list [address]";
@@ -25,7 +25,7 @@ export const builder: CommandBuilder<{}, Options> = (yargs) => {
 };
 
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
-  const { privateKey, chain } = argv;
+  const { privateKey, chain, providerUrl } = argv;
   let { address } = argv;
 
   if (!address) {
@@ -43,11 +43,16 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
   }
 
   try {
-    const res = await fetch(
-      `${network.host}/chain/${network.chainId}/tables/controller/${address}`
-    );
-    const out = JSON.stringify(await res.json(), null, 2);
-    console.log(out);
+    const signer = getWalletWithProvider({
+      privateKey,
+      chain,
+      providerUrl,
+    });
+    const reg = new Registry({ signer });
+
+    const res = await reg.listTables(address);
+
+    console.log(res);
     /* c8 ignore next 3 */
   } catch (err: any) {
     console.error(err.message);

@@ -61,7 +61,7 @@ describe("commands/create", function () {
       .parse();
     assert.calledWith(
       consoleError,
-      "calling ValidateCreateTable parsing create table statement: unable to parse the query: syntax error at position 29 near ')'"
+      "error parsing statement: syntax error at position 32 near ')'"
     );
   });
 
@@ -82,7 +82,9 @@ describe("commands/create", function () {
       .parse();
     assert.calledWith(
       consoleError,
-      "ENOENT: no such file or directory, open 'missing.sql'"
+      match((value) => {
+        return value.startsWith("ENOENT: no such file or directory");
+      }, "Didn't throw ENOENT.")
     );
   });
 
@@ -109,7 +111,7 @@ describe("commands/create", function () {
     );
   });
 
-  test("passes with local-tableland", async function () {
+  test("Create passes with local-tableland", async function () {
     const [account] = getAccounts();
     const privateKey = account.privateKey.slice(2);
     const consoleLog = spy(console, "log");
@@ -127,15 +129,16 @@ describe("commands/create", function () {
       .parse();
     assert.calledWith(
       consoleLog,
-      match(function (value: string) {
-        const { prefix, name, chainId, tableId, txnHash } = JSON.parse(value);
+      match(function (value: any) {
+        const { prefix, name, chainId, tableId, transactionHash } =
+          value.meta.txn;
         return (
           prefix === "first_table" &&
           chainId === 31337 &&
           name.startsWith(prefix) &&
           name.endsWith(tableId) &&
-          typeof txnHash === "string" &&
-          txnHash.startsWith("0x")
+          typeof transactionHash === "string" &&
+          transactionHash.startsWith("0x")
         );
       }, "does not match")
     );
@@ -159,15 +162,16 @@ describe("commands/create", function () {
       .parse();
     assert.calledWith(
       consoleLog,
-      match(function (value: string) {
-        const { prefix, name, chainId, tableId, txnHash } = JSON.parse(value);
+      match(function (value: any) {
+        const { prefix, name, chainId, tableId, transactionHash } =
+          value.meta.txn;
         return (
           prefix === "second_table" &&
           chainId === 31337 &&
           name.startsWith(prefix) &&
           name.endsWith(tableId) &&
-          typeof txnHash === "string" &&
-          txnHash.startsWith("0x")
+          typeof transactionHash === "string" &&
+          transactionHash.startsWith("0x")
         );
       }, "does not match")
     );
@@ -193,15 +197,16 @@ describe("commands/create", function () {
       .parse();
     assert.calledWith(
       consoleLog,
-      match(function (value: string) {
-        const { prefix, name, chainId, tableId, txnHash } = JSON.parse(value);
+      match(function (value: any) {
+        const { prefix, name, chainId, tableId, transactionHash } =
+          value.meta.txn;
         return (
           prefix === "file_test" &&
           chainId === 31337 &&
           name.startsWith(prefix) &&
           name.endsWith(tableId) &&
-          typeof txnHash === "string" &&
-          txnHash.startsWith("0x")
+          typeof transactionHash === "string" &&
+          transactionHash.startsWith("0x")
         );
       }, "does not match")
     );
@@ -228,15 +233,16 @@ describe("commands/create", function () {
       .parse();
     assert.calledWith(
       consoleLog,
-      match(function (value: string) {
-        const { prefix, name, chainId, tableId, txnHash } = JSON.parse(value);
+      match(function (value: any) {
+        const { prefix, name, chainId, tableId, transactionHash } =
+          value.meta.txn;
         return (
           prefix === "stdin_test" &&
           chainId === 31337 &&
           name.startsWith(prefix) &&
           name.endsWith(tableId) &&
-          typeof txnHash === "string" &&
-          txnHash.startsWith("0x")
+          typeof transactionHash === "string" &&
+          transactionHash.startsWith("0x")
         );
       }, "does not match")
     );

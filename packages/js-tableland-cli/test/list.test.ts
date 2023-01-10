@@ -22,7 +22,7 @@ describe("commands/list", function () {
     );
   });
 
-  test("throws without chain", async function () {
+  test("List throws without chain", async function () {
     const [account] = getAccounts();
     const privateKey = account.privateKey.slice(2);
     const consoleError = spy(console, "error");
@@ -40,10 +40,13 @@ describe("commands/list", function () {
     await yargs(["list", "--chain", "custom", "--privateKey", privateKey])
       .command(mod)
       .parse();
-    assert.calledWith(consoleError, "Invalid URL");
+    assert.calledWith(
+      consoleError,
+      "unsupported chain (see `chains` command for details)"
+    );
   });
 
-  test("passes with local-tableland", async function () {
+  test("List passes with local-tableland", async function () {
     const [account] = getAccounts();
     const privateKey = account.privateKey.slice(2);
     const consoleLog = spy(console, "log");
@@ -58,12 +61,13 @@ describe("commands/list", function () {
       .parse();
     assert.calledWith(
       consoleLog,
-      match(function (value: string) {
-        const array = JSON.parse(value);
+      match(function (value: any) {
+        const array = value;
         return (
           Array.isArray(array) &&
           array.length > 0 &&
-          array.shift().name === "healthbot_31337_1"
+          array[0].tableId === "1" &&
+          array[0].chainId === 31337
         );
       }, "does not match")
     );

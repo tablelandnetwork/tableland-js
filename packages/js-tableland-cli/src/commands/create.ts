@@ -1,6 +1,6 @@
 import type yargs from "yargs";
 import type { Arguments, CommandBuilder } from "yargs";
-import { connect, ConnectOptions, ChainName } from "@tableland/sdk";
+import { Database, ChainName } from "@tableland/sdk";
 import { getWalletWithProvider, getLink } from "../utils.js";
 import { createInterface } from "readline";
 import { promises } from "fs";
@@ -20,8 +20,6 @@ export type Options = {
 export const command = "create [schema]";
 export const desc = "Create a new table";
 
-const regex = /^\s*CREATE\s+TABLE\s+([\w\d]+)\s*\((.*)\)\s*;?\s*/gim;
-
 export const builder: CommandBuilder<{}, Options> = (yargs) =>
   yargs
     .positional("schema", {
@@ -40,8 +38,8 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
     }) as yargs.Argv<Options>;
 
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
-  let { schema, prefix } = argv;
-  const { privateKey, chain, providerUrl, file } = argv;
+  let { schema } = argv;
+  const { privateKey, chain, providerUrl, file, prefix } = argv;
 
   try {
     const signer = getWalletWithProvider({
@@ -49,11 +47,6 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       chain,
       providerUrl,
     });
-    const options: ConnectOptions = {
-      chain,
-      signer,
-      rpcRelay: false,
-    };
 
     if (file != null) {
       schema = await promises.readFile(file, { encoding: "utf-8" });
@@ -70,23 +63,20 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       return;
     }
 
-    // If we find a name in a full create statement, this will be used instead
-    const check = regex.exec(schema.toString());
-    if (check != null) {
-      schema = check[2];
-      prefix = check[1];
+    let statement = `CREATE TABLE ${prefix} (${schema})`;
+
+    const check = /CREATE TABLE/gim.exec(schema.toString());
+    if (check) {
+      statement = schema;
     }
 
-    const res = await connect(options).create(schema, { prefix });
-    const link = getLink(chain, res.txnHash);
-    const out = JSON.stringify(
-      { ...res, link, tableId: (res.tableId ?? "").toString() },
-      null,
-      2
-    );
+    const db = new Database({ signer });
+    const res = await db.prepare(statement).all();
+    const link = getLink(chain, res.meta.txn?.transactionHash as string);
+    const out = { ...res, link };
     console.log(out);
     /* c8 ignore next 3 */
   } catch (err: any) {
-    console.error(err.message);
+    console.error(err?.cause?.message || err.message);
   }
 };

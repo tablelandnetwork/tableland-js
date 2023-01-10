@@ -33,24 +33,14 @@ describe("commands/schema", function () {
   test("throws with missing table", async function () {
     const consoleError = spy(console, "error");
     await yargs(["schema", "ignored_31337_99"]).command(mod).parse();
-    assert.calledWith(consoleError, "Failed to get schema from table");
+    assert.calledWith(consoleError, "Not Found");
   });
 
-  test("passes with local-tableland", async function () {
+  test("Schema passes with local-tableland", async function () {
     const consoleLog = spy(console, "log");
     await yargs(["schema", "healthbot_31337_1"]).command(mod).parse();
-    assert.calledWith(
-      consoleLog,
-      `{
-  "columns": [
-    {
-      "name": "counter",
-      "type": "integer",
-      "constraints": []
-    }
-  ],
-  "table_constraints": []
-}`
-    );
+    assert.calledWith(consoleLog, {
+      columns: [{ name: "counter", type: "integer" }],
+    });
   });
 });

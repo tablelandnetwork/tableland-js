@@ -2,7 +2,7 @@ import { describe, test, afterEach, before } from "mocha";
 import { spy, restore, assert } from "sinon";
 import yargs from "yargs/yargs";
 import * as mod from "../src/commands/chains.js";
-import { SUPPORTED_CHAINS } from "@tableland/sdk";
+import { getChains } from "../src/utils.js";
 
 describe("commands/chains", function () {
   before(async function () {
@@ -13,15 +13,10 @@ describe("commands/chains", function () {
     restore();
   });
 
-  test("returns correct output", async function () {
-    const chains = Object.fromEntries(
-      Object.entries(SUPPORTED_CHAINS).filter(
-        ([name]) => !name.includes("staging") && !name.includes("custom")
-      )
-    );
-    const out = JSON.stringify(chains, null, 2);
+  test("chains returns correct output", async function () {
+    const chains = getChains();
     const consoleLog = spy(console, "log");
     await yargs(["chains"]).command(mod).parse();
-    assert.calledWith(consoleLog, out);
+    assert.calledWith(consoleLog, chains);
   });
 });

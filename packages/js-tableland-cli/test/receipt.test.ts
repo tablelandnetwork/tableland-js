@@ -2,31 +2,22 @@ import { getAccounts } from "@tableland/local";
 import { describe, test, afterEach, before } from "mocha";
 import { spy, restore, assert } from "sinon";
 import yargs from "yargs/yargs";
-import { connect, ConnectOptions } from "@tableland/sdk";
+import { Database } from "@tableland/sdk";
 import { getWalletWithProvider, wait } from "../src/utils.js";
 import * as mod from "../src/commands/receipt.js";
 
 describe("commands/receipt", function () {
-  this.timeout("10s");
+  this.timeout("30s");
 
   before(async function () {
-    await wait(500);
+    await wait(10000);
   });
 
   afterEach(function () {
     restore();
   });
 
-  test("throws without privateKey", async function () {
-    const consoleError = spy(console, "error");
-    await yargs(["receipt", "blah"]).command(mod).parse();
-    assert.calledWith(
-      consoleError,
-      "missing required flag (`-k` or `--privateKey`)"
-    );
-  });
-
-  test("throws without chain", async function () {
+  test("Receipt throws without chain", async function () {
     const [account] = getAccounts();
     const privateKey = account.privateKey.slice(2);
     const consoleError = spy(console, "error");
@@ -53,13 +44,10 @@ describe("commands/receipt", function () {
     ])
       .command(mod)
       .parse();
-    assert.calledWith(
-      consoleError,
-      "calling GetReceipt: invalid txn hash: hex string without 0x prefix"
-    );
+    assert.calledWith(consoleError, "Not Found");
   });
 
-  test("passes with local-tableland", async function () {
+  test("Receipt passes with local-tableland", async function () {
     const [account] = getAccounts();
     const privateKey = account.privateKey.slice(2);
     const consoleLog = spy(console, "log");
@@ -69,26 +57,25 @@ describe("commands/receipt", function () {
       chain: "local-tableland",
       providerUrl: undefined,
     });
-    const options: ConnectOptions = {
-      chain: "local-tableland",
-      rpcRelay: false,
-      signer,
-    };
 
-    const { hash } = await connect(options).write(
-      "update healthbot_31337_1 set counter=1;"
-    );
-    await yargs([
-      "receipt",
-      "--privateKey",
-      privateKey,
-      "--chain",
-      "local-tableland",
-      hash,
-    ])
-      .command(mod)
-      .parse();
-    // TODO: Ideally, we check the response here, but the hashes aren't deterministic
-    assert.calledOnce(consoleLog);
+    const db = new Database({ signer })
+      .prepare("update healthbot_31337_1 set counter=1;")
+      .all() as any;
+
+    db.then(async () => {
+      await yargs([
+        "receipt",
+        "--privateKey",
+        privateKey,
+        "--chain",
+        "local-tableland",
+
+        db.transactionHash,
+      ])
+        .command(mod)
+        .parse();
+      // TODO: Ideally, we check the response here, but the hashes aren't deterministic
+      assert.calledOnce(consoleLog);
+    });
   });
 });

@@ -1,6 +1,6 @@
 import type yargs from "yargs";
 import type { Arguments, CommandBuilder } from "yargs";
-import { connect, ConnectOptions, ChainName } from "@tableland/sdk";
+import { ChainName, Database } from "@tableland/sdk";
 import { getWalletWithProvider, getLink } from "../utils.js";
 import { promises } from "fs";
 import { createInterface } from "readline";
@@ -41,10 +41,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       chain,
       providerUrl,
     });
-    const options: ConnectOptions = {
-      chain,
-      signer,
-    };
+
     if (file != null) {
       statement = await promises.readFile(file, { encoding: "utf-8" });
     } else if (statement == null) {
@@ -59,15 +56,16 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       );
       return;
     }
-    const res = await connect(options).write(statement, {
-      skipConfirm: false,
-      rpcRelay: false,
-    });
-    const link = getLink(chain, res.hash);
-    const out = JSON.stringify({ ...res, link }, null, 2);
+    const db = new Database({ signer });
+
+    const res = await db.prepare(statement).all();
+
+    const link = getLink(chain, res?.meta?.txn?.transactionHash as string);
+    const out = { ...res, link };
     console.log(out);
     /* c8 ignore next 3 */
   } catch (err: any) {
-    console.error(err.message);
+    console.error(err?.cause?.message || err?.message);
+    console.error(err);
   }
 };

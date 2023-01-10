@@ -14,7 +14,7 @@ export type Options = {
 };
 
 const defaults = {
-  chain: "polygon-mumbai",
+  chain: "maticmum",
   rpcRelay: false,
 };
 

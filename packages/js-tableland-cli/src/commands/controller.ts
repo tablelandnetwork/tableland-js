@@ -1,8 +1,7 @@
 import type yargs from "yargs";
 import type { Arguments, CommandBuilder } from "yargs";
-import { connect, ConnectOptions, ChainName } from "@tableland/sdk";
+import { ChainName, Registry } from "@tableland/sdk";
 import { getWalletWithProvider, getLink } from "../utils.js";
-
 export type Options = {
   // Local
   name: string;
@@ -37,14 +36,11 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
             chain,
             providerUrl,
           });
-          const options: ConnectOptions = {
-            chain,
-            signer,
-            rpcRelay: false,
-          };
-          const res = await connect(options).getController(name);
-          const out = JSON.stringify(res, null, 2);
-          console.log(out);
+          const reg = new Registry({ signer });
+
+          const res = await reg.getController(name);
+
+          console.log(res);
           /* c8 ignore next 3 */
         } catch (err: any) {
           console.error(err.message);
@@ -73,16 +69,12 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
             chain,
             providerUrl,
           });
-          const options: ConnectOptions = {
-            chain,
-            signer,
-            rpcRelay: false,
-          };
-          const res = await connect(options).setController(controller, name, {
-            rpcRelay: false,
-          });
+
+          const reg = new Registry({ signer });
+          const res = await reg.setController({ tableName: name, controller });
+
           const link = getLink(chain, res.hash);
-          const out = JSON.stringify({ ...res, link }, null, 2);
+          const out = { ...res, link };
           console.log(out);
           /* c8 ignore next 3 */
         } catch (err: any) {
@@ -107,13 +99,13 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
             chain,
             providerUrl,
           });
-          const options: ConnectOptions = {
-            chain,
-            signer,
-          };
-          const res = await connect(options).lockController(name);
+
+          const reg = new Registry({ signer });
+
+          const res = await reg.lockController(name);
+
           const link = getLink(chain, res.hash);
-          const out = JSON.stringify({ ...res, link }, null, 2);
+          const out = { ...res, link };
           console.log(out);
           /* c8 ignore next 3 */
         } catch (err: any) {

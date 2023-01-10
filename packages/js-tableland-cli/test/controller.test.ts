@@ -60,7 +60,10 @@ describe("commands/controller", function () {
     ])
       .command(mod)
       .parse();
-    assert.calledWith(consoleError, "invalid tableId was provided");
+    assert.calledWith(
+      consoleError,
+      "error validating name: table name has wrong format: invalid"
+    );
   });
 
   test("throws with invalid set arguments", async function () {
@@ -79,7 +82,10 @@ describe("commands/controller", function () {
     ])
       .command(mod)
       .parse();
-    assert.calledWith(consoleError, "invalid tableId was provided");
+    assert.calledWith(
+      consoleError,
+      "error validating name: table name has wrong format: "
+    );
   });
 
   test("passes when setting a controller", async function () {
@@ -101,8 +107,8 @@ describe("commands/controller", function () {
       .parse();
     assert.calledWith(
       consoleLog,
-      match(function (value: string) {
-        const { hash, link } = JSON.parse(value);
+      match(function (value: any) {
+        const { hash, link } = value;
         return typeof hash === "string" && hash.startsWith("0x") && !link;
       }, "does not match")
     );
@@ -123,10 +129,7 @@ describe("commands/controller", function () {
     ])
       .command(mod)
       .parse();
-    assert.calledWith(
-      consoleLog,
-      `"0x0000000000000000000000000000000000000000"`
-    );
+    assert.calledWith(consoleLog, `0x0000000000000000000000000000000000000000`);
   });
 
   // TODO: Create tests for locking a controller

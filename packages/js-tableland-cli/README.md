@@ -15,6 +15,7 @@
 - [Background](#background)
 - [Usage](#usage)
 - [Install](#install)
+- [Config](#config)
 - [Development](#development)
 - [Contributing](#contributing)
 - [License](#license)
@@ -30,29 +31,27 @@ tableland <command>
 
 Commands:
   tableland chains             List information about supported chains
-  tableland controller <sub>   Get, set, and lock the controller contract for a giv
-                               en table
+  tableland controller <sub>   Get, set, and lock the controller contract for a
+                               given table
   tableland create [schema]    Create a new table
-  tableland hash <schema>      Validate a table schema and get the structure hash
   tableland info <name>        Get info about a given table by name
-  tableland init               Create config file                      [aliases: i]
+  tableland init               Create config file                   [aliases: i]
   tableland list [address]     List tables by address
   tableland read [statement]   Run a read-only query against a remote table
                                                           [aliases: r, query, q]
-  tableland receipt <hash>     Get the receipt of a chain transaction to know if it
-                               was executed, and the execution details
+  tableland receipt <hash>     Get the receipt of a chain transaction to know if
+                               it was executed, and the execution details
   tableland schema <name>      Get info about a given table schema
-  tableland structure <hash>   Get table name(s) by schema structure hash
-  tableland token              Create a SIWE token
-  tableland write [statement]  Run a mutating SQL statement against a remote table
-                                                            [aliases: w, run, r]
+  tableland write [statement]  Run a mutating SQL statement against a remote
+                               table                        [aliases: w, run, r]
+  tableland shell [statement]  Interact with tableland via an interactive shell
+                               environment                      [aliases: s, sh]
 
 Options:
       --help         Show help                                         [boolean]
       --version      Show version number                               [boolean]
-      --config       Path to JSON config file
   -k, --privateKey   Private key string                                 [string]
-  -c, --chain        The EVM chain to target[string] [default: "polygon-mumbai"]
+  -c, --chain        The EVM chain to target      [string] [default: "maticmum"]
   -p, --providerUrl  JSON RPC API provider URL. (e.g., https://eth-rinkeby.alche
                      myapi.io/v2/123abc123a...)                         [string]
 ```
@@ -79,7 +78,7 @@ The configuration file will be resolved starting from the current working direct
 
 The options you can use in the configuration file are the same as the global cli flag options. Additionally, all of these configuration values can be overriden via environement variables (prefixed with `TBL_`), or via a local `.env` file. See `.env.example` for an example.
 
-A configuration file can also be bootstrapped using the `tableland init` command. This will provide an interactive prompt to setup a config file (you can skip the interactive prompts by using the `--yes` flag). Global cli flags can be used in combination with the `init` command to skip specific questions. For example `tableland init --chain "polygon-mumbai"` will skip the question about default chain, and use `polygon-mumbai` in the output config file.
+A configuration file can also be bootstrapped using the `tableland init` command. This will provide an interactive prompt to setup a config file (you can skip the interactive prompts by using the `--yes` flag). Global cli flags can be used in combination with the `init` command to skip specific questions. For example `tableland init --chain "maticmum"` will skip the question about default chain, and use `maticmum` in the output config file.
 
 # Development
 
