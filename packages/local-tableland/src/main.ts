@@ -15,7 +15,7 @@ import {
   pipeNamedSubprocess,
   waitForReady,
   getAccounts,
-  getConnection,
+  getDatabase,
   logSync,
   isWindows,
   inDebugMode,
@@ -231,5 +231,5 @@ class LocalTableland {
   }
 }
 
-export { LocalTableland, getAccounts, getConnection };
+export { LocalTableland, getAccounts, getDatabase };
 export type { Config };

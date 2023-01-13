@@ -4,12 +4,24 @@ import { EventEmitter } from "node:events";
 import { Readable } from "node:stream";
 import { ChildProcess, SpawnSyncReturns } from "node:child_process";
 import { getDefaultProvider, Wallet } from "ethers";
-import { connect, Connection } from "@tableland/sdk";
+import {
+  getBaseUrl,
+  Database,
+  Registry,
+  Validator,
+  overrideDefaults,
+  getChainId,
+} from "@tableland/sdk";
 import { chalk } from "./chalk.js";
 
 // NOTE: We are creating this file in the prebuild.sh script so that we can support cjs and esm
 import { getDirname } from "./get-dirname.js";
 const _dirname = getDirname();
+
+// The SDK does not know about the local-tableland contract
+overrideDefaults(getChainId("local-tableland"), {
+  contractAddress: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+});
 
 export type ConfigDescriptor = {
   name: string;
@@ -274,8 +286,24 @@ const hardhatAccounts = [
   "df57089febbacf7ba0bc227dafbffa9fc08a93fdc68e1e42411a14efcf23656e",
 ];
 
-export const getConnection = function (account: Wallet): Connection {
-  return connect({ signer: account, chain: "local-tableland" });
+export const getDatabase = function (account: Wallet): Database {
+  return new Database({
+    signer: account,
+    baseUrl: getBaseUrl("local-tableland"),
+    autoWait: true,
+  });
+};
+
+export const getRegistry = function (account: Wallet): Registry {
+  return new Registry({
+    signer: account,
+  });
+};
+
+export const getValidator = function (baseUrl?: string): Validator {
+  return new Validator({
+    baseUrl: baseUrl || getBaseUrl("local-tableland"),
+  });
 };
 
 export const getAccounts = function (): Wallet[] {

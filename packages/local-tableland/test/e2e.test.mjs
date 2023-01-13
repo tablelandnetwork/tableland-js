@@ -1,478 +1,311 @@
 import chai from "chai";
-import { connect } from "@tableland/sdk";
-import { getAccounts, getConnection } from "../dist/esm/util.js";
+import {
+  getAccounts,
+  getDatabase,
+  getRegistry,
+  getValidator,
+} from "../dist/esm/util.js";
 import { LocalTableland } from "../dist/esm/main.js";
 
 const expect = chai.expect;
+const localTablelandChainId = 31337;
 
 describe("Validator, Chain, and SDK work end to end", function () {
   const accounts = getAccounts();
-  const lt = new LocalTableland({ silent: true });
+  const lt = new LocalTableland({
+    silent: true,
+  });
 
   // These tests take a bit longer than normal since we are running them against an actual network
   this.timeout(20000);
   before(async function () {
     await lt.start();
+    await new Promise((resolve) => setTimeout(() => resolve(), 2000));
   });
 
   after(async function () {
     await lt.shutdown();
   });
 
-  it("Creates a table that can be read from", async function () {
+  it("creates a table that can be read from", async function () {
     const signer = accounts[1];
-    const tableland = getConnection(signer);
+    const db = getDatabase(signer);
 
-    const prefix = "test_create_read";
-    // `key` is a reserved word in sqlite
-    const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
-      prefix,
-    });
-
-    const chainId = 31337;
-
-    const data = await tableland.read(
-      `SELECT * FROM ${prefix}_${chainId}_${tableId};`
-    );
-    expect(data.rows).to.eql([]);
-  });
-
-  it("Create a table that can be written to", async function () {
-    const signer = accounts[1];
-
-    const tableland = getConnection(signer);
-
-    const prefix = "test_create_write";
-    const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
-      prefix,
-    });
-
-    const chainId = 31337;
-    const queryableName = `${prefix}_${chainId}_${tableId}`;
-
-    const writeRes = await tableland.write(
-      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
+    // `key` is a reserved word in sqlite.
+    const res = await db.exec(
+      `CREATE TABLE test_create_read (keyy TEXT, val TEXT);`
     );
 
-    const data = await tableland.read(`SELECT * FROM ${queryableName};`);
-
-    expect(typeof writeRes.hash).to.eql("string");
-    expect(data.rows).to.eql([["tree", "aspen"]]);
+    const data = await db.prepare(`SELECT * FROM ${res.meta.txn.name};`).all();
+    expect(data.results).to.eql([]);
   });
 
-  it("Table cannot be written to unless caller is allowed", async function () {
+  it("create a table that can be written to", async function () {
+    this.timeout(50000);
     const signer = accounts[1];
+    const db = getDatabase(signer);
 
-    const tableland = getConnection(signer);
+    const { meta: createMetadata } = await db
+      .prepare("CREATE TABLE test_create_write (keyy TEXT, val TEXT);")
+      .run();
 
-    const prefix = "test_not_allowed";
-    const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
-      prefix,
-    });
+    const tableName = createMetadata.txn?.name ?? "";
+    expect(tableName).to.match(/^test_create_write_31337_\d+$/);
 
-    const chainId = 31337;
-    const queryableName = `${prefix}_${chainId}_${tableId}`;
+    const insertRes = await db
+      .prepare(`INSERT INTO ${tableName} (keyy, val) VALUES ('tree', 'aspen');`)
+      .run();
 
-    const data = await tableland.read(`SELECT * FROM ${queryableName};`);
-    expect(data.rows).to.eql([]);
+    expect(insertRes.success).to.eql(true);
+    expect(typeof insertRes.meta.duration).to.eql("number");
+
+    const readRes = await db.prepare(`SELECT * FROM ${tableName};`).all();
+
+    expect(readRes.results).to.eql([{ keyy: "tree", val: "aspen" }]);
+  });
+
+  it("table cannot be written to unless caller is allowed", async function () {
+    const signer = accounts[1];
+    const db = getDatabase(signer);
+
+    const { meta: createMetadata } = await db
+      .prepare("CREATE TABLE test_not_allowed (keyy TEXT, val TEXT);")
+      .run();
+    const queryableName = createMetadata.txn?.name ?? "";
+
+    const data = await db.prepare(`SELECT * FROM ${queryableName};`).all();
+
+    expect(data.results).to.eql([]);
 
     const signer2 = accounts[2];
-    const tableland2 = getConnection(signer2);
+    const db2 = getDatabase(signer2);
 
     await expect(
       (async function () {
-        await tableland2.write(
-          `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
-        );
+        await db2
+          .prepare(
+            `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
+          )
+          .all();
       })()
     ).to.be.rejectedWith(
-      "db query execution failed (code: ACL, msg: not enough privileges)"
+      // TODO: the old error was "db query execution failed (code: ACL, msg: not enough privileges)"
+      //       we now get "ALL_ERROR", which is not very helpful in understanding what went wrong.
+      "ALL_ERROR"
     );
 
-    const data2 = await tableland2.read(`SELECT * FROM ${queryableName};`);
-    expect(data2.rows).to.eql([]);
+    const data2 = await db2.prepare(`SELECT * FROM ${queryableName};`).all();
+    expect(data2.results).to.eql([]);
   });
 
-  it("Create a table can have a row deleted", async function () {
+  it("create a table can have a row deleted", async function () {
     const signer = accounts[1];
+    const db = getDatabase(signer);
 
-    const tableland = getConnection(signer);
+    const { meta: createMetadata } = await db
+      .prepare("CREATE TABLE test_create_delete (keyy TEXT, val TEXT);")
+      .run();
+    const queryableName = createMetadata.txn?.name ?? "";
 
-    const prefix = "test_create_delete";
-    const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
-      prefix,
-    });
+    const write1 = await db
+      .prepare(
+        `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
+      )
+      .all();
 
-    const chainId = 31337;
-    const queryableName = `${prefix}_${chainId}_${tableId}`;
+    expect(typeof write1.meta.txn.transactionHash).to.eql("string");
 
-    const write1 = await tableland.write(
-      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
-    );
+    const write2 = await db
+      .prepare(
+        `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'pine')`
+      )
+      .all();
 
-    expect(typeof write1.hash).to.eql("string");
+    expect(typeof write2.meta.txn.transactionHash).to.eql("string");
 
-    const write2 = await tableland.write(
-      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'pine')`
-    );
+    const data = await db.prepare(`SELECT * FROM ${queryableName};`).all();
+    expect(data.results.length).to.eql(2);
 
-    expect(typeof write2.hash).to.eql("string");
+    const delete1 = await db
+      .prepare(`DELETE FROM ${queryableName} WHERE val = 'pine';`)
+      .all();
 
-    const data = await tableland.read(`SELECT * FROM ${queryableName};`);
-    expect(data.rows.length).to.eql(2);
+    expect(typeof delete1.meta.txn.transactionHash).to.eql("string");
 
-    const delete1 = await tableland.write(
-      `DELETE FROM ${queryableName} WHERE val = 'pine';`
-    );
-
-    expect(typeof delete1.hash).to.eql("string");
-
-    const data2 = await tableland.read(`SELECT * FROM ${queryableName};`);
-    await expect(data2.rows.length).to.eql(1);
+    const data2 = await db.prepare(`SELECT * FROM ${queryableName};`).all();
+    await expect(data2.results.length).to.eql(1);
   }, 30000);
 
-  it("Read a table with `table` output", async function () {
+  // TODO: make this a test for some kind of results formatting function
+  //       assuming that is still appropriate
+  it("read via `raw` method returns data with `table` output", async function () {
     const signer = accounts[1];
+    const db = getDatabase(signer);
 
-    const tableland = getConnection(signer);
+    const { meta: createMetadata } = await db
+      .prepare("CREATE TABLE test_read (keyy TEXT, val TEXT);")
+      .run();
+    const queryableName = createMetadata.txn?.name ?? "";
 
-    const prefix = "test_read";
-    const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
-      prefix,
-    });
+    await db
+      .prepare(
+        `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
+      )
+      .all();
 
-    const chainId = 31337;
-    const queryableName = `${prefix}_${chainId}_${tableId}`;
+    const data = await db
+      .prepare(`SELECT * FROM ${queryableName};`, {
+        output: "table",
+      })
+      .raw();
 
-    await tableland.write(
-      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
-    );
-
-    const data = await tableland.read(`SELECT * FROM ${queryableName};`, {
-      output: "table",
-    });
-
-    expect(data.columns).to.eql([{ name: "keyy" }, { name: "val" }]);
-    expect(data.rows).to.eql([["tree", "aspen"]]);
+    expect(data).to.eql([["tree", "aspen"]]);
   });
 
-  // TODO: this test fails because validator has casing issue
-  // https://github.com/tablelandnetwork/go-tableland/issues/393
-  it.skip("Count rows in a table", async function () {
+  it("count rows in a table", async function () {
     const signer = accounts[1];
+    const db = getDatabase(signer);
 
-    const tableland = getConnection(signer);
+    const { meta: createMetadata } = await db
+      .prepare("CREATE TABLE test_count (keyy TEXT, val TEXT);")
+      .run();
+    const queryableName = createMetadata.txn?.name ?? "";
 
-    const prefix = "test_count";
-    const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
-      prefix,
-    });
+    await db
+      .prepare(
+        `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
+      )
+      .all();
 
-    const chainId = 31337;
-    const queryableName = `${prefix}_${chainId}_${tableId}`;
+    await db
+      .prepare(
+        `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'pine')`
+      )
+      .all();
 
-    await tableland.write(
-      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
-    );
+    const data = await db
+      .prepare(`SELECT COUNT(*) FROM ${queryableName};`)
+      .all();
 
-    await tableland.write(
-      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'pine')`
-    );
-
-    const data = await tableland.read(`SELECT COUNT(*) FROM ${queryableName};`);
-
-    expect(data).to.eql({ columns: [{ name: "COUNT(*)" }], rows: [[2]] });
+    expect(data.results).to.eql([{ "count(*)": 2 }]);
   });
 
-  it("Read a table with `objects` output", async function () {
+  it("read a single row with `first` method", async function () {
     const signer = accounts[1];
+    const db = getDatabase(signer);
 
-    const tableland = getConnection(signer);
+    const { meta: createMetadata } = await db
+      .prepare("CREATE TABLE test_read (keyy TEXT, val TEXT);")
+      .run();
+    const queryableName = createMetadata.txn?.name ?? "";
 
-    const prefix = "test_read";
-    const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
-      prefix,
-    });
+    await db
+      .prepare(
+        `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
+      )
+      .all();
 
-    const chainId = 31337;
-    const queryableName = `${prefix}_${chainId}_${tableId}`;
+    await db
+      .prepare(
+        `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'pine')`
+      )
+      .all();
 
-    await tableland.write(
-      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
-    );
-
-    const data = await tableland.read(`SELECT * FROM ${queryableName};`, {
-      output: "objects",
-    });
-
-    expect(data).to.eql([{ keyy: "tree", val: "aspen" }]);
-  });
-
-  it("Read a single row with `unwrap` option", async function () {
-    const signer = accounts[1];
-
-    const tableland = getConnection(signer);
-
-    const prefix = "test_read";
-    const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
-      prefix,
-    });
-
-    const chainId = 31337;
-    const queryableName = `${prefix}_${chainId}_${tableId}`;
-
-    await tableland.write(
-      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
-    );
-
-    const data = await tableland.read(`SELECT * FROM ${queryableName};`, {
-      unwrap: true,
-      output: "objects",
-    });
+    const data = await db.prepare(`SELECT * FROM ${queryableName};`).first();
 
     expect(data).to.eql({ keyy: "tree", val: "aspen" });
   });
 
-  it("Read two rows with `unwrap` option fails", async function () {
+  it("list an account's tables", async function () {
     const signer = accounts[1];
+    const db = getDatabase(signer);
+    const registry = getRegistry(signer);
 
-    const tableland = getConnection(signer);
+    const { meta: createMetadata } = await db
+      .prepare("CREATE TABLE test_create_list (keyy TEXT, val TEXT);")
+      .run();
+    const tableId = createMetadata.txn?.tableId ?? "";
 
-    const prefix = "test_read";
-    const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
-      prefix,
-    });
-
-    const chainId = 31337;
-    const queryableName = `${prefix}_${chainId}_${tableId}`;
-
-    await tableland.write(
-      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
-    );
-    await tableland.write(
-      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'pine')`
-    );
-
-    await expect(
-      (async function () {
-        await tableland.read(`SELECT * FROM ${queryableName};`, {
-          unwrap: true,
-          output: "objects",
-        });
-      })()
-    ).to.be.rejectedWith(
-      "unwrapped results with more than one row aren't supported in JSON RPC API"
-    );
-  });
-
-  it("Read with `extract` option", async function () {
-    const signer = accounts[1];
-
-    const tableland = getConnection(signer);
-
-    const prefix = "test_read_extract";
-    const { tableId } = await tableland.create("val TEXT", {
-      prefix,
-    });
-
-    const chainId = 31337;
-    const queryableName = `${prefix}_${chainId}_${tableId}`;
-
-    await tableland.write(
-      `INSERT INTO ${queryableName} (val) VALUES ('aspen')`
-    );
-    await tableland.write(`INSERT INTO ${queryableName} (val) VALUES ('pine')`);
-
-    const data = await tableland.read(`SELECT * FROM ${queryableName};`, {
-      extract: true,
-      output: "objects",
-    });
-
-    expect(data).to.eql(["aspen", "pine"]);
-  });
-
-  it("Read table with two columns with `extract` option fails", async function () {
-    const signer = accounts[1];
-
-    const tableland = getConnection(signer);
-
-    const prefix = "test_read";
-    const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
-      prefix,
-    });
-
-    const chainId = 31337;
-    const queryableName = `${prefix}_${chainId}_${tableId}`;
-
-    await tableland.write(
-      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
-    );
-
-    await expect(
-      (async function () {
-        await tableland.read(`SELECT * FROM ${queryableName};`, {
-          extract: true,
-          output: "objects",
-        });
-      })()
-    ).to.be.rejectedWith(
-      "can only extract values for result sets with one column but this has 2"
-    );
-  });
-
-  it("List an account's tables", async function () {
-    const signer = accounts[1];
-
-    const tableland = getConnection(signer);
-
-    const prefix = "test_create_list";
-    const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
-      prefix,
-    });
-
-    const chainId = 31337;
-    const queryableName = `${prefix}_${chainId}_${tableId}`;
-
-    const tablesMeta = await tableland.list();
+    const tablesMeta = await registry.listTables();
 
     expect(Array.isArray(tablesMeta)).to.eql(true);
-    const table = tablesMeta.find((table) => table.name === queryableName);
+    const table = tablesMeta.find((table) => table.tableId === tableId);
 
     expect(typeof table).to.equal("object");
-    expect(table.controller).to.eql(accounts[1].address);
+    expect(table.chainId).to.eql(localTablelandChainId);
   });
 
-  it("write to a table without using the relay", async function () {
+  it("write statement validates table name prefix", async function () {
     const signer = accounts[1];
+    const db = getDatabase(signer);
 
-    // Note: options can be removed when rpcRelay is removed
-    const tableland = connect({
-      signer,
-      chain: "local-tableland",
-      rpcRelay: false,
-    });
+    const prefix1 = "test_direct_invalid_write";
+    await db.prepare(`CREATE TABLE ${prefix1} (keyy TEXT, val TEXT);`).run();
 
-    const prefix = "test_direct_write";
-    const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
-      prefix,
-    });
-
-    const chainId = 31337;
-    const queryableName = `${prefix}_${chainId}_${tableId}`;
-
-    const writeRes = await tableland.write(
-      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
-    );
-
-    expect(typeof writeRes.hash).to.eql("string");
-
-    const data = await tableland.read(`SELECT * FROM ${queryableName};`);
-    expect(data.rows).to.eql([["tree", "aspen"]]);
-  });
-
-  it("write without relay statement validates table name prefix", async function () {
-    const signer = accounts[1];
-
-    // Note: use `getConnection` when rpcRelay is removed
-    const tableland = connect({
-      signer,
-      chain: "local-tableland",
-      rpcRelay: false,
-    });
-
-    const prefix = "test_direct_invalid_write";
-    await tableland.create("keyy TEXT, val TEXT", { prefix });
-
-    const prefix2 = "test_direct_invalid_write2";
-    const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
-      prefix: prefix2,
-    });
+    const { meta: createMetadata2 } = await db
+      .prepare("CREATE TABLE test_direct_invalid_write2 (keyy TEXT, val TEXT);")
+      .run();
+    const tableId2 = createMetadata2.txn?.tableId ?? "";
 
     // both tables owned by the same account
     // the prefix is for the first table, but id is for second table
-    const queryableName = `${prefix}_31337_${tableId}`;
+    const invalidName = `${prefix1}_${localTablelandChainId}_${tableId2}`;
 
     await expect(
       (async function () {
-        await tableland.write(
-          `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
-        );
+        await db
+          .prepare(
+            `INSERT INTO ${invalidName} (keyy, val) VALUES ('tree', 'aspen')`
+          )
+          .all();
       })()
     ).to.be.rejectedWith(
-      `calling ValidateWriteQuery: table prefix doesn't match (exp ${prefix2}, got ${prefix})`
+      // TODO: old error was `calling ValidateWriteQuery: table prefix doesn't match (exp ${prefix2}, got ${prefix1})`
+      //       the new error message isn't very informative
+      "ALL_ERROR"
     );
   });
 
-  it("write without relay statement validates table ID", async function () {
+  it("write statement validates table ID", async function () {
     const signer = accounts[1];
-
-    // Note: use `getConnection` when rpcRelay is removed
-    const tableland = connect({
-      signer,
-      chain: "local-tableland",
-      rpcRelay: false,
-    });
+    const db = getDatabase(signer);
 
     const prefix = "test_direct_invalid_id_write";
-    await tableland.create("keyy TEXT, val TEXT", { prefix });
+    await db.prepare(`CREATE TABLE ${prefix} (keyy TEXT, val TEXT);`).run();
 
     // the tableId 0 does not exist since we start with tableId == 1
-    const queryableName = `${prefix}_31337_0`;
+    const queryableName = `${prefix}_${localTablelandChainId}_0`;
 
     await expect(
       (async function () {
-        await tableland.write(
-          `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
-        );
+        await db
+          .prepare(
+            `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
+          )
+          .all();
       })()
     ).to.be.rejectedWith(
-      `getting table: failed to get the table: sql: no rows in result set`
+      // TODO: old error was `getting table: failed to get the table: sql: no rows in result set`
+      //       the new error message isn't very informative
+      "ALL_ERROR"
     );
   });
 
-  it("set controller without relay", async function () {
+  it("allows setting controller", async function () {
     const signer = accounts[1];
+    const db = getDatabase(signer);
+    const registry = getRegistry(signer);
 
-    // Note: use `getConnection` when rpcRelay is removed
-    const tableland = connect({
-      signer,
-      chain: "local-tableland",
-      rpcRelay: false,
+    const { meta: createMetadata } = await db
+      .prepare("CREATE TABLE test_set_controller (keyy TEXT, val TEXT);")
+      .run();
+    const tableName = createMetadata.txn?.name ?? "";
+
+    const { hash } = await registry.setController({
+      // Set the controller to Hardhat #7
+      controller: "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955",
+      tableName,
     });
-
-    const prefix = "test_create_setcontroller_norelay";
-    // `key` is a reserved word in sqlite
-    const { name } = await tableland.create("keyy TEXT, val TEXT", { prefix });
-
-    // Set the controller to Hardhat #7
-    const { hash } = await tableland.setController(
-      "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955",
-      name
-    );
-
-    expect(typeof hash).to.eql("string");
-    expect(hash.length).to.eql(66);
-  });
-
-  it("set controller with relay", async function () {
-    const signer = accounts[1];
-
-    // Note: we can remove this test when rpcRelay is removed
-    const tableland = connect({
-      signer,
-      chain: "local-tableland",
-      rpcRelay: true /* this is default `true`, just being explicit */,
-    });
-
-    const prefix = "test_create_setcontroller_relay";
-    // `key` is a reserved word in sqlite
-    const { name } = await tableland.create("keyy TEXT, val TEXT", { prefix });
-
-    // Set the controller to Hardhat #7
-    const { hash } = await tableland.setController(
-      "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955",
-      name
-    );
 
     expect(typeof hash).to.eql("string");
     expect(hash.length).to.eql(66);
@@ -480,130 +313,107 @@ describe("Validator, Chain, and SDK work end to end", function () {
 
   it("get controller returns an address", async function () {
     const signer = accounts[1];
+    const db = getDatabase(signer);
+    const registry = getRegistry(signer);
 
-    const tableland = getConnection(signer);
-
-    const prefix = "test_create_getcontroller";
-    // `key` is a reserved word in sqlite
-    const { name } = await tableland.create("keyy TEXT, val TEXT", { prefix });
+    const { meta: createMetadata } = await db
+      .prepare("CREATE TABLE test_create_getcontroller (keyy TEXT, val TEXT);")
+      .run();
+    const tableName = createMetadata.txn?.name ?? "";
 
     // Hardhat #7
     const controllerAddress = "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955";
 
-    const { hash } = await tableland.setController(controllerAddress, name);
+    const { hash } = await registry.setController({
+      controller: controllerAddress,
+      tableName,
+    });
 
     expect(typeof hash).to.eql("string");
     expect(hash.length).to.eql(66);
 
-    const controller = await tableland.getController(name);
+    const controller = await registry.getController(tableName);
 
     expect(controller).to.eql(controllerAddress);
   });
 
-  it("lock controller without relay returns a transaction hash", async function () {
+  it("lock controller returns a transaction hash", async function () {
     const signer = accounts[1];
+    const db = getDatabase(signer);
+    const registry = getRegistry(signer);
 
-    // Note: use `getConnection` when rpcRelay is removed
-    const tableland = connect({
-      signer,
-      chain: "local-tableland",
-      rpcRelay: false,
-    });
-
-    const prefix = "test_create_lockcontroller";
-    // `key` is a reserved word in sqlite
-    const { name } = await tableland.create("keyy TEXT, val TEXT", { prefix });
+    const { meta: createMetadata } = await db
+      .prepare("CREATE TABLE test_create_lockcontroller (keyy TEXT, val TEXT);")
+      .run();
+    const tableName = createMetadata.txn?.name ?? "";
 
     // Hardhat #7
     const controllerAddress = "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955";
 
-    const { hash } = await tableland.setController(controllerAddress, name);
+    const { hash } = await registry.setController({
+      controller: controllerAddress,
+      tableName,
+    });
 
     expect(typeof hash).to.eql("string");
     expect(hash.length).to.eql(66);
 
-    const tx = await tableland.lockController(name);
+    const tx = await registry.lockController(tableName);
 
     expect(typeof tx.hash).to.eql("string");
   });
 
   it("get the schema for a table", async function () {
     const signer = accounts[1];
+    const db = getDatabase(signer);
+    const validator = getValidator();
 
-    const tableland = getConnection(signer);
+    const { meta: createMetadata } = await db
+      .prepare("CREATE TABLE test_get_schema (keyy TEXT, val TEXT);")
+      .run();
+    const tableId = createMetadata.txn?.tableId ?? "";
+    const tableName = createMetadata.txn?.name ?? "";
 
-    const prefix = "test_get_schema";
-    const { tableId } = await tableland.create("a INT PRIMARY KEY", { prefix });
-
-    const chainId = 31337;
-    const queryableName = `${prefix}_${chainId}_${tableId}`;
-
-    const tableSchema = await tableland.schema(queryableName);
-
-    expect(typeof tableSchema.columns).to.eql("object");
-    expect(Array.isArray(tableSchema.table_constraints)).to.eql(true);
-    expect(tableSchema.columns.length).to.eql(1);
-    expect(tableSchema.columns[0].name).to.eql("a");
-    expect(tableSchema.columns[0].type).to.eql("int");
-    expect(Array.isArray(tableSchema.columns[0].constraints)).to.eql(true);
-    expect(tableSchema.columns[0].constraints[0].toLowerCase()).to.eql(
-      "primary key"
-    );
-  });
-
-  it("get the structure for a hash", async function () {
-    const signer = accounts[1];
-
-    const tableland = getConnection(signer);
-
-    const prefix = "test_get_structure";
-    const { tableId } = await tableland.create("a TEXT, b INT PRIMARY KEY", {
-      prefix,
+    const table = await validator.getTableById({
+      chainId: localTablelandChainId,
+      tableId,
     });
 
-    const chainId = 31337;
-    const queryableName = `${prefix}_${chainId}_${tableId}`;
-
-    const { structureHash } = await tableland.hash(
-      "a TEXT, b INT PRIMARY KEY",
-      { prefix }
-    );
-
-    const tableStructure = await tableland.structure(structureHash);
-
-    expect(Array.isArray(tableStructure)).to.eql(true);
-
-    const lastStructure = tableStructure[tableStructure.length - 1];
-
-    expect(lastStructure.name).to.eql(queryableName);
-    expect(lastStructure.controller).to.eql(accounts[1].address);
-    expect(lastStructure.structure).to.eql(structureHash);
+    expect(Array.isArray(table.schema.columns)).to.eql(true);
+    expect(table.schema.columns.length).to.eql(2);
+    expect(table.schema.columns[0]).to.eql({
+      name: "keyy",
+      type: "text",
+    });
+    expect(table.schema.columns[1]).to.eql({
+      name: "val",
+      type: "text",
+    });
+    expect(table.name).to.eql(tableName);
   });
 
   it("A write that violates table constraints throws error", async function () {
     const signer = accounts[1];
+    const db = getDatabase(signer);
 
-    const tableland = getConnection(signer);
-
-    const prefix = "test_create_tc_violation";
-    const { tableId } = await tableland.create(
-      "id TEXT, name TEXT, PRIMARY KEY(id)",
-      {
-        prefix,
-      }
-    );
-
-    const chainId = 31337;
-    const queryableName = `${prefix}_${chainId}_${tableId}`;
+    const { meta: createMetadata } = await db
+      .prepare(
+        "CREATE TABLE test_create_tc_violation (id TEXT, name TEXT, PRIMARY KEY(id));"
+      )
+      .run();
+    const queryableName = createMetadata.txn?.name ?? "";
 
     await expect(
       (async function () {
-        await tableland.write(
-          `INSERT INTO ${queryableName} VALUES (1, '1'), (1, '1')`
-        );
+        await db
+          .prepare(`INSERT INTO ${queryableName} VALUES (1, '1'), (1, '1')`)
+          .all();
       })()
     ).to.be.rejectedWith(
-      `db query execution failed (code: SQLITE_UNIQUE constraint failed: ${queryableName}.id, msg: UNIQUE constraint failed: ${queryableName}.id)`
+      // TODO: old error was
+      //       `db query execution failed (code: SQLITE_UNIQUE constraint failed: ${queryableName}.id, msg: UNIQUE constraint failed: ${queryableName}.id)`
+      //       the new error isn't very informative
+      "ALL_ERROR"
     );
   });
 });
