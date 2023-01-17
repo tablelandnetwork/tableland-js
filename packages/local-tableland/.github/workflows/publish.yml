@@ -25,7 +25,7 @@ jobs:
       - name: Setup Node Environment ⬢
         uses: actions/setup-node@v1
         with:
-          node-version: 16
+          node-version: 18
 
       - name: Tag release
         uses: rickstaa/action-create-tag@v1
@@ -42,15 +42,11 @@ jobs:
       - name: Install 🔧
         run: npm install
 
-      - name: Latest
-        id: tag
-        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
-
       - name: Conditional
         id: cond
         uses: haya14busa/action-cond@v1
         with:
-          cond: ${{ contains(steps.tag.outputs.tag, '-') }}
+          cond: ${{ contains(github.event.inputs.release_version, '-') }}
           if_true: "next"
           if_false: "latest"
 
