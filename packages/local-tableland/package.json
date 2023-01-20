@@ -55,7 +55,7 @@
     "local-tableland": "dist/esm/up.js"
   },
   "dependencies": {
-    "@tableland/sdk": "^4.0.0-pre.1",
+    "@tableland/sdk": "^4.0.0-pre.3",
     "@tableland/validator": "^0.0.3",
     "cross-spawn": "^7.0.3",
     "enquirer": "^2.3.6",
