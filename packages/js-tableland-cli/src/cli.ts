@@ -51,6 +51,10 @@ const _argv = yargs(hideBin(process.argv))
     description: "The EVM chain to target",
     default: "maticmum",
   })
+  .option("baseUrl", {
+    type: "string",
+    description: "The URL of your Tableland validator",
+  })
   .options("providerUrl", {
     alias: "p",
     type: "string",

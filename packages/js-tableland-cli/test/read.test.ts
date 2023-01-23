@@ -150,6 +150,27 @@ describe("commands/read", function () {
     );
   });
 
+  test("Custom baseUrl is called", async function () {
+    const fetchSpy = spy(global, "fetch");
+    await yargs([
+      "read",
+      "select * from healthbot_31337_1;",
+      "--chain",
+      "local-tableland",
+      "--format",
+      "pretty",
+      "--baseUrl",
+      "https://localhost:8909",
+    ])
+      .command(mod)
+      .parse();
+
+    assert.calledWith(
+      fetchSpy,
+      match((v: any) => v.includes("https://localhost:8909/"))
+    );
+  });
+
   test.skip("passes with alternate output format (pretty)", async function () {
     const consoleLog = spy(console, "log");
     await yargs([

@@ -5,6 +5,7 @@ import { getChainInfo, Validator } from "@tableland/sdk";
 export type Options = {
   // Local
   name: string;
+  baseUrl: string | undefined;
 };
 
 export const command = "info <name>";
@@ -17,7 +18,7 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
   }) as yargs.Argv<Options>;
 
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
-  const { name } = argv;
+  const { name, baseUrl } = argv;
 
   const parts = name.split("_");
   const [tableId, chainId] = name.split("_").reverse();
@@ -37,7 +38,9 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
   }
 
   try {
-    const validator = Validator.forChain(parseInt(chainId));
+    const validator = baseUrl
+      ? new Validator({ baseUrl })
+      : Validator.forChain(parseInt(chainId));
     const res = await validator.getTableById({
       tableId,
       chainId: parseInt(chainId),

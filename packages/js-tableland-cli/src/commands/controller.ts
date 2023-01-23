@@ -11,6 +11,7 @@ export type Options = {
   privateKey: string;
   chain: ChainName;
   providerUrl: string | undefined;
+  baseUrl: string | undefined;
 };
 
 export const command = "controller <sub>";

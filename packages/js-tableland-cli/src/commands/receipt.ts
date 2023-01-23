@@ -10,6 +10,7 @@ export type Options = {
   // Global
   privateKey: string;
   chain: ChainName;
+  baseUrl: string | undefined;
 };
 
 export const command = "receipt <hash>";
@@ -23,7 +24,7 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
   }) as yargs.Argv<Options>;
 
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
-  const { hash, chain } = argv;
+  const { hash, chain, baseUrl } = argv;
 
   const network = getChains()[chain];
   if (!network) {
@@ -32,7 +33,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
   }
 
   try {
-    const v = Validator.forChain(chain);
+    const v = baseUrl ? new Validator({ baseUrl }) : Validator.forChain(chain);
     const res = await v.receiptByTransactionHash({
       chainId: getChainId(chain),
       transactionHash: hash,

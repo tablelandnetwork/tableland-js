@@ -13,6 +13,7 @@ export type Options = {
 
   // Global
   chain: ChainName;
+  baseUrl: string | undefined;
 };
 
 export const command = "read [statement]";
@@ -39,7 +40,7 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
 
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
   let { statement } = argv;
-  const { chain, format, file } = argv;
+  const { chain, format, file, baseUrl } = argv;
 
   const network = getChains()[chain];
   if (!network) {
@@ -62,7 +63,8 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       );
       return;
     }
-    const db = await Database.readOnly(chain);
+
+    const db = baseUrl ? new Database({ baseUrl }) : Database.readOnly(chain);
     const res = await db.prepare(statement).all();
 
     if (format === "pretty") {

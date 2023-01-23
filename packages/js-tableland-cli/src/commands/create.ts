@@ -15,6 +15,7 @@ export type Options = {
   privateKey: string;
   chain: ChainName;
   providerUrl: string | undefined;
+  baseUrl: string | undefined;
 };
 
 export const command = "create [schema]";
@@ -39,7 +40,7 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
 
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
   let { schema } = argv;
-  const { privateKey, chain, providerUrl, file, prefix } = argv;
+  const { privateKey, chain, providerUrl, file, prefix, baseUrl } = argv;
 
   try {
     const signer = getWalletWithProvider({
@@ -70,7 +71,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       statement = schema;
     }
 
-    const db = new Database({ signer });
+    const db = new Database({ signer, baseUrl });
     const res = await db.prepare(statement).all();
     const link = getLink(chain, res.meta.txn?.transactionHash as string);
     const out = { ...res, link };
