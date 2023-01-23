@@ -1,6 +1,6 @@
 {
   "name": "@tableland/cli",
-  "version": "4.0.0",
+  "version": "4.0.0-pre6.0",
   "description": "Tableland command line tools",
   "repository": "https://github.com/tablelandnetwork/js-tableland-cli",
   "publishConfig": {
@@ -61,7 +61,7 @@
     "typescript": "^4.8.4"
   },
   "dependencies": {
-    "@tableland/sdk": "^4.0.0-pre.3",
+    "@tableland/sdk": "^4.0.0-pre.4",
     "@tableland/sqlparser": "^1.0.0",
     "chalk": "^5.1.2",
     "cli-select": "^1.1.2",
