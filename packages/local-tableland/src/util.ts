@@ -4,19 +4,16 @@ import { EventEmitter } from "node:events";
 import { Readable } from "node:stream";
 import { ChildProcess, SpawnSyncReturns } from "node:child_process";
 import { getDefaultProvider, Wallet } from "ethers";
-import {
-  getBaseUrl,
-  Database,
-  Registry,
-  Validator,
-  overrideDefaults,
-  getChainId,
-} from "@tableland/sdk";
+import { helpers, Database, Registry, Validator } from "@tableland/sdk";
 import { chalk } from "./chalk.js";
 
 // NOTE: We are creating this file in the prebuild.sh script so that we can support cjs and esm
 import { getDirname } from "./get-dirname.js";
 const _dirname = getDirname();
+
+const getBaseUrl = helpers.getBaseUrl;
+const overrideDefaults = helpers.overrideDefaults;
+const getChainId = helpers.getChainId;
 
 // The SDK does not know about the local-tableland contract
 overrideDefaults(getChainId("local-tableland"), {
