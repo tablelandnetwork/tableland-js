@@ -16,6 +16,8 @@ import {
   waitForReady,
   getAccounts,
   getDatabase,
+  getRegistry,
+  getValidator,
   logSync,
   isWindows,
   inDebugMode,
@@ -231,5 +233,5 @@ class LocalTableland {
   }
 }
 
-export { LocalTableland, getAccounts, getDatabase };
+export { LocalTableland, getAccounts, getDatabase, getRegistry, getValidator };
 export type { Config };
