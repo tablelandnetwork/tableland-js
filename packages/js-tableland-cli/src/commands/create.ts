@@ -1,22 +1,16 @@
 import type yargs from "yargs";
 import type { Arguments, CommandBuilder } from "yargs";
-import { Database, ChainName } from "@tableland/sdk";
-import { getWalletWithProvider, getLink } from "../utils.js";
+import { getLink } from "../utils.js";
 import { createInterface } from "readline";
 import { promises } from "fs";
+import { GlobalOptions } from "../cli.js";
+import { setupCommand } from "../lib/commandSetup.js";
 
-export type Options = {
-  // Local
+export interface Options extends GlobalOptions {
   schema?: string;
   prefix?: string;
   file?: string;
-
-  // Global
-  privateKey: string;
-  chain: ChainName;
-  providerUrl: string | undefined;
-  baseUrl: string | undefined;
-};
+}
 
 export const command = "create [schema]";
 export const desc = "Create a new table";
@@ -39,16 +33,10 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
     }) as yargs.Argv<Options>;
 
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
-  let { schema } = argv;
-  const { privateKey, chain, providerUrl, file, prefix, baseUrl } = argv;
-
   try {
-    const signer = getWalletWithProvider({
-      privateKey,
-      chain,
-      providerUrl,
-    });
-
+    let { schema } = argv;
+    const { chain, file, prefix } = argv;
+    const { database, ens } = await setupCommand(argv);
     if (file != null) {
       schema = await promises.readFile(file, { encoding: "utf-8" });
     } else if (schema == null) {
@@ -71,7 +59,11 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       statement = schema;
     }
 
-    const db = new Database({ signer, baseUrl });
+    const db = database;
+
+    if (argv.enableEnsExperiment && ens)
+      statement = await ens.resolve(statement);
+
     const res = await db.prepare(statement).all();
     const link = getLink(chain, res.meta.txn?.transactionHash as string);
     const out = { ...res, link };

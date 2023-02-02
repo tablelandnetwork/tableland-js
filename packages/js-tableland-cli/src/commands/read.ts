@@ -1,20 +1,16 @@
 import type { Arguments, CommandBuilder } from "yargs";
-import { Database, ChainName } from "@tableland/sdk";
 import yargs from "yargs";
 import { promises } from "fs";
 import { createInterface } from "readline";
-import { getChains } from "../utils.js";
+import { GlobalOptions } from "../cli.js";
+import { setupCommand } from "../lib/commandSetup.js";
 
-export type Options = {
-  // Local
+export interface Options extends GlobalOptions {
   statement?: string;
   format: "pretty" | "table" | "objects";
   file?: string;
-
-  // Global
-  chain: ChainName;
-  baseUrl: string | undefined;
-};
+  providerUrl: string;
+}
 
 export const command = "read [statement]";
 export const desc = "Run a read-only query against a remote table";
@@ -40,15 +36,10 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
 
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
   let { statement } = argv;
-  const { chain, format, file, baseUrl } = argv;
-
-  const network = getChains()[chain];
-  if (!network) {
-    console.error("unsupported chain (see `chains` command for details)");
-    return;
-  }
+  const { format, file } = argv;
 
   try {
+    const { database, ens } = await setupCommand(argv, { readOnly: true });
     if (file != null) {
       statement = await promises.readFile(file, { encoding: "utf-8" });
     } else if (statement == null) {
@@ -63,8 +54,12 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       );
       return;
     }
+    const db = database;
 
-    const db = baseUrl ? new Database({ baseUrl }) : Database.readOnly(chain);
+    if (argv.enableEnsExperiment && ens) {
+      statement = await ens.resolve(statement);
+    }
+
     const res = await db.prepare(statement).all();
 
     if (format === "pretty") {

@@ -9,6 +9,7 @@ import * as receipt from "./receipt.js";
 import * as schema from "./schema.js";
 import * as write from "./write.js";
 import * as shell from "./shell.js";
+import * as namespace from "./namespace.js";
 
 export const commands = [
   chains,
@@ -22,4 +23,5 @@ export const commands = [
   schema,
   write,
   shell,
+  namespace,
 ];

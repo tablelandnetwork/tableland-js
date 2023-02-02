@@ -1,12 +1,11 @@
 import type yargs from "yargs";
 import type { Arguments, CommandBuilder } from "yargs";
-import { getChainInfo, Validator } from "@tableland/sdk";
+import { GlobalOptions } from "../cli.js";
+import { setupCommand } from "../lib/commandSetup.js";
 
-export type Options = {
-  // Local
+export interface Options extends GlobalOptions {
   name: string;
-  baseUrl: string | undefined;
-};
+}
 
 export const command = "schema <name>";
 export const desc = "Get info about a given table schema";
@@ -18,34 +17,29 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
   }) as yargs.Argv<Options>;
 
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
-  const { name, baseUrl } = argv;
-
-  const parts = name.split("_");
-  if (parts.length < 3) {
-    console.error(
-      "invalid table name (name format is `{prefix}_{chainId}_{tableId}`)"
-    );
-    return;
-  }
-
-  const tableId = parts.pop() as string;
-  const chainId = parseInt(parts.pop()!);
-  const network = getChainInfo(chainId);
-
-  if (!network) {
-    console.error("unsupported chain (see `chains` command for details)");
-    return;
-  }
-
   try {
-    const validator = baseUrl
-      ? new Validator({ baseUrl })
-      : Validator.forChain(chainId);
+    const { name } = argv;
+    const [tableId, chainId] = name.split("_").reverse();
+
+    const parts = name.split("_");
+
+    if (parts.length < 3 && !argv.enableEnsExperiment) {
+      console.error(
+        "invalid table name (name format is `{prefix}_{chainId}_{tableId}`)"
+      );
+      return;
+    }
+
+    const { validator } = await setupCommand(
+      { ...argv, chain: parseInt(chainId) as any },
+      { readOnly: true }
+    );
+
     const res = await validator.getTableById({
       tableId,
-      chainId,
+      chainId: parseInt(chainId),
     });
-    console.log(res.schema);
+    console.dir(res.schema, { depth: null });
     /* c8 ignore next 3 */
   } catch (err: any) {
     console.error(err.message);

@@ -1,18 +1,13 @@
 import type yargs from "yargs";
 import type { Arguments, CommandBuilder } from "yargs";
-import { ChainName, Registry } from "@tableland/sdk";
+import { Registry } from "@tableland/sdk";
 import { getWalletWithProvider, getLink } from "../utils.js";
-export type Options = {
-  // Local
+import { GlobalOptions } from "../cli.js";
+
+export interface Options extends GlobalOptions {
   name: string;
   controller: string;
-
-  // Global
-  privateKey: string;
-  chain: ChainName;
-  providerUrl: string | undefined;
-  baseUrl: string | undefined;
-};
+}
 
 export const command = "controller <sub>";
 export const desc =
@@ -32,7 +27,7 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
         const { name, chain, privateKey, providerUrl } = argv;
 
         try {
-          const signer = getWalletWithProvider({
+          const signer = await getWalletWithProvider({
             privateKey,
             chain,
             providerUrl,
@@ -65,7 +60,7 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
         const { name, controller, chain, privateKey, providerUrl } = argv;
 
         try {
-          const signer = getWalletWithProvider({
+          const signer = await getWalletWithProvider({
             privateKey,
             chain,
             providerUrl,
@@ -95,7 +90,7 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
         const { name, chain, privateKey, providerUrl } = argv;
 
         try {
-          const signer = getWalletWithProvider({
+          const signer = await getWalletWithProvider({
             privateKey,
             chain,
             providerUrl,

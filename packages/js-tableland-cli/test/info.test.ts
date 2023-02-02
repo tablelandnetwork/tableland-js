@@ -15,7 +15,7 @@ describe("commands/info", function () {
     restore();
   });
 
-  test("throws with invalid table name", async function () {
+  test("info throws with invalid table name", async function () {
     const consoleError = spy(console, "error");
     await yargs(["info", "invalid_name"]).command(mod).parse();
     assert.calledWith(
@@ -24,7 +24,7 @@ describe("commands/info", function () {
     );
   });
 
-  test("throws with invalid chain", async function () {
+  test("info throws with invalid chain", async function () {
     const consoleError = spy(console, "error");
     await yargs(["info", "valid_9999_0"]).command(mod).parse();
     assert.calledWith(
@@ -50,7 +50,7 @@ describe("commands/info", function () {
     );
   });
 
-  test("throws with missing table", async function () {
+  test("info throws with missing table", async function () {
     const consoleError = spy(console, "error");
     await yargs(["info", "ignored_31337_99"]).command(mod).parse();
     assert.calledWith(consoleError, "Not Found");

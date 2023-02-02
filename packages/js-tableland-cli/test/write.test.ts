@@ -93,9 +93,9 @@ describe("commands/write", function () {
     const privateKey = account.privateKey.slice(2);
     const stdin = mockStd.stdin();
     const consoleError = spy(console, "error");
-    process.nextTick(() => {
+    setTimeout(() => {
       stdin.send("\n").end();
-    });
+    }, 100);
     await yargs([
       "write",
       "--chain",
@@ -174,9 +174,9 @@ describe("commands/write", function () {
     const privateKey = account.privateKey.slice(2);
     const consoleLog = spy(console, "log");
     const stdin = mockStd.stdin();
-    process.nextTick(() => {
+    setTimeout(() => {
       stdin.send("update healthbot_31337_1 set counter=1;\n").end();
-    });
+    }, 100);
     await yargs([
       "write",
       "--chain",

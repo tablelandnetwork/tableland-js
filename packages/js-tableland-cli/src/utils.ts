@@ -1,23 +1,23 @@
 import { Wallet, providers, getDefaultProvider } from "ethers";
-import { ChainName, getChainInfo, supportedChains } from "@tableland/sdk";
+import { helpers } from "@tableland/sdk";
 
 export const getChains = () =>
   Object.fromEntries(
-    Object.entries(supportedChains).filter(
+    Object.entries(helpers.supportedChains).filter(
       ([name]) => !name.includes("staging")
     )
   );
 
 export interface Options {
   privateKey: string;
-  chain: ChainName;
+  chain: helpers.ChainName;
   providerUrl: string | undefined;
 }
 
 export const wait = (timeout: number) =>
   new Promise((resolve) => setTimeout(resolve, timeout));
 
-export function getLink(chain: ChainName, hash: string): string {
+export function getLink(chain: helpers.ChainName, hash: string): string {
   /* c8 ignore start */
   if (chain.includes("ethereum")) {
     if (chain.includes("goerli")) {
@@ -44,16 +44,18 @@ export function getLink(chain: ChainName, hash: string): string {
   /* c8 ignore stop */
 }
 
-export function getWalletWithProvider({
+export async function getWalletWithProvider({
   privateKey,
   chain,
   providerUrl,
-}: Options): Wallet {
+}: Options): Promise<Wallet> {
   if (privateKey == null) {
     throw new Error("missing required flag (`-k` or `--privateKey`)");
   }
-  const network: any = getChainInfo(chain);
-  if (network == null) {
+  let network: helpers.ChainInfo;
+  try {
+    network = helpers.getChainInfo(chain);
+  } catch (e) {
     throw new Error("unsupported chain (see `chains` command for details)");
   }
 
@@ -67,11 +69,17 @@ export function getWalletWithProvider({
   /* c8 ignore start */
   if (!provider) {
     // This will be significantly rate limited, but we only need to run it once
-    provider = getDefaultProvider(network);
+    provider = getDefaultProvider({ ...network, name: network.chainName });
   }
+
   if (!provider) {
     throw new Error("unable to create ETH API provider");
   }
+
+  if ((await provider.getNetwork()).chainId !== network.chainId) {
+    throw new Error("Provider / chain mismatch.");
+  }
+
   /* c8 ignore stop */
   return wallet.connect(provider);
 }

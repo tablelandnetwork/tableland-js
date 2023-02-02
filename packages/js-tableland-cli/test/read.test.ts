@@ -7,8 +7,9 @@ import * as mod from "../src/commands/read.js";
 import { wait } from "../src/utils.js";
 
 describe("commands/read", function () {
+  this.timeout(10000);
   before(async function () {
-    await wait(500);
+    await wait(5000);
   });
 
   afterEach(function () {
@@ -51,9 +52,9 @@ describe("commands/read", function () {
   test("throws with empty stdin", async function () {
     const stdin = mockStd.stdin();
     const consoleError = spy(console, "error");
-    process.nextTick(() => {
+    setTimeout(() => {
       stdin.send("\n").end();
-    });
+    }, 100);
     await yargs(["read", "--chain", "local-tableland"]).command(mod).parse();
     assert.calledWith(
       consoleError,
@@ -127,9 +128,9 @@ describe("commands/read", function () {
   test("passes when provided input from stdin", async function () {
     const consoleLog = spy(console, "log");
     const stdin = mockStd.stdin();
-    process.nextTick(() => {
+    setTimeout(() => {
       stdin.send("select * from healthbot_31337_1;\n").end();
-    });
+    }, 100);
     await yargs([
       "read",
       "--chain",

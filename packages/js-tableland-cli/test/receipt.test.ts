@@ -52,7 +52,7 @@ describe("commands/receipt", function () {
     const privateKey = account.privateKey.slice(2);
     const consoleLog = spy(console, "log");
 
-    const signer = getWalletWithProvider({
+    const signer = await getWalletWithProvider({
       privateKey,
       chain: "local-tableland",
       providerUrl: undefined,

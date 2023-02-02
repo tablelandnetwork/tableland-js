@@ -93,9 +93,9 @@ describe("commands/create", function () {
     const privateKey = account.privateKey.slice(2);
     const stdin = mockStd.stdin();
     const consoleError = spy(console, "error");
-    process.nextTick(() => {
+    setTimeout(() => {
       stdin.send("\n").end();
-    });
+    }, 100);
     await yargs([
       "create",
       "--chain",
@@ -217,11 +217,11 @@ describe("commands/create", function () {
     const privateKey = account.privateKey.slice(2);
     const consoleLog = spy(console, "log");
     const stdin = mockStd.stdin();
-    process.nextTick(() => {
+    setTimeout(() => {
       stdin
         .send("create table stdin_test (id int primary key, name text);\n")
         .end();
-    });
+    }, 100);
     await yargs([
       "create",
       "--chain",

@@ -1,10 +1,15 @@
 {
   "name": "@tableland/cli",
-  "version": "4.0.0-pre6.0",
+  "version": "0.0.0",
   "description": "Tableland command line tools",
   "repository": "https://github.com/tablelandnetwork/js-tableland-cli",
   "publishConfig": {
     "access": "public"
+  },
+  "overrides": {
+    "ethereum-waffle": {
+      "@nomicfoundation/hardhat-chai-matchers": "*"
+    }
   },
   "keywords": [
     "tableland",
@@ -32,11 +37,12 @@
     "test": "mocha",
     "coverage": "c8 mocha",
     "clean": "rm -rf dist",
-    "build": "npx tsc && chmod +x dist/cli.js"
+    "build": "npx tsc && chmod +x dist/cli.js",
+    "tableland": "node --experimental-specifier-resolution=node ./dist/cli.js"
   },
   "license": "MIT AND Apache-2.0",
   "devDependencies": {
-    "@tableland/local": "^1.0.0-pre.1",
+    "@tableland/local": "^1.0.0-pre.2",
     "@types/cosmiconfig": "^6.0.0",
     "@types/inquirer": "^9.0.2",
     "@types/js-yaml": "^4.0.5",
@@ -61,8 +67,9 @@
     "typescript": "^4.8.4"
   },
   "dependencies": {
-    "@tableland/sdk": "^4.0.0-pre.4",
-    "@tableland/sqlparser": "^1.0.0",
+    "@ensdomains/ensjs": "3.0.0-alpha.39",
+    "@tableland/sdk": "^4.0.0-pre.6",
+    "@tableland/sqlparser": "1.0.3",
     "chalk": "^5.1.2",
     "cli-select": "^1.1.2",
     "cli-select-2": "^2.0.0",

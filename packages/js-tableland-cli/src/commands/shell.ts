@@ -1,23 +1,15 @@
 import yargs, { Arguments, CommandBuilder } from "yargs";
 import cliSelect from "cli-select";
-import { ChainName, Database, Config } from "@tableland/sdk";
 import chalk from "chalk";
 import { createInterface } from "readline";
-import { getChains, getWalletWithProvider } from "../utils.js";
-import init from "@tableland/sqlparser";
 
-export type Options = {
-  // Local
+import { GlobalOptions } from "../cli.js";
+import { Connections, setupCommand } from "../lib/commandSetup.js";
+
+export interface Options extends GlobalOptions {
   statement?: string;
   format: "pretty" | "table" | "objects";
-
-  // Global
-  chain: ChainName;
-  privateKey: string;
-  providerUrl: string | undefined;
-  verbose: boolean;
-  baseUrl: string | undefined;
-};
+}
 
 export const command = "shell [statement]";
 export const desc =
@@ -59,21 +51,15 @@ async function confirmQuery() {
 async function fireFullQuery(
   statement: string,
   argv: any,
-  tablelandConnection: Database
+  tablelandConnection: Connections
 ) {
-  switch (true) {
-    case statement.trim().endsWith(".help"):
-      console.log("Uh, I didn't think I'd get this far");
-      break;
-    case statement.trim().endsWith(";"):
-      // Parse query for read, write, or create;
-      // If write or create, confrm with cliSelect
-      // If read, return response in Tabular form
-      break;
-  }
-
   try {
     const { type } = await globalThis.sqlparser.normalize(statement);
+    const { database, ens } = tablelandConnection;
+
+    if (argv.enableEnsExperiment && ens) {
+      statement = await ens.resolve(statement);
+    }
 
     let stmt;
     let confirm: any = true;
@@ -83,7 +69,7 @@ async function fireFullQuery(
     }
     if (!confirm) return;
     try {
-      stmt = tablelandConnection.prepare(statement);
+      stmt = database.prepare(statement);
       const response = await stmt.all();
       const { results } = response;
 
@@ -114,7 +100,7 @@ async function fireFullQuery(
 
 async function shellYeah(
   argv: any,
-  tablelandConnection: Database,
+  tablelandConnection: Connections,
   history: string[] = []
 ) {
   try {
@@ -180,33 +166,21 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
     }) as yargs.Argv<Options>;
 
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
-  await init();
-  const { privateKey, chain, providerUrl, baseUrl } = argv;
-
   try {
-    const signer = getWalletWithProvider({
-      privateKey,
-      chain,
-      providerUrl,
-    });
-    const options: Config = {
-      signer,
-      baseUrl,
-    };
-
-    const tablelandConnection = new Database(options);
-
-    const network: any = getChains()[chain];
-    if (!network) {
-      console.error("unsupported chain (see `chains` command for details)");
-    }
-
+    const connections = await setupCommand(argv);
+    const { signer, network } = connections;
     console.log("Welcome to Tableland");
     console.log(`Tableland CLI shell`);
-    // console.log(`Enter ".help" for usage hints`);
-    console.log(`Connected to ${network.chainName} using ${signer.address}`);
+    console.log(
+      `Connected to ${network.chainName} using ${await signer.getAddress()}`
+    );
+    if (argv.enableEnsExperiment) {
+      console.log(
+        "ENS namespace is experimental, no promises that it will exist in future builds"
+      );
+    }
 
-    await shellYeah(argv, tablelandConnection);
+    await shellYeah(argv, connections);
   } catch (e: any) {
     console.error(e.message);
   }

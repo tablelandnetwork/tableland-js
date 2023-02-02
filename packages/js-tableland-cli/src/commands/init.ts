@@ -5,13 +5,13 @@ import { resolve, dirname } from "path";
 import { mkdirSync, createWriteStream, WriteStream } from "fs";
 import inquirer from "inquirer";
 import { getChains } from "../utils.js";
+import { GlobalOptions } from "../cli.js";
 
-export type Options = {
-  // Local
+export interface Options extends GlobalOptions {
   yes: boolean;
   format: "json" | "yaml" | "yml";
   path: string;
-};
+}
 
 const defaults = {
   chain: "maticmum",

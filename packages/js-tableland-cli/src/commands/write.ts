@@ -1,21 +1,15 @@
 import type yargs from "yargs";
 import type { Arguments, CommandBuilder } from "yargs";
-import { ChainName, Database } from "@tableland/sdk";
-import { getWalletWithProvider, getLink } from "../utils.js";
+import { getLink } from "../utils.js";
 import { promises } from "fs";
 import { createInterface } from "readline";
+import { GlobalOptions } from "../cli.js";
+import { setupCommand } from "../lib/commandSetup.js";
 
-export type Options = {
-  // Local
+export interface Options extends GlobalOptions {
   statement?: string;
   file?: string;
-
-  // Global
-  privateKey: string;
-  chain: ChainName;
-  providerUrl: string | undefined;
-  baseUrl: string | undefined;
-};
+}
 
 export const command = "write [statement]";
 export const desc = "Run a mutating SQL statement against a remote table";
@@ -34,15 +28,10 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
 
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
   let { statement } = argv;
-  const { privateKey, chain, providerUrl, file, baseUrl } = argv;
+  const { chain, file } = argv;
 
   try {
-    const signer = getWalletWithProvider({
-      privateKey,
-      chain,
-      providerUrl,
-    });
-
+    const { database, ens } = await setupCommand(argv);
     if (file != null) {
       statement = await promises.readFile(file, { encoding: "utf-8" });
     } else if (statement == null) {
@@ -57,9 +46,12 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       );
       return;
     }
-    const db = new Database({ signer, baseUrl });
 
-    const res = await db.prepare(statement).all();
+    if (argv.enableEnsExperiment && ens) {
+      statement = await ens.resolve(statement);
+    }
+
+    const res = await database.prepare(statement).all();
 
     const link = getLink(chain, res?.meta?.txn?.transactionHash as string);
     const out = { ...res, link };

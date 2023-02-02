@@ -37,9 +37,9 @@ describe("commands/schema", function () {
   });
 
   test("Schema passes with local-tableland", async function () {
-    const consoleLog = spy(console, "log");
+    const consoleDir = spy(console, "dir");
     await yargs(["schema", "healthbot_31337_1"]).command(mod).parse();
-    assert.calledWith(consoleLog, {
+    assert.calledWith(consoleDir, {
       columns: [{ name: "counter", type: "integer" }],
     });
   });
