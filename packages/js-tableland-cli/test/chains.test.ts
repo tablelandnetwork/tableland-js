@@ -15,8 +15,8 @@ describe("commands/chains", function () {
 
   test("chains returns correct output", async function () {
     const chains = getChains();
-    const consoleLog = spy(console, "log");
+    const consoleDir = spy(console, "dir");
     await yargs(["chains"]).command(mod).parse();
-    assert.calledWith(consoleLog, chains);
+    assert.calledWith(consoleDir, chains);
   });
 });

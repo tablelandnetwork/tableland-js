@@ -114,7 +114,7 @@ describe("commands/write", function () {
   test("Write passes with local-tableland", async function () {
     const [account] = getAccounts();
     const privateKey = account.privateKey.slice(2);
-    const consoleLog = spy(console, "log");
+    const consoleDir = spy(console, "dir");
     await yargs([
       "write",
       "update healthbot_31337_1 set counter=1 where rowid=0;", // This just updates in place
@@ -126,7 +126,7 @@ describe("commands/write", function () {
       .command(mod)
       .parse();
     assert.calledWith(
-      consoleLog,
+      consoleDir,
       match(function (value: any) {
         const { transactionHash, link } = value.meta.txn;
         return (
@@ -141,7 +141,7 @@ describe("commands/write", function () {
   test("passes when provided input from file", async function () {
     const [account] = getAccounts();
     const privateKey = account.privateKey.slice(2);
-    const consoleLog = spy(console, "log");
+    const consoleDir = spy(console, "dir");
     const path = await temporaryWrite(
       "update healthbot_31337_1 set counter=1;\n"
     );
@@ -157,7 +157,7 @@ describe("commands/write", function () {
       .command(mod)
       .parse();
     assert.calledWith(
-      consoleLog,
+      consoleDir,
       match(function (value: any) {
         const { transactionHash, link } = value.meta.txn;
         return (
@@ -172,7 +172,7 @@ describe("commands/write", function () {
   test("passes when provided input from stdin", async function () {
     const [account] = getAccounts();
     const privateKey = account.privateKey.slice(2);
-    const consoleLog = spy(console, "log");
+    const consoleDir = spy(console, "dir");
     const stdin = mockStd.stdin();
     setTimeout(() => {
       stdin.send("update healthbot_31337_1 set counter=1;\n").end();
@@ -187,7 +187,7 @@ describe("commands/write", function () {
       .command(mod)
       .parse();
     assert.calledWith(
-      consoleLog,
+      consoleDir,
       match(function (value: any) {
         const { transactionHash, link } = value.meta.txn;
         return (

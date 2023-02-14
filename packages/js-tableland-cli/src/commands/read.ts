@@ -66,7 +66,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       console.table(res.results);
     } else {
       const out = res;
-      console.log(out);
+      console.dir(out, { depth: null });
     }
     /* c8 ignore next 3 */
   } catch (err: any) {

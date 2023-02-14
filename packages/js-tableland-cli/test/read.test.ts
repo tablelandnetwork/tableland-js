@@ -63,7 +63,7 @@ describe("commands/read", function () {
   });
 
   test("Read passes with local-tableland (defaults to table format)", async function () {
-    const consoleLog = spy(console, "log");
+    const consoleDir = spy(console, "dir");
     await yargs([
       "read",
       "select * from healthbot_31337_1",
@@ -73,7 +73,7 @@ describe("commands/read", function () {
       .command(mod)
       .parse();
     assert.calledWith(
-      consoleLog,
+      consoleDir,
       match((value) => {
         const res = value;
         return res.results[0].counter === 1;
@@ -82,7 +82,7 @@ describe("commands/read", function () {
   });
 
   test("passes with alternate output format (objects)", async function () {
-    const consoleLog = spy(console, "log");
+    const consoleDir = spy(console, "dir");
     await yargs([
       "read",
       "select * from healthbot_31337_1;",
@@ -94,7 +94,7 @@ describe("commands/read", function () {
       .command(mod)
       .parse();
     assert.calledWith(
-      consoleLog,
+      consoleDir,
       match((value) => {
         const res = value;
         return res.results[0].counter === 1;
@@ -103,7 +103,7 @@ describe("commands/read", function () {
   });
 
   test("passes when provided input from file", async function () {
-    const consoleLog = spy(console, "log");
+    const consoleDir = spy(console, "dir");
     const path = await temporaryWrite("select * from healthbot_31337_1;\n");
     await yargs([
       "read",
@@ -117,7 +117,7 @@ describe("commands/read", function () {
       .command(mod)
       .parse();
     assert.calledWith(
-      consoleLog,
+      consoleDir,
       match((value) => {
         const res = value;
         return res.results[0].counter === 1;
@@ -126,7 +126,7 @@ describe("commands/read", function () {
   });
 
   test("passes when provided input from stdin", async function () {
-    const consoleLog = spy(console, "log");
+    const consoleDir = spy(console, "dir");
     const stdin = mockStd.stdin();
     setTimeout(() => {
       stdin.send("select * from healthbot_31337_1;\n").end();
@@ -143,7 +143,7 @@ describe("commands/read", function () {
       .command(mod)
       .parse();
     assert.calledWith(
-      consoleLog,
+      consoleDir,
       match((value) => {
         const res = value;
         return res.results[0].counter === 1;
@@ -173,7 +173,7 @@ describe("commands/read", function () {
   });
 
   test.skip("passes with alternate output format (pretty)", async function () {
-    const consoleLog = spy(console, "log");
+    const consoleDir = spy(console, "dir");
     await yargs([
       "read",
       "select * from healthbot_31337_1;",
@@ -185,7 +185,7 @@ describe("commands/read", function () {
       .command(mod)
       .parse();
     assert.calledWith(
-      consoleLog,
+      consoleDir,
       `
 ┌─────────┬─────────┐
 │ (index) │ counter │

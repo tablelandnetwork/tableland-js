@@ -34,11 +34,11 @@ describe("commands/info", function () {
   });
 
   test("Info passes with local-tableland", async function () {
-    const consoleLog = spy(console, "log");
+    const consoleDir = spy(console, "dir");
     await yargs(["info", "healthbot_31337_1"]).command(mod).parse();
 
     assert.calledWith(
-      consoleLog,
+      consoleDir,
       match(function (value: any) {
         const { name, attributes, externalUrl } = value;
         return (

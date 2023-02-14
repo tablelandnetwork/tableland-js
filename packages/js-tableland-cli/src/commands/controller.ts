@@ -36,7 +36,7 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
 
           const res = await reg.getController(name);
 
-          console.log(res);
+          console.dir(res, { depth: null });
           /* c8 ignore next 3 */
         } catch (err: any) {
           console.error(err.message);
@@ -71,7 +71,7 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
 
           const link = getLink(chain, res.hash);
           const out = { ...res, link };
-          console.log(out);
+          console.dir(out, { depth: null });
           /* c8 ignore next 3 */
         } catch (err: any) {
           console.error(err.message);
@@ -102,7 +102,7 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
 
           const link = getLink(chain, res.hash);
           const out = { ...res, link };
-          console.log(out);
+          console.dir(out, { depth: null });
           /* c8 ignore next 3 */
         } catch (err: any) {
           console.error(err.message);
