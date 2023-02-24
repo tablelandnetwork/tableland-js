@@ -71,7 +71,6 @@ async function fireFullQuery(
     try {
       stmt = database.prepare(statement);
       const response = await stmt.all();
-      const result = { response };
 
       console.dir(response, { depth: null });
       switch (type) {
@@ -80,9 +79,6 @@ async function fireFullQuery(
           break;
         case "write":
           console.log(`Updated table: ${response.meta.txn?.name}`);
-          break;
-        case "read":
-          console.dir(result, { depth: null });
           break;
         default:
       }

@@ -54,6 +54,8 @@ describe("commands/create", function () {
       "invalid",
       "--chain",
       "local-tableland",
+      "--prefix",
+      "cooltable",
       "--privateKey",
       privateKey,
     ])

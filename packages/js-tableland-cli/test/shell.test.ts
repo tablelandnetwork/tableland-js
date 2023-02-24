@@ -39,9 +39,14 @@ describe("commands/shell", function () {
       .command(mod)
       .parse();
 
-    assert.match(consoleDir.getCall(1).args[0].response.results, [
-      { counter: 1 },
-    ]);
+    assert.calledWith(
+      consoleDir,
+      match((value) => {
+        console.log(value);
+        const res = value;
+        return res.results[0].counter === 1;
+      }, "Doesn't match expected output")
+    );
   });
 
   test("Shell throws without network", async function () {
@@ -107,8 +112,13 @@ describe("commands/shell", function () {
       .command(mod)
       .parse();
 
-    assert.match(consoleDir.getCall(1).args[0].response.results, [
-      { counter: 1 },
-    ]);
+    assert.calledWith(
+      consoleDir,
+      match((value) => {
+        console.log(value);
+        const res = value;
+        return res.results[0].counter === 1;
+      }, "Doesn't match expected output")
+    );
   });
 });

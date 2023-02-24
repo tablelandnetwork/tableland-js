@@ -52,11 +52,17 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       return;
     }
 
-    let statement = `CREATE TABLE ${prefix} (${schema})`;
+    let statement = "";
 
     const check = /CREATE TABLE/gim.exec(schema.toString());
     if (check) {
       statement = schema;
+    } else if (prefix === undefined) {
+      console.error(
+        "Must specify --prefix if you do not provide a full Create statement"
+      );
+    } else {
+      statement = `CREATE TABLE ${prefix} (${schema})`;
     }
 
     const db = database;

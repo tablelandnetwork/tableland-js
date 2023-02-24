@@ -45,14 +45,12 @@ export default class EnsResolver {
         return true;
       }
     } catch (e) {
+      console.log(e);
       return false;
     }
   }
 
   async addTableRecords(domain: string, maps: TableMap[]) {
-    if (!(await this.isOwner(domain))) {
-      throw new Error("You don't own that ENS domain");
-    }
     try {
       await this.ENS.setRecords(domain, {
         records: {
