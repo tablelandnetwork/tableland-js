@@ -33,19 +33,21 @@ Under the hood Local Tableland is running an in memory instance of Hardhat Netwo
 Using the [JS SDK](https://github.com/tablelandnetwork/js-tableland) with a local-tableland sandboxed network is straight forward. In the SDK connection options simply specify `chain: 'local-tableland'`.
 For example:
 
-```
-import { connect } from '@tableland/sdk';
-const tableland = connect({ chain: 'local-tableland' });
+```js
+import { connect } from "@tableland/sdk";
+const tableland = connect({ chain: "local-tableland" });
 ```
 
 ## Programmatic Usage
 
 If you are using Local Tableland to run tests for your project, or want to start a sandbox network programmatically for any reason, the following example covers the basics
 
-```
+```js
 import { LocalTableland } from "@tableland/local";
 
-const lt = new LocalTableland({ /* silent or verbose can be set via an options object as the first arg */ });
+const lt = new LocalTableland({
+  /* silent or verbose can be set via an options object as the first arg */
+});
 
 const go = async function () {
   lt.start();
@@ -56,7 +58,7 @@ const stop = async function () {
   await lt.shutdown();
 };
 
-go().catch(err => console.log(err));
+go().catch((err) => console.log(err));
 ```
 
 **Best practices for testing is to start a single local network and run all of your tests against it, i.e. don't create an instance for each test. Doing this will speed up test execution significantly.**
@@ -67,7 +69,7 @@ Using Local Tableland to test a Hardhat project is straight forward. The one key
 
 Consider the basic example below
 
-```
+```js
 import { after, before, describe, test } from "mocha";
 import { LocalTableland, getAccounts } from "@tableland/local";
 
