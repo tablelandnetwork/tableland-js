@@ -60,12 +60,21 @@ export async function getWalletWithProvider({
   }
 
   const wallet = new Wallet(privateKey);
-  let provider: providers.BaseProvider = new providers.JsonRpcProvider(
-    chain === "local-tableland" && !providerUrl
-      ? "http://127.0.0.1:8545"
-      : providerUrl,
-    network.name === "localhost" ? undefined : network.name
-  );
+
+  // We want to aquire a provider using the params given by the caller.
+  let provider: providers.BaseProvider | undefined;
+  // first we check if a providerUrl was given.
+  if (providerUrl) {
+    provider = new providers.JsonRpcProvider(providerUrl, network.name);
+  }
+
+  // Second we will check if the "local-tableland" chain is being used,
+  // because the default provider won't work with this chain.
+  if (!provider && chain === "local-tableland") {
+    provider = new providers.JsonRpcProvider("http://127.0.0.1:8545");
+  }
+
+  // Finally we use the default provider
   /* c8 ignore start */
   if (!provider) {
     // This will be significantly rate limited, but we only need to run it once
@@ -76,8 +85,15 @@ export async function getWalletWithProvider({
     throw new Error("unable to create ETH API provider");
   }
 
-  if ((await provider.getNetwork()).chainId !== network.chainId) {
-    throw new Error("Provider / chain mismatch.");
+  let providerChainId: number | undefined;
+  try {
+    providerChainId = (await provider.getNetwork()).chainId;
+  } catch (err) {
+    throw new Error("cannot determine provider chain ID");
+  }
+
+  if (providerChainId !== network.chainId) {
+    throw new Error("provider / chain mismatch.");
   }
 
   /* c8 ignore stop */
