@@ -49,7 +49,8 @@
     "build:esm": "cp src/get-dirname-esm.ts src/get-dirname.ts && tsc -p tsconfig.json",
     "build:cjs": "cp src/get-dirname-cjs.ts src/get-dirname.ts && tsc -p tsconfig.cjs.json",
     "build": "npm run clean && npm run build:esm && npm run build:cjs && ./fixup.sh",
-    "up": "node dist/esm/up.js --validator ../go-tableland --registry ../evm-tableland"
+    "up": "node dist/esm/up.js",
+    "up:dev": "node dist/esm/up.js --validator ../go-tableland --registry ../evm-tableland"
   },
   "bin": {
     "local-tableland": "dist/esm/up.js"
