@@ -16,18 +16,22 @@ describe("commands/read", function () {
     restore();
   });
 
-  test("throws with invalid chain", async function () {
+  test("throws with invalid table name", async function () {
     const consoleError = spy(console, "error");
-    await yargs(["read", "select * from something;"]).command(mod).parse();
+    const tableName = "something";
+    const statement = `select * from ${tableName};`;
+    await yargs(["read", statement, "--baseUrl", "http://127.0.0.1:8080"])
+      .command(mod)
+      .parse();
     assert.calledWith(
       consoleError,
-      "unsupported chain (see `chains` command for details)"
+      `error validating name: table name has wrong format: ${tableName}`
     );
   });
 
   test("throws with invalid statement", async function () {
     const consoleError = spy(console, "error");
-    await yargs(["read", "invalid;", "--chain", "local-tableland"])
+    await yargs(["read", "invalid;", "--baseUrl", "http://127.0.0.1:8080"])
       .command(mod)
       .parse();
     assert.calledWith(
@@ -38,7 +42,13 @@ describe("commands/read", function () {
 
   test("throws with missing file", async function () {
     const consoleError = spy(console, "error");
-    await yargs(["read", "--file", "missing.sql", "--chain", "local-tableland"])
+    await yargs([
+      "read",
+      "--file",
+      "missing.sql",
+      "--baseUrl",
+      "http://127.0.0.1:8080",
+    ])
       .command(mod)
       .parse();
     assert.calledWith(
@@ -55,7 +65,9 @@ describe("commands/read", function () {
     setTimeout(() => {
       stdin.send("\n").end();
     }, 100);
-    await yargs(["read", "--chain", "local-tableland"]).command(mod).parse();
+    await yargs(["read", "--baseUrl", "http://127.0.0.1:8080"])
+      .command(mod)
+      .parse();
     assert.calledWith(
       consoleError,
       "missing input value (`statement`, `file`, or piped input from stdin required)"
@@ -64,12 +76,7 @@ describe("commands/read", function () {
 
   test("Read passes with local-tableland (defaults to table format)", async function () {
     const consoleDir = spy(console, "dir");
-    await yargs([
-      "read",
-      "select * from healthbot_31337_1",
-      "--chain",
-      "local-tableland",
-    ])
+    await yargs(["read", "select * from healthbot_31337_1"])
       .command(mod)
       .parse();
     assert.calledWith(
@@ -86,8 +93,6 @@ describe("commands/read", function () {
     await yargs([
       "read",
       "select * from healthbot_31337_1;",
-      "--chain",
-      "local-tableland",
       "--format",
       "objects",
     ])
@@ -105,15 +110,7 @@ describe("commands/read", function () {
   test("passes when provided input from file", async function () {
     const consoleDir = spy(console, "dir");
     const path = await temporaryWrite("select * from healthbot_31337_1;\n");
-    await yargs([
-      "read",
-      "--chain",
-      "local-tableland",
-      "--file",
-      path,
-      "--format",
-      "objects",
-    ])
+    await yargs(["read", "--file", path, "--format", "objects"])
       .command(mod)
       .parse();
     assert.calledWith(
@@ -133,8 +130,6 @@ describe("commands/read", function () {
     }, 100);
     await yargs([
       "read",
-      "--chain",
-      "local-tableland",
       "--format",
       "objects",
       "--providerUrl",
@@ -156,8 +151,6 @@ describe("commands/read", function () {
     await yargs([
       "read",
       "select * from healthbot_31337_1;",
-      "--chain",
-      "local-tableland",
       "--format",
       "pretty",
       "--baseUrl",
@@ -177,8 +170,6 @@ describe("commands/read", function () {
     await yargs([
       "read",
       "select * from healthbot_31337_1;",
-      "--chain",
-      "local-tableland",
       "--format",
       "pretty",
     ])

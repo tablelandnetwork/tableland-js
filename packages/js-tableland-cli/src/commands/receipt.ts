@@ -21,6 +21,10 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
   try {
     const { hash, chain } = argv;
+    if (!chain) {
+      console.error("missing required flag (`-c` or `--chain`)");
+      return;
+    }
     const { validator } = await setupCommand(argv);
     const res = await validator.receiptByTransactionHash({
       chainId: helpers.getChainId(chain),

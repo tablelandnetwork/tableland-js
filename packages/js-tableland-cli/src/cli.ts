@@ -60,7 +60,6 @@ const _argv = yargs(hideBin(process.argv))
     alias: "c",
     type: "string",
     description: "The EVM chain to target",
-    default: "maticmum",
   })
   .option("enableEnsExperiment", {
     type: "boolean",

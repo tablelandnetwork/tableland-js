@@ -26,6 +26,26 @@ describe("commands/receipt", function () {
       .parse();
     assert.calledWith(
       consoleError,
+      "missing required flag (`-c` or `--chain`)"
+    );
+  });
+
+  test("Receipt throws with invalid chain", async function () {
+    const [account] = getAccounts();
+    const privateKey = account.privateKey.slice(2);
+    const consoleError = spy(console, "error");
+    await yargs([
+      "receipt",
+      "--privateKey",
+      privateKey,
+      "--chain",
+      "foozbazz",
+      "ignored",
+    ])
+      .command(mod)
+      .parse();
+    assert.calledWith(
+      consoleError,
       "unsupported chain (see `chains` command for details)"
     );
   });

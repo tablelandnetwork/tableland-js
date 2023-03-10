@@ -35,8 +35,16 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
   try {
     let { schema } = argv;
-    const { chain, file, prefix } = argv;
-    const { database, ens } = await setupCommand(argv);
+    const { chain, file, prefix, privateKey } = argv;
+    // enforce that all args required for this command are available
+    if (!privateKey) {
+      console.error("missing required flag (`-k` or `--privateKey`)");
+      return;
+    }
+    if (!chain) {
+      console.error("missing required flag (`-c` or `--chain`)");
+      return;
+    }
     if (file != null) {
       schema = await promises.readFile(file, { encoding: "utf-8" });
     } else if (schema == null) {
@@ -65,7 +73,8 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       statement = `CREATE TABLE ${prefix} (${schema})`;
     }
 
-    const db = database;
+    // now that we have parsed the command args, run the create operation
+    const { database: db, ens } = await setupCommand(argv);
 
     if (argv.enableEnsExperiment && ens)
       statement = await ens.resolve(statement);

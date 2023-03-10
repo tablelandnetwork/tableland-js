@@ -28,10 +28,18 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
 
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
   let { statement } = argv;
-  const { chain, file } = argv;
+  const { chain, file, privateKey } = argv;
 
   try {
-    const { database, ens } = await setupCommand(argv);
+    // enforce that all args required for this command are available
+    if (!privateKey) {
+      console.error("missing required flag (`-k` or `--privateKey`)");
+      return;
+    }
+    if (!chain) {
+      console.error("missing required flag (`-c` or `--chain`)");
+      return;
+    }
     if (file != null) {
       statement = await promises.readFile(file, { encoding: "utf-8" });
     } else if (statement == null) {
@@ -47,11 +55,13 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       return;
     }
 
+    const { database: db, ens } = await setupCommand(argv);
+
     if (argv.enableEnsExperiment && ens) {
       statement = await ens.resolve(statement);
     }
 
-    const res = await database.prepare(statement).all();
+    const res = await db.prepare(statement).all();
 
     const link = getLink(chain, res?.meta?.txn?.transactionHash as string);
     const out = { ...res, link };

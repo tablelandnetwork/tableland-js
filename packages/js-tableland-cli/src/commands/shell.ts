@@ -160,6 +160,11 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
 
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
   try {
+    const { chain } = argv;
+    if (!chain) {
+      console.error("missing required flag (`-c` or `--chain`)");
+      return;
+    }
     const connections = await setupCommand(argv);
     const { signer, network } = connections;
     console.log("Welcome to Tableland");

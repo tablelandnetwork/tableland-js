@@ -20,9 +20,12 @@ export const builder: CommandBuilder<{}, Options> = (yargs) => {
 
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
   try {
-    const { privateKey } = argv;
+    const { chain, privateKey } = argv;
     let { address } = argv;
-
+    if (!chain) {
+      console.error("missing required flag (`-c` or `--chain`)");
+      return;
+    }
     if (!address) {
       if (privateKey) {
         address = new Wallet(privateKey).address;

@@ -39,7 +39,6 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
   const { format, file } = argv;
 
   try {
-    const { database, ens } = await setupCommand(argv, { readOnly: true });
     if (file != null) {
       statement = await promises.readFile(file, { encoding: "utf-8" });
     } else if (statement == null) {
@@ -54,7 +53,8 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       );
       return;
     }
-    const db = database;
+
+    const { database: db, ens } = await setupCommand(argv);
 
     if (argv.enableEnsExperiment && ens) {
       statement = await ens.resolve(statement);

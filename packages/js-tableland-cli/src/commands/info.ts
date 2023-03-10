@@ -30,10 +30,10 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       return;
     }
 
-    const { ens, validator } = await setupCommand(
-      { ...argv, chain: parseInt(chainId) as any },
-      { readOnly: true }
-    );
+    const { ens, validator } = await setupCommand({
+      ...argv,
+      chain: parseInt(chainId) as any,
+    });
 
     if (argv.enableEnsExperiment && ens) {
       name = await ens.resolveTable(name);

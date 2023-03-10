@@ -30,10 +30,10 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       return;
     }
 
-    const { validator } = await setupCommand(
-      { ...argv, chain: parseInt(chainId) as any },
-      { readOnly: true }
-    );
+    const { validator } = await setupCommand({
+      ...argv,
+      chain: parseInt(chainId) as any,
+    });
 
     const res = await validator.getTableById({
       tableId,

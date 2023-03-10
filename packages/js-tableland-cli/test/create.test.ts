@@ -27,6 +27,24 @@ describe("commands/create", function () {
     );
   });
 
+  test("throws if chain not provided", async function () {
+    const [account] = getAccounts();
+    const privateKey = account.privateKey.slice(2);
+    const consoleError = spy(console, "error");
+    await yargs([
+      "create",
+      "(id int primary key, desc text)",
+      "--privateKey",
+      privateKey,
+    ])
+      .command(mod)
+      .parse();
+    assert.calledWith(
+      consoleError,
+      "missing required flag (`-c` or `--chain`)"
+    );
+  });
+
   test("throws with invalid chain", async function () {
     const [account] = getAccounts();
     const privateKey = account.privateKey.slice(2);
@@ -36,6 +54,8 @@ describe("commands/create", function () {
       "(id int primary key, desc text)",
       "--privateKey",
       privateKey,
+      "--chain",
+      "foozbaaz",
     ])
       .command(mod)
       .parse();

@@ -13,9 +13,9 @@ describe("commands/list", function () {
     restore();
   });
 
-  test("throws without privateKey", async function () {
+  test("throws without privateKey or address", async function () {
     const consoleError = spy(console, "error");
-    await yargs(["list"]).command(mod).parse();
+    await yargs(["list", "--chain", "maticmum"]).command(mod).parse();
     assert.calledWith(
       consoleError,
       "must supply `--privateKey` or `address` positional"
@@ -27,6 +27,19 @@ describe("commands/list", function () {
     const privateKey = account.privateKey.slice(2);
     const consoleError = spy(console, "error");
     await yargs(["list", "--privateKey", privateKey]).command(mod).parse();
+    assert.calledWith(
+      consoleError,
+      "missing required flag (`-c` or `--chain`)"
+    );
+  });
+
+  test("List throws with invalid chain", async function () {
+    const [account] = getAccounts();
+    const privateKey = account.privateKey.slice(2);
+    const consoleError = spy(console, "error");
+    await yargs(["list", "--privateKey", privateKey, "--chain", "foozbazz"])
+      .command(mod)
+      .parse();
     assert.calledWith(
       consoleError,
       "unsupported chain (see `chains` command for details)"

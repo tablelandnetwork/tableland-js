@@ -5,8 +5,6 @@ import { GlobalOptions } from "../cli.js";
 import { getWalletWithProvider } from "../utils.js";
 import EnsResolver from "./EnsResolver.js";
 
-export type ConnectionsOptions = { readOnly: boolean };
-
 export class Connections {
   _database: Database | undefined;
   _validator: Validator | undefined;
@@ -70,74 +68,70 @@ export class Connections {
     return this._network;
   }
 
-  constructor(
-    argv: GlobalOptions,
-    options: { readOnly: boolean } = { readOnly: false }
-  ) {
-    this._ready = this.prepare(argv, options).then(() => {
+  constructor(argv: GlobalOptions) {
+    this._ready = this.prepare(argv).then(() => {
       this._readyResolved = true;
     });
   }
 
-  async prepare(
-    argv: GlobalOptions,
-    options: { readOnly: boolean } = { readOnly: false }
-  ) {
+  // Once a command is issued we want to collect the args and options and
+  // "prepare" all of the underlying interfaces, e.g. validator, signer, database, etc...
+  // The strategy we are employing here boils down to, "setup everything we can with what we are given"
+  // Then the command handler will have everything it needs as long as it is requiring the correct
+  // args.
+  async prepare(argv: GlobalOptions) {
     const {
       privateKey,
-      chain,
       providerUrl,
+      chain,
       baseUrl,
       enableEnsExperiment,
       ensProviderUrl,
     } = argv;
-    const { readOnly } = options;
-    let signer: Signer | undefined;
 
-    if (!options.readOnly) {
-      signer = await getWalletWithProvider({
+    if (privateKey && chain) {
+      this._signer = await getWalletWithProvider({
         privateKey,
+        // providerUrl is optional, and this might be undefined
         providerUrl,
         chain,
       });
-      this._signer = signer;
     }
 
     if (enableEnsExperiment && ensProviderUrl) {
       this._ens = new EnsResolver({
         ensProviderUrl,
-        signer,
+        signer: this._signer,
       });
     }
-    try {
-      this._network = helpers.getChainInfo(chain);
-    } catch (e) {
-      console.error("unsupported chain (see `chains` command for details)");
+
+    if (chain) {
+      try {
+        this._network = helpers.getChainInfo(chain);
+      } catch (e) {
+        console.error("unsupported chain (see `chains` command for details)");
+      }
     }
 
-    if (signer) this._registry = new Registry({ signer });
+    if (this._signer) this._registry = new Registry({ signer: this._signer });
 
-    this._database =
-      readOnly && !baseUrl
-        ? Database.readOnly(chain)
-        : new Database({
-            signer,
-            baseUrl,
-          });
+    this._database = new Database({
+      // both of these props might be undefined
+      signer: this._signer,
+      baseUrl,
+    });
 
-    this._validator =
-      baseUrl || !chain
-        ? new Validator({ baseUrl })
-        : Validator.forChain(chain);
+    if (baseUrl) {
+      this._validator = new Validator({ baseUrl });
+    } else if (chain) {
+      this._validator = Validator.forChain(chain);
+    }
   }
 }
 
-export async function setupCommand(
-  argv: GlobalOptions,
-  options?: ConnectionsOptions
-) {
+export async function setupCommand(argv: GlobalOptions) {
   await init();
-  const connections = new Connections(argv, options);
+  const connections = new Connections(argv);
   await connections.ready();
   return connections;
 }

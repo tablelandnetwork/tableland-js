@@ -49,11 +49,24 @@ describe("commands/shell", function () {
     );
   });
 
-  test("Shell throws without network", async function () {
+  test("Shell throws without chain", async function () {
     const [account] = getAccounts();
     const privateKey = account.privateKey.slice(2);
     const consoleError = spy(console, "error");
     await yargs(["shell", "--privateKey", privateKey]).command(mod).parse();
+    assert.calledWith(
+      consoleError,
+      "missing required flag (`-c` or `--chain`)"
+    );
+  });
+
+  test("Shell throws with invalid chain", async function () {
+    const [account] = getAccounts();
+    const privateKey = account.privateKey.slice(2);
+    const consoleError = spy(console, "error");
+    await yargs(["shell", "--privateKey", privateKey, "--chain", "foozbazz"])
+      .command(mod)
+      .parse();
     assert.calledWith(
       consoleError,
       "unsupported chain (see `chains` command for details)"

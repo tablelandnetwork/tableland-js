@@ -27,6 +27,24 @@ describe("commands/write", function () {
     );
   });
 
+  test("throws missing chain", async function () {
+    const [account] = getAccounts();
+    const privateKey = account.privateKey.slice(2);
+    const consoleError = spy(console, "error");
+    await yargs([
+      "write",
+      "insert into fake_31337_1 values (1, 2, 3);",
+      "--privateKey",
+      privateKey,
+    ])
+      .command(mod)
+      .parse();
+    assert.calledWith(
+      consoleError,
+      "missing required flag (`-c` or `--chain`)"
+    );
+  });
+
   test("throws with invalid chain", async function () {
     const [account] = getAccounts();
     const privateKey = account.privateKey.slice(2);
@@ -36,6 +54,8 @@ describe("commands/write", function () {
       "insert into fake_31337_1 values (1, 2, 3);",
       "--privateKey",
       privateKey,
+      "--chain",
+      "foozbazz",
     ])
       .command(mod)
       .parse();
