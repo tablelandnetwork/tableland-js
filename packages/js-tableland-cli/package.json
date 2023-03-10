@@ -69,7 +69,7 @@
   "dependencies": {
     "@ensdomains/ensjs": "3.0.0-alpha.39",
     "@tableland/sdk": "4.0.0",
-    "@tableland/sqlparser": "1.0.3",
+    "@tableland/sqlparser": "1.0.4",
     "chalk": "^5.1.2",
     "cli-select": "^1.1.2",
     "cli-select-2": "^2.0.0",
