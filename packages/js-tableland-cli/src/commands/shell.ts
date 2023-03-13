@@ -72,13 +72,17 @@ async function fireFullQuery(
       stmt = database.prepare(statement);
       const response = await stmt.all();
 
-      console.dir(response, { depth: null });
+      console.log(JSON.stringify(response.results));
       switch (type) {
         case "create":
-          console.log(`Created table: ${response.meta.txn?.name}`);
+          console.log(
+            JSON.stringify({ createdTable: response.meta.txn?.name })
+          );
           break;
         case "write":
-          console.log(`Updated table: ${response.meta.txn?.name}`);
+          console.log(
+            JSON.stringify({ updatedTable: response.meta.txn?.name })
+          );
           break;
         default:
       }

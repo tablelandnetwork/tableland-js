@@ -39,7 +39,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
 
     const res = await registry.listTables(address);
 
-    console.dir(res, { depth: null });
+    console.log(JSON.stringify(res));
     /* c8 ignore next 3 */
   } catch (err: any) {
     console.error(err.message);

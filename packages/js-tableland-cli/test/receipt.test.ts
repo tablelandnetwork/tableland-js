@@ -70,7 +70,7 @@ describe("commands/receipt", function () {
   test("Receipt passes with local-tableland", async function () {
     const [account] = getAccounts();
     const privateKey = account.privateKey.slice(2);
-    const consoleDir = spy(console, "dir");
+    const consoleLog = spy(console, "log");
 
     const signer = await getWalletWithProvider({
       privateKey,
@@ -95,7 +95,7 @@ describe("commands/receipt", function () {
         .command(mod)
         .parse();
       // TODO: Ideally, we check the response here, but the hashes aren't deterministic
-      assert.calledOnce(consoleDir);
+      assert.calledOnce(consoleLog);
     });
   });
 });

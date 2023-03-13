@@ -43,7 +43,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       tableId,
       chainId: parseInt(chainId),
     });
-    console.dir(res, { depth: null });
+    console.log(JSON.stringify(res));
     /* c8 ignore next 3 */
   } catch (err: any) {
     console.error(err?.cause?.message || err.message);

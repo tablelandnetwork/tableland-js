@@ -55,7 +55,7 @@ async function setHandler(argv: yargs.ArgumentsCamelCase<Options>) {
       mappings,
     };
 
-    console.dir(response, { depth: null });
+    console.log(JSON.stringify(response));
   }
 }
 

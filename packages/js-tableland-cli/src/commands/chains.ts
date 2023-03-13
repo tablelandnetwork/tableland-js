@@ -14,5 +14,5 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
 const chains = getChains();
 
 export const handler = async (_argv: Arguments<Options>): Promise<void> => {
-  console.dir(chains, { depth: null });
+  console.log(JSON.stringify(chains));
 };

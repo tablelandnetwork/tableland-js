@@ -82,7 +82,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     const res = await db.prepare(statement).all();
     const link = getLink(chain, res.meta.txn?.transactionHash as string);
     const out = { ...res, link };
-    console.dir(out, { depth: null });
+    console.log(JSON.stringify(out));
     /* c8 ignore next 3 */
   } catch (err: any) {
     console.error(err?.cause?.message || err.message);

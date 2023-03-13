@@ -74,22 +74,22 @@ describe("commands/read", function () {
     );
   });
 
-  test("Read passes with local-tableland (defaults to table format)", async function () {
-    const consoleDir = spy(console, "dir");
+  test("Read passes with local-tableland (defaults to 'objects' format)", async function () {
+    const consoleLog = spy(console, "log");
     await yargs(["read", "select * from healthbot_31337_1"])
       .command(mod)
       .parse();
     assert.calledWith(
-      consoleDir,
+      consoleLog,
       match((value) => {
-        const res = value;
-        return res.results[0].counter === 1;
+        value = JSON.parse(value);
+        return value[0].counter === 1;
       }, "Doesn't match expected output")
     );
   });
 
   test("passes with alternate output format (objects)", async function () {
-    const consoleDir = spy(console, "dir");
+    const consoleLog = spy(console, "log");
     await yargs([
       "read",
       "select * from healthbot_31337_1;",
@@ -99,31 +99,32 @@ describe("commands/read", function () {
       .command(mod)
       .parse();
     assert.calledWith(
-      consoleDir,
+      consoleLog,
       match((value) => {
-        const res = value;
-        return res.results[0].counter === 1;
+        value = JSON.parse(value);
+        return value[0].counter === 1;
       }, "Doesn't match expected output")
     );
   });
 
   test("passes when provided input from file", async function () {
-    const consoleDir = spy(console, "dir");
+    const consoleLog = spy(console, "log");
     const path = await temporaryWrite("select * from healthbot_31337_1;\n");
     await yargs(["read", "--file", path, "--format", "objects"])
       .command(mod)
       .parse();
     assert.calledWith(
-      consoleDir,
+      consoleLog,
       match((value) => {
+        value = JSON.parse(value);
         const res = value;
-        return res.results[0].counter === 1;
+        return res[0].counter === 1;
       }, "Doesn't match expected output")
     );
   });
 
   test("passes when provided input from stdin", async function () {
-    const consoleDir = spy(console, "dir");
+    const consoleLog = spy(console, "log");
     const stdin = mockStd.stdin();
     setTimeout(() => {
       stdin.send("select * from healthbot_31337_1;\n").end();
@@ -138,10 +139,10 @@ describe("commands/read", function () {
       .command(mod)
       .parse();
     assert.calledWith(
-      consoleDir,
+      consoleLog,
       match((value) => {
-        const res = value;
-        return res.results[0].counter === 1;
+        value = JSON.parse(value);
+        return value[0].counter === 1;
       }, "Doesn't match expected output")
     );
   });
@@ -166,7 +167,7 @@ describe("commands/read", function () {
   });
 
   test.skip("passes with alternate output format (pretty)", async function () {
-    const consoleDir = spy(console, "dir");
+    const consoleLog = spy(console, "log");
     await yargs([
       "read",
       "select * from healthbot_31337_1;",
@@ -176,7 +177,7 @@ describe("commands/read", function () {
       .command(mod)
       .parse();
     assert.calledWith(
-      consoleDir,
+      consoleLog,
       `
 ┌─────────┬─────────┐
 │ (index) │ counter │

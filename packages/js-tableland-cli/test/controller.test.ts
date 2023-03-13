@@ -91,7 +91,7 @@ describe("commands/controller", function () {
   test("passes when setting a controller", async function () {
     const [account] = getAccounts();
     const privateKey = account.privateKey.slice(2);
-    const consoleDir = spy(console, "dir");
+    const consoleLog = spy(console, "log");
 
     await yargs([
       "controller",
@@ -106,9 +106,9 @@ describe("commands/controller", function () {
       .command(mod)
       .parse();
     assert.calledWith(
-      consoleDir,
+      consoleLog,
       match(function (value: any) {
-        const { hash, link } = value;
+        const { hash, link } = JSON.parse(value);
         return typeof hash === "string" && hash.startsWith("0x") && !link;
       }, "does not match")
     );
@@ -117,7 +117,7 @@ describe("commands/controller", function () {
   test("passes when getting a controller", async function () {
     const [account] = getAccounts();
     const privateKey = account.privateKey.slice(2);
-    const consoleDir = spy(console, "dir");
+    const consoleLog = spy(console, "log");
     await yargs([
       "controller",
       "get",
@@ -129,7 +129,7 @@ describe("commands/controller", function () {
     ])
       .command(mod)
       .parse();
-    assert.calledWith(consoleDir, `0x0000000000000000000000000000000000000000`);
+    assert.calledWith(consoleLog, `0x0000000000000000000000000000000000000000`);
   });
 
   // TODO: Create tests for locking a controller
