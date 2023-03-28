@@ -2,14 +2,13 @@
 
 ## Overview
 
-This repo contains tooling to get a sandboxed single node Tableland Network running locally. This is useful for local only development, removing the need for testnet faucets and giving you easy access to logs of everything that is happening on the tableland network during development. You can also use this repo to setup end to end tests with most popular testing frameworks.
+This package contains tooling to get a sandboxed single node Tableland Network running locally. This is useful for local only development, removing the need for testnet faucets and giving you easy access to logs of everything that is happening on the tableland network during development. You can also use this package to setup end to end tests with most popular testing frameworks.
 
 ## Requirements for a Tableland Network
 
 A Tableland Network at it's most basic is made up of two parts. An EVM compatible Blockchain with the Tableland Registry contract deployed to it, and a Tableland Validator that can listen to events emitted from the contract and materialize tables.
-This repo helps automate setup, configuration, and running of a network.
 
-There are two potential paths to running a local network with this repo:
+There are two potential paths to running a local network:
 
 1. Use the Registry contract as an npm dependency and run a binary release of the Validator. This will be most useful for developers who want to have a local sandbox to build against, or setup automated tests that run against an actual network.
 2. Use this as part of a workspace that also has the [evm-tableland](https://github.com/tablelandnetwork/evm-tableland) and [go-tableland](https://github.com/tablelandnetwork/go-tableland) repos in it. This will be most useful for working on contributing changes to tableland core. If using this setup you will probably want to create a tableland.config.js file via the cli `npx local-tableland --init`
@@ -30,28 +29,76 @@ Under the hood Local Tableland is running an in memory instance of Hardhat Netwo
 
 ## Connecting With The JS SDK
 
-Using the [JS SDK](https://github.com/tablelandnetwork/js-tableland) with a local-tableland sandboxed network is straight forward. In the SDK connection options simply specify `chain: 'local-tableland'`.
+Using the [JS SDK](https://github.com/tablelandnetwork/js-tableland) with a local-tableland sandboxed network is the same as any network, you just configure the provider with the chain you want to use.
 For example:
 
 ```js
-import { connect } from "@tableland/sdk";
-const tableland = connect({ chain: "local-tableland" });
+import { Database } from "@tableland/sdk";
+import { getDefaultProvider, Wallet } from "ethers";
+
+// The local EVM node has the default Hardhat standalone node URL
+const localEvmUrl = "http://127.0.0.1:8545";
+// Hardhat Public Private Key for Account 1. This is preloaded with 10,000 ETH in the local EVM node.
+const privateKey =
+  "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356";
+
+const wallet = new Wallet(privateKey);
+const provider = getDefaultProvider(localEvmUrl);
+const signer = wallet.connect(provider);
+
+const db = new Database({ signer });
 ```
 
 ## Programmatic Usage
 
-If you are using Local Tableland to run tests for your project, or want to start a sandbox network programmatically for any reason, the following example covers the basics
+If you are using Local Tableland to run tests for your project, or want to start a sandbox network programmatically for any reason, there are some helper utilities exported by this package to reduce boilerplate.
+For example:
 
 ```js
-import { LocalTableland } from "@tableland/local";
+import {
+  LocalTableland,
+  getDatabase,
+  getRegistry,
+  getValidator,
+  getAccounts,
+} from "@tableland/local";
 
 const lt = new LocalTableland({
-  /* silent or verbose can be set via an options object as the first arg */
+  // silent or verbose can be set via an options object as the first arg
+  silent: true,
 });
 
 const go = async function () {
   lt.start();
   await lt.isReady();
+
+  // Get wallets a.k.a signers for all 25 of the public Hardhat accounts.
+  const accounts = getAccounts();
+
+  // Get a Database instance that's connected to the passed in account.
+  const db = getDatabase(accounts[1]);
+  const response = await db
+    .prepare(`CREATE TABLE my_table (id integer primary key, name text);`)
+    .all();
+  console.log(response);
+
+  // Get an instance of the Registry class, more details here:
+  // https://docs.tableland.xyz/javascript-sdk#4b0319e3e6384fe085d39a423ef76809
+  const registry = getRegistry(accounts[1]);
+  // List account 1 tables
+  const myTables = await reg.listTables();
+  console.log(myTables);
+
+  // Get an instance of the Validator class, more details here:
+  // https://docs.tableland.xyz/javascript-sdk#225a0a3514db48688542135258993c85
+  const validator = getValidator(accounts[1]);
+  const tableData = await validator.getTableById({
+    chainId: 31337,
+    tableId: "1",
+  });
+  console.log(tableData);
+
+  await stop();
 };
 
 const stop = async function () {
