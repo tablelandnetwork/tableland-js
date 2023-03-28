@@ -42,7 +42,7 @@
   },
   "license": "MIT AND Apache-2.0",
   "devDependencies": {
-    "@tableland/local": "^1.0.0-pre.2",
+    "@tableland/local": "^1.0.0",
     "@types/cosmiconfig": "^6.0.0",
     "@types/inquirer": "^9.0.2",
     "@types/js-yaml": "^4.0.5",
@@ -68,8 +68,8 @@
   },
   "dependencies": {
     "@ensdomains/ensjs": "3.0.0-alpha.52",
-    "@tableland/sdk": "4.0.1",
-    "@tableland/sqlparser": "1.0.4",
+    "@tableland/sdk": "4.0.2",
+    "@tableland/sqlparser": "1.0.5",
     "chalk": "^5.1.2",
     "cli-select": "^1.1.2",
     "cli-select-2": "^2.0.0",
