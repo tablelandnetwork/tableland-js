@@ -10,6 +10,8 @@ export interface Options extends GlobalOptions {
   format: "pretty" | "table" | "objects" | "raw";
   file?: string;
   providerUrl: string;
+  extract?: boolean;
+  unwrap?: boolean;
 }
 
 export const command = "read [statement]";
@@ -39,11 +41,23 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
       type: "string",
       alias: "f",
       description: "Get statement from input file",
+    })
+    .option("extract", {
+      type: "boolean",
+      description:
+        "Returns only the set of values of a single column. Read statement must be require only a single column.",
+      default: false,
+    })
+    .option("unwrap", {
+      type: "boolean",
+      description:
+        "Returns the results of a single row instead of array of results. Read statement must result in a single row response.",
+      default: false,
     }) as yargs.Argv<Options>;
 
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
   let { statement } = argv;
-  const { format, file } = argv;
+  const { format, file, unwrap, extract } = argv;
 
   try {
     if (file != null) {
@@ -61,23 +75,46 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       return;
     }
 
-    const { database: db, ens } = await setupCommand(argv);
+    const setup = await setupCommand(argv);
+    const { database: db, ens } = setup;
 
     if (argv.enableEnsExperiment && ens) {
       statement = await ens.resolve(statement);
     }
 
-    const res = await db.prepare(statement).all();
+    let res;
+    if ((format === "table" || format === "objects") && (unwrap || extract)) {
+      if (!argv.chain) {
+        throw new Error("Chain ID is required to use unwrap or extract");
+      }
+      const { validator } = setup;
+      try {
+        res = await validator.queryByStatement({
+          statement,
+          extract: argv.extract,
+          format: "objects",
+          unwrap: argv.unwrap,
+        });
+      } catch (e: any) {
+        if (e.message.includes("in JSON at position")) {
+          console.log("Can't unwrap multiple rows. Use --unwrap=false");
+        } else {
+          throw e;
+        }
+      }
+    } else {
+      res = (await db.prepare(statement).all()).results;
+    }
 
     switch (format) {
       case "pretty":
-        console.table(res.results);
+        console.table(res);
         break;
       case "objects":
-        console.log(JSON.stringify(res.results));
+        console.log(JSON.stringify(res));
         break;
       case "table":
-        console.log(JSON.stringify(transformTableData(res.results)));
+        console.log(JSON.stringify(transformTableData(res)));
         break;
       case "raw":
         console.log(

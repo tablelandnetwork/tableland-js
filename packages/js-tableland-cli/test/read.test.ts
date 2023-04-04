@@ -74,6 +74,46 @@ describe("commands/read", function () {
     );
   });
 
+  test("passes with extract option", async function () {
+    const consoleLog = spy(console, "log");
+    await yargs([
+      "read",
+      "select counter from healthbot_31337_1;",
+      "--extract",
+      "--chain",
+      "local-tableland",
+    ])
+      .command(mod)
+      .parse();
+    assert.calledWith(
+      consoleLog,
+      match((value) => {
+        value = JSON.parse(value);
+        return Array.isArray(value) && value.includes(1);
+      }, "Doesn't match expected output")
+    );
+  });
+
+  test("passes with unwrap option", async function () {
+    const consoleLog = spy(console, "log");
+    await yargs([
+      "read",
+      "select counter from healthbot_31337_1 where counter = 1;",
+      "--unwrap",
+      "--chain",
+      "local-tableland",
+    ])
+      .command(mod)
+      .parse();
+    assert.calledWith(
+      consoleLog,
+      match((value) => {
+        value = JSON.parse(value);
+        return value.counter === 1;
+      }, "Doesn't match expected output")
+    );
+  });
+
   test("Read passes with local-tableland (defaults to 'objects' format)", async function () {
     const consoleLog = spy(console, "log");
     await yargs(["read", "select * from healthbot_31337_1"])
