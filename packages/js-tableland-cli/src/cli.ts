@@ -8,6 +8,12 @@ import { commands } from "./commands/index.js";
 import { cosmiconfigSync } from "cosmiconfig";
 import { helpers } from "@tableland/sdk";
 
+process.on("warning", (warning) => {
+  if (warning.name !== "ExperimentalWarning") {
+    console.warn(warning.name, warning.message);
+  }
+});
+
 if (!globalThis.fetch) {
   (globalThis as any).fetch = fetch;
   (globalThis as any).Headers = Headers;

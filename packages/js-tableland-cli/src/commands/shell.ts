@@ -1,8 +1,5 @@
 import yargs, { Arguments, CommandBuilder } from "yargs";
-import cliSelect from "cli-select";
-import chalk from "chalk";
 import { createInterface } from "readline";
-
 import { GlobalOptions } from "../cli.js";
 import { Connections, setupCommand } from "../lib/commandSetup.js";
 
@@ -23,29 +20,27 @@ process.on("SIGINT", function () {
 });
 
 async function confirmQuery() {
-  const selected = await cliSelect({
-    values: {
-      confirm: "Confirm: Send this transaction to the network",
-      deny: "Oops. No, don't send that transaction.",
-      // fireAndForget:
-      //   "Fire and forget: Send, but don't want for confirmation. DO NOT RECOMMEND.",
-    },
-    valueRenderer: (value, selected) => {
-      if (selected) {
-        return chalk.underline(value);
+  return new Promise((resolve) => {
+    const rl = createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+
+    rl.question(
+      "You are sending a transaction to the network, using gas. Are you sure? (y/n) ",
+      (answer) => {
+        const response = answer.toLowerCase();
+        rl.close();
+
+        if (response === "y" || response === "yes") {
+          resolve(true);
+        } else {
+          console.log("Aborting.");
+          resolve(false);
+        }
       }
-      return value;
-    },
-  });
-
-  console.log(chalk.bgBlue(selected.id));
-  if (selected.id === "confirm") {
-    console.log(
-      chalk.underline("Committing to network. This will take a few moments.")
     );
-  }
-
-  return selected.id;
+  });
 }
 
 async function fireFullQuery(
@@ -62,12 +57,9 @@ async function fireFullQuery(
     }
 
     let stmt;
-    let confirm: any = true;
 
-    if (type === "write" || type === "create") {
-      confirm = (await confirmQuery()) === "confirm";
-    }
-    if (!confirm) return;
+    if (type !== "read" && !(await confirmQuery())) return;
+
     try {
       stmt = database.prepare(statement);
       const response = await stmt.all();
@@ -91,7 +83,7 @@ async function fireFullQuery(
     }
     /* c8 ignore next 3 */
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 }
 

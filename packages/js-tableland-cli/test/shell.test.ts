@@ -42,6 +42,113 @@ describe("commands/shell", function () {
     assert.match(consoleLog.getCall(3).args[0], '[{"counter":1}]');
   });
 
+  test("Shell Works with initial input", async function () {
+    const consoleLog = spy(console, "log");
+    const [account] = getAccounts();
+    const privateKey = account.privateKey.slice(2);
+    await yargs([
+      "shell",
+      "--chain",
+      "local-tableland",
+      "--format",
+      "objects",
+      "--privateKey",
+      privateKey,
+      "SELECT * FROM healthbot_31337_1;",
+    ])
+      .command(mod)
+      .parse();
+
+    assert.match(consoleLog.getCall(3).args[0], '[{"counter":1}]');
+  });
+
+  test("Shell handles invalid query", async function () {
+    const consoleError = spy(console, "error");
+    const stdin = mockStd.stdin();
+
+    setTimeout(() => {
+      stdin.send("select non_existent_table;\n").end();
+    }, 1000);
+
+    const [account] = getAccounts();
+    const privateKey = account.privateKey.slice(2);
+    await yargs([
+      "shell",
+      "--chain",
+      "local-tableland",
+      "--format",
+      "objects",
+      "--privateKey",
+      privateKey,
+    ])
+      .command(mod)
+      .parse();
+
+    assert.calledWith(
+      consoleError,
+      match((v: any) => v.message.includes("error parsing statement"))
+    );
+  });
+
+  test("Write queries continue with 'y' input", async function () {
+    const consoleLog = spy(console, "log");
+    const stdin = mockStd.stdin();
+
+    setTimeout(() => {
+      stdin.send("CREATE TABLE SomeTable (id integer, message text);\n");
+      setTimeout(() => {
+        stdin.send("y\n");
+      }, 500);
+    }, 1000);
+
+    const [account] = getAccounts();
+    const privateKey = account.privateKey.slice(2);
+    await yargs([
+      "shell",
+      "--chain",
+      "local-tableland",
+      "--format",
+      "objects",
+      "--privateKey",
+      privateKey,
+    ])
+      .command(mod)
+      .parse();
+
+    assert.match(consoleLog.getCall(4).args[0], (v: any) => {
+      const value = JSON.parse(v);
+      return value.createdTable;
+    });
+  });
+
+  test("Write queries aborts with 'n' input", async function () {
+    const consoleLog = spy(console, "log");
+    const stdin = mockStd.stdin();
+
+    setTimeout(() => {
+      stdin.send("CREATE TABLE SomeTable (id integer, message text);\n");
+      setTimeout(() => {
+        stdin.send("n\n");
+      }, 500);
+    }, 1000);
+
+    const [account] = getAccounts();
+    const privateKey = account.privateKey.slice(2);
+    await yargs([
+      "shell",
+      "--chain",
+      "local-tableland",
+      "--format",
+      "objects",
+      "--privateKey",
+      privateKey,
+    ])
+      .command(mod)
+      .parse();
+
+    assert.match(consoleLog.getCall(3).args[0], "Aborting.");
+  });
+
   test("Shell throws without chain", async function () {
     const [account] = getAccounts();
     const privateKey = account.privateKey.slice(2);
