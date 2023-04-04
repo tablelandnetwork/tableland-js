@@ -33,13 +33,17 @@ export class Connections {
 
   get registry(): Registry {
     this.readyCheck();
-    if (!this._registry) throw new Error("No registry");
+    if (!this._registry)
+      throw new Error(
+        "No registry. This may be because you did not specify a private key with which to interact with the registry."
+      );
     return this._registry;
   }
 
   get validator(): Validator {
     this.readyCheck();
-    if (!this._validator) throw new Error("No registry");
+    if (!this._validator)
+      throw new Error("No validator. Set a chain or a baseURL.");
     return this._validator;
   }
 
