@@ -71,7 +71,8 @@ describe("commands/write", function () {
     const consoleError = spy(console, "error");
     await yargs([
       "write",
-      "invalid",
+      // Note: cannot have a table named "table"
+      "update table set counter=1 where rowid=0;",
       "--chain",
       "local-tableland",
       "--privateKey",
@@ -81,7 +82,9 @@ describe("commands/write", function () {
       .parse();
     assert.calledWith(
       consoleError,
-      "error parsing statement: syntax error at position 7 near 'invalid'"
+      `error parsing statement: syntax error at position 12 near 'table'
+update table set counter=1 where rowid=0;
+       ^^^^^`
     );
   });
 

@@ -36,7 +36,7 @@ describe("commands/read", function () {
       .parse();
     assert.calledWith(
       consoleError,
-      "error parsing statement: syntax error at position 7 near 'invalid'"
+      "error parsing statement: syntax error at position 7 near 'invalid'\ninvalid;\n^^^^^^^"
     );
   });
 
