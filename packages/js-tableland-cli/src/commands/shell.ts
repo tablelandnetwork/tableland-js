@@ -3,6 +3,13 @@ import { createInterface } from "readline";
 import { GlobalOptions } from "../cli.js";
 import { Connections, setupCommand } from "../lib/commandSetup.js";
 
+const help = `Commands:
+[query] - run a query
+.exit - exit the shell
+.help - show this help
+
+SQL Queries can be multi-line, and must end with a semicolon (;).`;
+
 export interface Options extends GlobalOptions {
   statement?: string;
   format: "pretty" | "table" | "objects";
@@ -118,14 +125,29 @@ async function shellYeah(
         statement += "\r\n";
         statement += state;
         rl.setPrompt("      ...>");
+        if (statement.trim().startsWith(".")) {
+          const command = statement.trim().split(" ")[0].replace(".", "");
+          switch (command) {
+            case "exit":
+              process.exit();
+              break;
+            case "help":
+            default:
+              console.log(help);
 
-        if (state.trim().endsWith(";")) {
+              break;
+          }
+        }
+
+        if (state.trim().endsWith(";") || statement.trim().startsWith(".")) {
           break;
         }
         rl.prompt();
       }
       rl.close();
-      await fireFullQuery(statement, argv, tablelandConnection);
+      if (!statement.trim().startsWith(".")) {
+        await fireFullQuery(statement, argv, tablelandConnection);
+      }
     }
 
     shellYeah(argv, tablelandConnection, history);

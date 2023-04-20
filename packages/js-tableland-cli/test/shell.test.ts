@@ -203,6 +203,37 @@ describe("commands/shell", function () {
     );
   });
 
+  test(".exit exits the shell", async function () {
+    const ogExit = process.exit;
+
+    // @ts-ignore
+    process.exit = function (code: any) {
+      console.log("Skiped process.exit in exit test");
+    };
+
+    const stdin = mockStd.stdin();
+    const exit = spy(process, "exit");
+
+    setTimeout(() => {
+      stdin.send(".exit\n").end();
+    }, 1000);
+
+    const [account] = getAccounts();
+    const privateKey = account.privateKey.slice(2);
+    await yargs([
+      "shell",
+      "--chain",
+      "local-tableland",
+      "--privateKey",
+      privateKey,
+    ])
+      .command(mod)
+      .parse();
+    assert.called(exit);
+
+    process.exit = ogExit;
+  });
+
   test("Shell Works with multi-line", async function () {
     const consoleLog = spy(console, "log");
     const stdin = mockStd.stdin();
