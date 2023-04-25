@@ -79,7 +79,11 @@ class LocalTableland {
         // we can't run in windows if we use detached mode
         detached: !isWindows(),
         cwd: this.registryDir,
-        env: { ...process.env, HARDHAT_NETWORK: "hardhat" },
+        env: {
+          ...process.env,
+          HARDHAT_NETWORK: "hardhat",
+          HARDHAT_UNLIMITED_CONTRACT_SIZE: "true",
+        },
       }
     );
 
