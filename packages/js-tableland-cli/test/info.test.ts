@@ -1,5 +1,6 @@
+import { equal } from "node:assert";
 import { describe, test, afterEach, before } from "mocha";
-import { spy, restore, assert, match } from "sinon";
+import { spy, restore, assert } from "sinon";
 import yargs from "yargs/yargs";
 import * as mod from "../src/commands/info.js";
 import { wait } from "../src/utils.js";
@@ -37,18 +38,13 @@ describe("commands/info", function () {
     const consoleLog = spy(console, "log");
     await yargs(["info", "healthbot_31337_1"]).command(mod).parse();
 
-    assert.calledWith(
-      consoleLog,
-      match(function (value: any) {
-        value = JSON.parse(value);
-        const { name, attributes, externalUrl } = value;
-        return (
-          name === "healthbot_31337_1" &&
-          externalUrl === "http://localhost:8080/chain/31337/tables/1" &&
-          Array.isArray(attributes)
-        );
-      }, "does not match")
-    );
+    const res = consoleLog.getCall(0).firstArg;
+    const value = JSON.parse(res);
+    const { name, attributes, externalUrl } = value;
+
+    equal(name, "healthbot_31337_1");
+    equal(externalUrl, "http://localhost:8080/api/v1/tables/31337/1");
+    equal(Array.isArray(attributes), true);
   });
 
   test("info throws with missing table", async function () {
