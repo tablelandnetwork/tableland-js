@@ -1,3 +1,4 @@
+import { equal } from "node:assert";
 import { describe, test } from "mocha";
 import { spy, assert, restore, match, stub } from "sinon";
 import yargs from "yargs/yargs";
@@ -45,7 +46,7 @@ describe("commands/shell", function () {
   });
 
   test("ENS in shell with single line", async function () {
-    const fullReolverStub = stub(
+    const fullResolverStub = stub(
       ethers.providers.JsonRpcProvider.prototype,
       "getResolver"
     ).callsFake(getResolverMock);
@@ -55,7 +56,7 @@ describe("commands/shell", function () {
 
     setTimeout(() => {
       stdin.send("select * from [foo.bar.eth];\n").end();
-    }, 1000);
+    }, 2000);
 
     const [account] = getAccounts();
     const privateKey = account.privateKey.slice(2);
@@ -74,9 +75,82 @@ describe("commands/shell", function () {
       .command(mod)
       .parse();
 
-    fullReolverStub.reset();
+    fullResolverStub.reset();
 
-    assert.match(consoleLog.getCall(4).args[0], '[{"counter":1}]');
+    const call4 = consoleLog.getCall(4);
+    equal(call4.args[0], '[{"counter":1}]');
+  });
+
+  test("ENS in shell with backtics", async function () {
+    const fullResolverStub = stub(
+      ethers.providers.JsonRpcProvider.prototype,
+      "getResolver"
+    ).callsFake(getResolverMock);
+
+    const consoleLog = spy(console, "log");
+    const stdin = mockStd.stdin();
+
+    setTimeout(() => {
+      stdin.send("select * from `foo.bar.eth`;\n").end();
+    }, 2000);
+
+    const [account] = getAccounts();
+    const privateKey = account.privateKey.slice(2);
+    await yargs([
+      "shell",
+      "--chain",
+      "local-tableland",
+      "--format",
+      "objects",
+      "--privateKey",
+      privateKey,
+      "--enableEnsExperiment",
+      "--ensProviderUrl",
+      "http://localhost:8545",
+    ])
+      .command(mod)
+      .parse();
+
+    fullResolverStub.reset();
+
+    const call4 = consoleLog.getCall(4);
+    equal(call4.args[0], '[{"counter":1}]');
+  });
+
+  test("ENS in shell with double quotes", async function () {
+    const fullResolverStub = stub(
+      ethers.providers.JsonRpcProvider.prototype,
+      "getResolver"
+    ).callsFake(getResolverMock);
+
+    const consoleLog = spy(console, "log");
+    const stdin = mockStd.stdin();
+
+    setTimeout(() => {
+      stdin.send(`select * from "foo.bar.eth";\n`).end();
+    }, 2000);
+
+    const [account] = getAccounts();
+    const privateKey = account.privateKey.slice(2);
+    await yargs([
+      "shell",
+      "--chain",
+      "local-tableland",
+      "--format",
+      "objects",
+      "--privateKey",
+      privateKey,
+      "--enableEnsExperiment",
+      "--ensProviderUrl",
+      "http://localhost:8545",
+    ])
+      .command(mod)
+      .parse();
+
+    fullResolverStub.reset();
+
+    const call4 = consoleLog.getCall(4);
+    equal(call4.args[0], '[{"counter":1}]');
   });
 
   test("Shell Works with initial input", async function () {

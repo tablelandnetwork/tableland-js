@@ -1,3 +1,4 @@
+import { equal } from "node:assert";
 import { describe, test, afterEach, before } from "mocha";
 import { spy, restore, assert, match } from "sinon";
 import yargs from "yargs/yargs";
@@ -74,7 +75,7 @@ describe("commands/controller", function () {
       "controller",
       "set",
       "invalid",
-      "",
+      "invalid",
       "--privateKey",
       privateKey,
       "--chain",
@@ -82,9 +83,11 @@ describe("commands/controller", function () {
     ])
       .command(mod)
       .parse();
-    assert.calledWith(
-      consoleError,
-      "error validating name: table name has wrong format: "
+
+    const value = consoleError.getCall(0).firstArg;
+    equal(
+      value.includes("error validating name: table name has wrong format: "),
+      true
     );
   });
 

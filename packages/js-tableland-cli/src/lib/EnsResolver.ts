@@ -1,5 +1,5 @@
 import ethers, { Signer } from "ethers";
-import ensLib from "./EnsCommand";
+import ensLib from "./EnsCommand.js";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { ENS } from "@ensdomains/ensjs";
 
@@ -28,10 +28,12 @@ export default class EnsResolver {
   }
 
   async resolveTable(tablename: string): Promise<string> {
-    const [textRecord, ...domainArray] = tablename.split(".");
+    // strip the [] sql identifier escape characters at the start and
+    // end, if they exist, then split on the "." separator
+    const [textRecord, ...domainArray] =
+      removeEscapeChars(tablename).split(".");
 
     const domain = domainArray.join(".");
-
     const address = await this.provider.getResolver(domain);
 
     return (await address?.getText(textRecord)) || tablename;
@@ -61,12 +63,9 @@ export default class EnsResolver {
     const record: any = {};
 
     const resolvedTablenames = await Promise.all(
-      tableNames.map((tableName) => {
-        return new Promise((resolve) => {
-          (async () => {
-            resolve([tableName, await this.resolveTable(tableName)]);
-          })();
-        });
+      tableNames.map(async (tableName) => {
+        tableName = removeEscapeChars(tableName);
+        return [tableName, await this.resolveTable(tableName)];
       })
     );
 
@@ -75,9 +74,19 @@ export default class EnsResolver {
     });
 
     const statements = await globalThis.sqlparser.normalize(statement, record);
-
     const finalStatement = statements.statements.join(";");
 
     return finalStatement;
   }
+}
+
+function removeEscapeChars(tableName: string): string {
+  return tableName
+    .trim()
+    .replace(/^\[/, "")
+    .replace(/\]$/, "")
+    .replace(/^`/, "")
+    .replace(/`$/, "")
+    .replace(/^"/, "")
+    .replace(/"$/, "");
 }

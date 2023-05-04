@@ -1,5 +1,6 @@
+import { equal } from "node:assert";
 import { describe, test, afterEach, before } from "mocha";
-import { spy, restore, assert, match } from "sinon";
+import { spy, restore, assert } from "sinon";
 import yargs from "yargs/yargs";
 import { getAccounts, getDatabase } from "@tableland/local";
 import * as mod from "../src/commands/transfer.js";
@@ -109,16 +110,14 @@ describe("commands/transfer", function () {
       .command(mod)
       .parse();
 
-    assert.calledWith(
-      consoleLog,
-      match(function (value: any) {
-        value = JSON.parse(value);
-        const { to, from } = value;
-        return (
-          from === account1.address &&
-          to === helpers.getContractAddress("local-tableland")
-        );
-      }, "does not match")
+    const res = consoleLog.getCall(0).firstArg;
+    const value = JSON.parse(res);
+    const { to, from } = value;
+
+    equal(from.toLowerCase(), account1.address.toLowerCase());
+    equal(
+      to.toLowerCase(),
+      helpers.getContractAddress("local-tableland").toLowerCase()
     );
   });
 });

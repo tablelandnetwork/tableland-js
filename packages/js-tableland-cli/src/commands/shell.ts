@@ -56,19 +56,16 @@ async function fireFullQuery(
   tablelandConnection: Connections
 ) {
   try {
-    const { type } = await globalThis.sqlparser.normalize(statement);
     const { database, ens } = tablelandConnection;
-
     if (argv.enableEnsExperiment && ens) {
       statement = await ens.resolve(statement);
     }
 
-    let stmt;
-
+    const { type } = await globalThis.sqlparser.normalize(statement);
     if (type !== "read" && !(await confirmQuery())) return;
 
     try {
-      stmt = database.prepare(statement);
+      const stmt = database.prepare(statement);
       const response = await stmt.all();
 
       console.log(JSON.stringify(response.results));
@@ -138,7 +135,6 @@ async function shellYeah(
               break;
           }
         }
-
         if (state.trim().endsWith(";") || statement.trim().startsWith(".")) {
           break;
         }
