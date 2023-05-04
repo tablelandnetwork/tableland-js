@@ -1,10 +1,12 @@
 import { describe, test, afterEach, before } from "mocha";
-import { spy, restore, assert, match } from "sinon";
+import { spy, restore, assert, match, stub } from "sinon";
 import yargs from "yargs/yargs";
 import { temporaryWrite } from "tempy";
 import mockStd from "mock-stdin";
 import * as mod from "../src/commands/read.js";
 import { wait } from "../src/utils.js";
+import { ethers } from "ethers";
+import { getResolverMock } from "./mock.js";
 
 describe("commands/read", function () {
   this.timeout(10000);
@@ -138,6 +140,35 @@ describe("commands/read", function () {
     ])
       .command(mod)
       .parse();
+    assert.calledWith(
+      consoleLog,
+      match((value) => {
+        value = JSON.parse(value);
+        return value[0].counter === 1;
+      }, "Doesn't match expected output")
+    );
+  });
+
+  test("ENS experimental replaces shorthand with tablename", async function () {
+    const fullReolverStub = stub(
+      ethers.providers.JsonRpcProvider.prototype,
+      "getResolver"
+    ).callsFake(getResolverMock);
+    const consoleLog = spy(console, "log");
+    await yargs([
+      "read",
+      "select * from [foo.bar.ens];",
+      "--format",
+      "objects",
+      "--enableEnsExperiment",
+      "--ensProviderUrl",
+      "https://localhost:7070",
+    ])
+      .command(mod)
+      .parse();
+
+    fullReolverStub.restore();
+
     assert.calledWith(
       consoleLog,
       match((value) => {

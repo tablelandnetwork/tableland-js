@@ -22,7 +22,7 @@ async function getHandler(argv: yargs.ArgumentsCamelCase<Options>) {
     return;
   }
 
-  console.log(await ens.resolveTable(record));
+  console.log(JSON.stringify({ value: await ens.resolveTable(record) }));
 }
 
 async function setHandler(argv: yargs.ArgumentsCamelCase<Options>) {

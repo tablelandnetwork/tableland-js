@@ -1,11 +1,13 @@
 import { describe, test, afterEach, before } from "mocha";
-import { spy, restore, assert, match } from "sinon";
+import { spy, restore, assert, match, stub } from "sinon";
 import yargs from "yargs/yargs";
 import { temporaryWrite } from "tempy";
 import mockStd from "mock-stdin";
 import { getAccounts } from "@tableland/local";
 import * as mod from "../src/commands/create.js";
 import { wait } from "../src/utils.js";
+import { ethers } from "ethers";
+import { getResolverMock } from "./mock.js";
 
 describe("commands/create", function () {
   this.timeout("30s");
@@ -43,6 +45,40 @@ describe("commands/create", function () {
       consoleError,
       "missing required flag (`-c` or `--chain`)"
     );
+  });
+
+  test("Create namespace with table using ENS", async () => {
+    const fullReolverStub = stub(
+      ethers.providers.JsonRpcProvider.prototype,
+      "getResolver"
+    ).callsFake(getResolverMock);
+
+    const consoleLog = spy(console, "log");
+    const [account] = getAccounts();
+    const privateKey = account.privateKey.slice(2);
+    await yargs([
+      "create",
+      "id integer, message text",
+      "hello",
+      "--chain",
+      "local-tableland",
+      "--privateKey",
+      privateKey,
+      "--ns",
+      "foo.bar.eth",
+      "--enableEnsExperiment",
+      "--ensProviderUrl",
+      "https://localhost:8080",
+    ])
+      .command(mod)
+      .parse();
+
+    fullReolverStub.restore();
+
+    assert.match(consoleLog.getCall(1).args[0], function (value: any) {
+      value = JSON.parse(value);
+      return value.ensNameRegistered === true;
+    });
   });
 
   test("throws with invalid chain", async function () {

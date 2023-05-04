@@ -10,9 +10,10 @@ export interface Options extends GlobalOptions {
   schema?: string;
   prefix?: string;
   file?: string;
+  ns?: string;
 }
 
-export const command = "create [schema]";
+export const command = "create [schema] [prefix]";
 export const desc = "Create a new table";
 
 export const builder: CommandBuilder<{}, Options> = (yargs) =>
@@ -26,6 +27,10 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
       type: "string",
       description:
         "Table name prefix (ignored if full create statement is provided)",
+    })
+    .option("ns", {
+      type: "string",
+      description: "ENS namespace to resolve schema from (experimental)",
     })
     .option("file", {
       alias: "f",
@@ -62,6 +67,9 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
 
     let statement = "";
 
+    // now that we have parsed the command args, run the create operation
+    const { database: db, ens } = await setupCommand(argv);
+
     const check = /CREATE TABLE/gim.exec(schema.toString());
     if (check) {
       statement = schema;
@@ -73,15 +81,20 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       statement = `CREATE TABLE ${prefix} (${schema})`;
     }
 
-    // now that we have parsed the command args, run the create operation
-    const { database: db, ens } = await setupCommand(argv);
-
     if (argv.enableEnsExperiment && ens)
       statement = await ens.resolve(statement);
 
     const res = await db.prepare(statement).all();
     const link = getLink(chain, res.meta.txn?.transactionHash as string);
-    const out = { ...res, link };
+    const out = { ...res, link, ensNameRegistered: false };
+
+    if (!check && argv.ns && argv.enableEnsExperiment && prefix) {
+      const register = (await ens?.addTableRecords(argv.ns, [
+        { key: prefix, value: out.meta.txn?.name as string },
+      ])) as boolean;
+      out.ensNameRegistered = register;
+    }
+
     console.log(JSON.stringify(out));
     /* c8 ignore next 3 */
   } catch (err: any) {

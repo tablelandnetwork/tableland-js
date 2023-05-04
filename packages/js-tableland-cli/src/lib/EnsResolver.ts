@@ -1,6 +1,7 @@
 import ethers, { Signer } from "ethers";
-import { ENS } from "@ensdomains/ensjs";
+import ensLib from "./EnsCommand";
 import { JsonRpcProvider } from "@ethersproject/providers";
+import { ENS } from "@ensdomains/ensjs";
 
 interface EnsResolverOptions {
   ensProviderUrl: string;
@@ -23,7 +24,7 @@ export default class EnsResolver {
     this.signer = signer;
     this.provider = new JsonRpcProvider(ensProviderUrl);
 
-    this.ENS = new ENS().withProvider(this.provider);
+    this.ENS = new ensLib.ENS().withProvider(this.provider);
   }
 
   async resolveTable(tablename: string): Promise<string> {
@@ -34,20 +35,6 @@ export default class EnsResolver {
     const address = await this.provider.getResolver(domain);
 
     return (await address?.getText(textRecord)) || tablename;
-  }
-
-  async isOwner(domain: string) {
-    const signer = this.provider.getSigner();
-    if (signer === undefined) throw new Error("No signer");
-    try {
-      const record = await this.ENS.getOwner(domain);
-      if (record?.owner === (await signer.getAddress())) {
-        return true;
-      }
-    } catch (e) {
-      console.log(e);
-      return false;
-    }
   }
 
   async addTableRecords(domain: string, maps: TableMap[]) {
@@ -64,7 +51,7 @@ export default class EnsResolver {
       console.log("Adding table to ENS failed");
       console.error(e.message);
     }
-    return false;
+    return true;
   }
 
   async resolve(statement: string): Promise<string> {
