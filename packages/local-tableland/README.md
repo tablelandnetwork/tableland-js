@@ -143,12 +143,12 @@ const go = async function () {
   // https://docs.tableland.xyz/sdk/core/registry-api
   const registry = getRegistry(accounts[1]);
   // List the tables owned by `accounts[1]`
-  const myTables = await reg.listTables();
+  const myTables = await registry.listTables();
   console.log(myTables);
 
   // Get an instance of the Validator class; more details here:
   // https://docs.tableland.xyz/sdk/core/validator-api
-  const validator = getValidator(accounts[1]);
+  const validator = getValidator(db.config.baseUrl);
   const tableData = await validator.getTableById({
     chainId: 31337,
     tableId: "1",
