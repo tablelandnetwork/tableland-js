@@ -162,6 +162,7 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
       description: "Initial query (optional)",
     })
     .option("verbose", {
+      alias: "v",
       type: "boolean",
       description: "Results show more data",
     })

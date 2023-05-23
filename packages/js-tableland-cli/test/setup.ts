@@ -9,6 +9,9 @@ if (!globalThis.fetch) {
   (globalThis as any).Response = Response;
 }
 
+// TODO: most tests rely on a spy on the global `console.log`. This means we must
+//    use silent: true here.  As an alternative we could explore using a `logger`
+//    that can be mocked, or spied on, or expose an extension api depending on the test.
 const lt = new LocalTableland({ silent: true });
 
 before(async function () {

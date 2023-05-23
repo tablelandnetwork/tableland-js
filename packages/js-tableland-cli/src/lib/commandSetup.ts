@@ -78,6 +78,10 @@ export class Connections {
     });
   }
 
+  async normalize(statement: string) {
+    return await globalThis.sqlparser.normalize(statement);
+  }
+
   // Once a command is issued we want to collect the args and options and
   // "prepare" all of the underlying interfaces, e.g. validator, signer, database, etc...
   // The strategy we are employing here boils down to, "setup everything we can with what we are given"
@@ -123,6 +127,7 @@ export class Connections {
       // both of these props might be undefined
       signer: this._signer,
       baseUrl,
+      autoWait: true,
     });
 
     if (baseUrl) {

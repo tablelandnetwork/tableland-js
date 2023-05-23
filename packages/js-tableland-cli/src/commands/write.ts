@@ -55,14 +55,78 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       return;
     }
 
-    const { database: db, ens } = await setupCommand(argv);
+    const { database: db, ens, normalize } = await setupCommand(argv);
 
     if (argv.enableEnsExperiment && ens) {
       statement = await ens.resolve(statement);
     }
 
-    const res = await db.prepare(statement).all();
+    // Parse the statement to see if more than one table is affected.
+    // If yes, then combine into separate statements and batch.
+    // If no, then process via single statement.
+    statement = statement.replace(/\n/i, "").replace(/\r/, "");
+    const normalized = await normalize(statement);
 
+    if (normalized.type !== "write") {
+      console.error("the `write` command can only accept write queries");
+      return;
+    }
+    if (normalized.tables.length < 1) {
+      console.error(
+        "after normalizing the statement there was no write query, hence nothing to do"
+      );
+      return;
+    }
+
+    if (normalized.tables.length < 2) {
+      const res = await db.prepare(statement).all();
+
+      const link = getLink(chain, res?.meta?.txn?.transactionHash as string);
+      const out = { ...res, link };
+      console.log(JSON.stringify(out));
+      return;
+    }
+
+    // TODO: taking an arbitrary sql string and returning each individual statement with the associated tableId
+    //    seems very useful in general.  We should expose this via the SDK or parser.
+    const statementsById = (
+      await Promise.all(
+        normalized.statements.map(async function (stmt) {
+          // re-normalize so we can be sure we've isolated each statement and it's tableId
+          const norm = await normalize(stmt);
+          if (norm.tables.length > 1) {
+            throw new Error(
+              "cannot normalize if single query affects more then one table"
+            );
+          }
+          const { tableId } = await globalThis.sqlparser.validateTableName(
+            norm.tables[0]
+          );
+          return {
+            statement: stmt,
+            tableId: tableId.toString(),
+          };
+        })
+      )
+    ).reduce(function (acc, cur) {
+      // take the re-normalized statements and concatenate the ones that share a tableId
+      if (acc[cur.tableId] == null) {
+        acc[cur.tableId] = "";
+      }
+
+      acc[cur.tableId] += cur.statement;
+      return acc;
+    }, {} as any);
+
+    const preparedStatements = Object.entries(statementsById).map(function ([
+      id,
+      stmt,
+    ]) {
+      if (typeof stmt !== "string") throw new Error("cannot prepare statement");
+      return db.prepare(stmt);
+    });
+
+    const [res] = await db.batch(preparedStatements);
     const link = getLink(chain, res?.meta?.txn?.transactionHash as string);
     const out = { ...res, link };
     console.log(JSON.stringify(out));

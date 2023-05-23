@@ -57,10 +57,16 @@ const _argv = yargs(hideBin(process.argv))
   .command(commands as any)
   .env("TBL")
   .config(config?.config)
-  .option("privateKey", {
-    alias: "k",
+  // the help and version options are internal to yargs, hence they are
+  // at the top of the help message no matter what order we specifiy
+  .option("help", {
+    alias: "h",
+  })
+  .alias("version", "V")
+  // custom options are in alphabetical order
+  .option("baseUrl", {
     type: "string",
-    description: "Private key string",
+    description: "The URL of your Tableland validator",
   })
   .option("chain", {
     alias: "c",
@@ -75,11 +81,12 @@ const _argv = yargs(hideBin(process.argv))
     type: "string",
     description: "Enable ENS experiment",
   })
-  .option("baseUrl", {
+  .option("privateKey", {
+    alias: "k",
     type: "string",
-    description: "The URL of your Tableland validator",
+    description: "Private key string",
   })
-  .options("providerUrl", {
+  .option("providerUrl", {
     alias: "p",
     type: "string",
     description:

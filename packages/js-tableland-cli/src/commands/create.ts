@@ -66,10 +66,6 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     }
 
     let statement = "";
-
-    // now that we have parsed the command args, run the create operation
-    const { database: db, ens } = await setupCommand(argv);
-
     const check = /CREATE TABLE/gim.exec(schema.toString());
     if (check) {
       statement = schema;
@@ -81,10 +77,61 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       statement = `CREATE TABLE ${prefix} (${schema})`;
     }
 
-    if (argv.enableEnsExperiment && ens)
-      statement = await ens.resolve(statement);
+    // now that we have parsed the command args, run the create operation
+    const { database: db, ens, normalize } = await setupCommand(argv);
 
-    const res = await db.prepare(statement).all();
+    if (argv.enableEnsExperiment && ens) {
+      statement = await ens.resolve(statement);
+    }
+    statement = statement
+      .replace(/\n/g, "")
+      .replace(/\r/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    // Parse the statement to see if more than one table is affected.
+    // If yes, then combine into separate statements and batch.
+    // If no, then process via single statement.
+    const statements = statement.split(";").filter((stmt) => stmt.trim());
+    // NOTE: the wasm-sqlparse will error if you normalize a string with 2 creates,
+    //  so we are splitting by semi-colon and then ensuring each statement is a create.
+    const normalized = await Promise.all(
+      statements.map(async (stmt) => await normalize(stmt))
+    );
+
+    if (!normalized.every((norm) => norm.type === "create")) {
+      console.error("the `create` command can only accept create queries");
+      return;
+    }
+    if (statements.length < 1) {
+      console.error(
+        "after normalizing the statement there was no create query, hence nothing to do"
+      );
+      return;
+    }
+
+    if (statements.length < 2) {
+      // send the original statement as a single create
+      const res = await db.prepare(statement).all();
+      const link = getLink(chain, res.meta.txn?.transactionHash as string);
+      const out = { ...res, link, ensNameRegistered: false };
+
+      if (!check && argv.ns && argv.enableEnsExperiment && prefix) {
+        const register = (await ens?.addTableRecords(argv.ns, [
+          { key: prefix, value: out.meta.txn?.name as string },
+        ])) as boolean;
+        out.ensNameRegistered = register;
+      }
+
+      console.log(JSON.stringify(out));
+      return;
+    }
+
+    const [res] = await db.batch(
+      statements.map(function (stmt) {
+        return db.prepare(stmt);
+      })
+    );
     const link = getLink(chain, res.meta.txn?.transactionHash as string);
     const out = { ...res, link, ensNameRegistered: false };
 
