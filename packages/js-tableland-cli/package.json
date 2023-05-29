@@ -67,7 +67,7 @@
     "typescript": "^5.0.2"
   },
   "dependencies": {
-    "@ensdomains/ensjs": "3.0.0-alpha.57",
+    "@ensdomains/ensjs": "3.0.0-alpha.64",
     "@tableland/sdk": "^4.3.0",
     "@tableland/sqlparser": "^1.0.6",
     "cli-select-2": "^2.0.0",
