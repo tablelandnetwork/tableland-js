@@ -35,7 +35,8 @@
     "format": "npm run prettier:fix && npm run lint:fix",
     "prepublishOnly": "npm run build",
     "test": "mocha",
-    "coverage": "c8 mocha",
+    "coverage": "TEST_TIMEOUT_FACTOR=3 c8 --100 --exclude test mocha --exit",
+    "coverage:report": "c8 report --reporter=html",
     "clean": "rm -rf dist",
     "build": "npx tsc && chmod +x dist/cli.js",
     "tableland": "node --experimental-specifier-resolution=node ./dist/cli.js"

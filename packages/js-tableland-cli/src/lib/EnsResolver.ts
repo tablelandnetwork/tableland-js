@@ -1,7 +1,8 @@
 import ethers, { Signer } from "ethers";
-import ensLib from "./EnsCommand.js";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { ENS } from "@ensdomains/ensjs";
+import ensLib from "./EnsCommand.js";
+import { logger } from "../utils.js";
 
 interface EnsResolverOptions {
   ensProviderUrl: string;
@@ -20,7 +21,10 @@ export default class EnsResolver {
 
   constructor(options: EnsResolverOptions) {
     const { signer, ensProviderUrl } = options;
-    if (!ensProviderUrl) throw new Error("No ensProviderUrl given");
+    /* c8 ignore next 3 */
+    if (!ensProviderUrl) {
+      throw new Error("No ensProviderUrl given");
+    }
     this.signer = signer;
     this.provider = new JsonRpcProvider(ensProviderUrl);
 
@@ -36,6 +40,7 @@ export default class EnsResolver {
     const domain = domainArray.join(".");
     const address = await this.provider.getResolver(domain);
 
+    // TODO: mock `this.provider.getResolver` so address is undefined and we get coverage on the or clause
     return (await address?.getText(textRecord)) || tablename;
   }
 
@@ -50,8 +55,8 @@ export default class EnsResolver {
       });
       return true;
     } catch (e: any) {
-      console.log("Adding table to ENS failed");
-      console.error(e.message);
+      logger.log("Adding table to ENS failed");
+      logger.error(e.message);
     }
     return true;
   }

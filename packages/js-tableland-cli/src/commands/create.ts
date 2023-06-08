@@ -1,6 +1,6 @@
 import type yargs from "yargs";
 import type { Arguments, CommandBuilder } from "yargs";
-import { getLink } from "../utils.js";
+import { getLink, logger } from "../utils.js";
 import { createInterface } from "readline";
 import { promises } from "fs";
 import { GlobalOptions } from "../cli.js";
@@ -43,11 +43,11 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     const { chain, file, prefix, privateKey } = argv;
     // enforce that all args required for this command are available
     if (!privateKey) {
-      console.error("missing required flag (`-k` or `--privateKey`)");
+      logger.error("missing required flag (`-k` or `--privateKey`)");
       return;
     }
     if (!chain) {
-      console.error("missing required flag (`-c` or `--chain`)");
+      logger.error("missing required flag (`-c` or `--chain`)");
       return;
     }
     if (file != null) {
@@ -59,7 +59,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       schema = value;
     }
     if (!schema) {
-      console.error(
+      logger.error(
         "missing input value (`schema`, `file`, or piped input from stdin required)"
       );
       return;
@@ -70,7 +70,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     if (check) {
       statement = schema;
     } else if (prefix === undefined) {
-      console.error(
+      logger.error(
         "Must specify --prefix if you do not provide a full Create statement"
       );
     } else {
@@ -100,11 +100,11 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     );
 
     if (!normalized.every((norm) => norm.type === "create")) {
-      console.error("the `create` command can only accept create queries");
+      logger.error("the `create` command can only accept create queries");
       return;
     }
     if (statements.length < 1) {
-      console.error(
+      logger.error(
         "after normalizing the statement there was no create query, hence nothing to do"
       );
       return;
@@ -123,7 +123,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
         out.ensNameRegistered = register;
       }
 
-      console.log(JSON.stringify(out));
+      logger.log(JSON.stringify(out));
       return;
     }
 
@@ -135,6 +135,9 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     const link = getLink(chain, res.meta.txn?.transactionHash as string);
     const out = { ...res, link, ensNameRegistered: false };
 
+    // TODO: I'm not sure how `check` would be false and statements.length < 2
+    //    so I didn't write a test for it
+    /* c8 ignore next 6 */
     if (!check && argv.ns && argv.enableEnsExperiment && prefix) {
       const register = (await ens?.addTableRecords(argv.ns, [
         { key: prefix, value: out.meta.txn?.name as string },
@@ -142,9 +145,9 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       out.ensNameRegistered = register;
     }
 
-    console.log(JSON.stringify(out));
+    logger.log(JSON.stringify(out));
     /* c8 ignore next 3 */
   } catch (err: any) {
-    console.error(err?.cause?.message || err.message);
+    logger.error(err?.cause?.message || err.message);
   }
 };

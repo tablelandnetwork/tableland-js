@@ -3,6 +3,7 @@ import type { Arguments, CommandBuilder } from "yargs";
 import { Wallet } from "ethers";
 import { GlobalOptions } from "../cli.js";
 import { setupCommand } from "../lib/commandSetup.js";
+import { logger } from "../utils.js";
 
 export interface Options extends GlobalOptions {
   address: string;
@@ -23,14 +24,14 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     const { chain, privateKey } = argv;
     let { address } = argv;
     if (!chain) {
-      console.error("missing required flag (`-c` or `--chain`)");
+      logger.error("missing required flag (`-c` or `--chain`)");
       return;
     }
     if (!address) {
       if (privateKey) {
         address = new Wallet(privateKey).address;
       } else {
-        console.error("must supply `--privateKey` or `address` positional");
+        logger.error("must supply `--privateKey` or `address` positional");
         return;
       }
     }
@@ -39,9 +40,9 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
 
     const res = await registry.listTables(address);
 
-    console.log(JSON.stringify(res));
+    logger.log(JSON.stringify(res));
     /* c8 ignore next 3 */
   } catch (err: any) {
-    console.error(err.message);
+    logger.error(err.message);
   }
 };

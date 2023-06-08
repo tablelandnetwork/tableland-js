@@ -3,6 +3,7 @@ import type { Arguments, CommandBuilder } from "yargs";
 import { helpers } from "@tableland/sdk";
 import { GlobalOptions } from "../cli.js";
 import { setupCommand } from "../lib/commandSetup.js";
+import { logger } from "../utils.js";
 
 export interface Options extends GlobalOptions {
   hash: string;
@@ -22,7 +23,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
   try {
     const { hash, chain } = argv;
     if (!chain) {
-      console.error("missing required flag (`-c` or `--chain`)");
+      logger.error("missing required flag (`-c` or `--chain`)");
       return;
     }
     const { validator } = await setupCommand(argv);
@@ -30,9 +31,9 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       chainId: helpers.getChainId(chain),
       transactionHash: hash,
     });
-    console.log(JSON.stringify(res));
+    logger.log(JSON.stringify(res));
     /* c8 ignore next 3 */
   } catch (err: any) {
-    console.error(err.message);
+    logger.error(err.message);
   }
 };

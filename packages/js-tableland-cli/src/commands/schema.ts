@@ -2,6 +2,7 @@ import type yargs from "yargs";
 import type { Arguments, CommandBuilder } from "yargs";
 import { GlobalOptions } from "../cli.js";
 import { setupCommand } from "../lib/commandSetup.js";
+import { logger } from "../utils.js";
 
 export interface Options extends GlobalOptions {
   name: string;
@@ -24,7 +25,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     const parts = name.split("_");
 
     if (parts.length < 3 && !argv.enableEnsExperiment) {
-      console.error(
+      logger.error(
         "invalid table name (name format is `{prefix}_{chainId}_{tableId}`)"
       );
       return;
@@ -39,9 +40,9 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       tableId,
       chainId: parseInt(chainId),
     });
-    console.log(JSON.stringify(res.schema));
+    logger.log(JSON.stringify(res.schema));
     /* c8 ignore next 3 */
   } catch (err: any) {
-    console.error(err.message);
+    logger.error(err.message);
   }
 };

@@ -1,11 +1,13 @@
+import { equal } from "node:assert";
 import { describe, test, afterEach, before } from "mocha";
-import { spy, restore, assert } from "sinon";
+import { spy, restore } from "sinon";
 import yargs from "yargs/yargs";
 import * as mod from "../src/commands/schema.js";
+import { wait, logger } from "../src/utils.js";
 
 describe("commands/schema", function () {
   before(async function () {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await wait(1000);
   });
 
   afterEach(function () {
@@ -13,35 +15,37 @@ describe("commands/schema", function () {
   });
 
   test("throws without invalid table name", async function () {
-    const consoleError = spy(console, "error");
+    const consoleError = spy(logger, "error");
     await yargs(["schema", "invalid_name"]).command(mod).parse();
-    assert.calledWith(
-      consoleError,
+
+    const value = consoleError.getCall(0).firstArg;
+    equal(
+      value,
       "invalid table name (name format is `{prefix}_{chainId}_{tableId}`)"
     );
   });
 
   test("throws with invalid chain", async function () {
-    const consoleError = spy(console, "error");
+    const consoleError = spy(logger, "error");
     await yargs(["schema", "valid_9999_0"]).command(mod).parse();
-    assert.calledWith(
-      consoleError,
-      "unsupported chain (see `chains` command for details)"
-    );
+
+    const value = consoleError.getCall(0).firstArg;
+    equal(value, "cannot use unsupported chain: 9999");
   });
 
   test("throws with missing table", async function () {
-    const consoleError = spy(console, "error");
+    const consoleError = spy(logger, "error");
     await yargs(["schema", "ignored_31337_99"]).command(mod).parse();
-    assert.calledWith(consoleError, "Not Found");
+
+    const value = consoleError.getCall(0).firstArg;
+    equal(value, "Not Found");
   });
 
   test("Schema passes with local-tableland", async function () {
-    const consoleLog = spy(console, "log");
+    const consoleLog = spy(logger, "log");
     await yargs(["schema", "healthbot_31337_1"]).command(mod).parse();
-    assert.calledWith(
-      consoleLog,
-      `{"columns":[{"name":"counter","type":"integer"}]}`
-    );
+
+    const value = consoleLog.getCall(0).firstArg;
+    equal(value, `{"columns":[{"name":"counter","type":"integer"}]}`);
   });
 });

@@ -3,6 +3,7 @@ import type { Arguments, CommandBuilder } from "yargs";
 import { GlobalOptions } from "../cli.js";
 import { setupCommand } from "../lib/commandSetup.js";
 import { init } from "@tableland/sqlparser";
+import { logger } from "../utils.js";
 
 export interface Options extends GlobalOptions {
   name: string;
@@ -39,9 +40,9 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       tableName: name,
       to: receiver,
     });
-    console.log(JSON.stringify(res));
+    logger.log(JSON.stringify(res));
     /* c8 ignore next 3 */
   } catch (err: any) {
-    console.error(err.message);
+    logger.error(err.message);
   }
 };

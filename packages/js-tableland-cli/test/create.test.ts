@@ -1,12 +1,12 @@
-import { equal } from "node:assert";
+import { equal, match } from "node:assert";
 import { describe, test, afterEach, before } from "mocha";
-import { spy, restore, assert, match, stub } from "sinon";
+import { spy, restore, stub } from "sinon";
 import yargs from "yargs/yargs";
 import { temporaryWrite } from "tempy";
 import mockStd from "mock-stdin";
 import { getAccounts } from "@tableland/local";
 import * as mod from "../src/commands/create.js";
-import { wait } from "../src/utils.js";
+import { wait, logger } from "../src/utils.js";
 import { ethers } from "ethers";
 import { getResolverMock } from "./mock.js";
 
@@ -24,18 +24,17 @@ describe("commands/create", function () {
   });
 
   test("throws without privateKey", async function () {
-    const consoleError = spy(console, "error");
+    const consoleError = spy(logger, "error");
     await yargs(["create", "blah"]).command(mod).parse();
-    assert.calledWith(
-      consoleError,
-      "missing required flag (`-k` or `--privateKey`)"
-    );
+
+    const value = consoleError.getCall(0).firstArg;
+    equal(value, "missing required flag (`-k` or `--privateKey`)");
   });
 
   test("throws if chain not provided", async function () {
     const [account] = accounts;
     const privateKey = account.privateKey.slice(2);
-    const consoleError = spy(console, "error");
+    const consoleError = spy(logger, "error");
     await yargs([
       "create",
       "(id int primary key, desc text)",
@@ -44,70 +43,36 @@ describe("commands/create", function () {
     ])
       .command(mod)
       .parse();
-    assert.calledWith(
-      consoleError,
-      "missing required flag (`-c` or `--chain`)"
-    );
-  });
 
-  test("Create namespace with table using ENS", async () => {
-    const fullReolverStub = stub(
-      ethers.providers.JsonRpcProvider.prototype,
-      "getResolver"
-    ).callsFake(getResolverMock);
-
-    const consoleLog = spy(console, "log");
-    const [account] = getAccounts();
-    const privateKey = account.privateKey.slice(2);
-    await yargs([
-      "create",
-      "id integer, message text",
-      "hello",
-      "--chain",
-      "local-tableland",
-      "--privateKey",
-      privateKey,
-      "--ns",
-      "foo.bar.eth",
-      "--enableEnsExperiment",
-      "--ensProviderUrl",
-      "https://localhost:8080",
-    ])
-      .command(mod)
-      .parse();
-
-    fullReolverStub.restore();
-
-    assert.match(consoleLog.getCall(1).args[0], function (value: any) {
-      value = JSON.parse(value);
-      return value.ensNameRegistered === true;
-    });
+    const value = consoleError.getCall(0).firstArg;
+    equal(value, "missing required flag (`-c` or `--chain`)");
   });
 
   test("throws with invalid chain", async function () {
     const [account] = accounts;
     const privateKey = account.privateKey.slice(2);
-    const consoleError = spy(console, "error");
+    const consoleError = spy(logger, "error");
     await yargs([
       "create",
       "(id int primary key, desc text)",
       "--privateKey",
       privateKey,
+      "--prefix",
+      "invalid_chain_table",
       "--chain",
       "foozbaaz",
     ])
       .command(mod)
       .parse();
-    assert.calledWith(
-      consoleError,
-      "unsupported chain (see `chains` command for details)"
-    );
+
+    const value = consoleError.getCall(0).firstArg;
+    equal(value, "unsupported chain (see `chains` command for details)");
   });
 
   test("throws with invalid statement", async function () {
     const [account] = accounts;
     const privateKey = account.privateKey.slice(2);
-    const consoleError = spy(console, "error");
+    const consoleError = spy(logger, "error");
     await yargs([
       "create",
       "invalid",
@@ -121,14 +86,17 @@ describe("commands/create", function () {
       .command(mod)
       .parse();
 
-    const res = consoleError.getCall(0).firstArg;
-    equal(res, "error parsing statement: syntax error at position 32 near ')'");
+    const value = consoleError.getCall(0).firstArg;
+    equal(
+      value,
+      "error parsing statement: syntax error at position 32 near ')'"
+    );
   });
 
   test("throws when mixing create and write statements", async function () {
     const [account] = accounts;
     const privateKey = account.privateKey.slice(2);
-    const consoleError = spy(console, "error");
+    const consoleError = spy(logger, "error");
     await yargs([
       "create",
       "create table fooz (a int);insert into fooz (a) values (1);",
@@ -142,14 +110,14 @@ describe("commands/create", function () {
       .command(mod)
       .parse();
 
-    const res = consoleError.getCall(0).firstArg;
-    equal(res, "the `create` command can only accept create queries");
+    const value = consoleError.getCall(0).firstArg;
+    equal(value, "the `create` command can only accept create queries");
   });
 
   test("throws with missing file", async function () {
     const [account] = accounts;
     const privateKey = account.privateKey.slice(2);
-    const consoleError = spy(console, "error");
+    const consoleError = spy(logger, "error");
     await yargs([
       "create",
       "--file",
@@ -161,19 +129,16 @@ describe("commands/create", function () {
     ])
       .command(mod)
       .parse();
-    assert.calledWith(
-      consoleError,
-      match((value) => {
-        return value.startsWith("ENOENT: no such file or directory");
-      }, "Didn't throw ENOENT.")
-    );
+
+    const value = consoleError.getCall(0).firstArg;
+    match(value, /ENOENT: no such file or directory/i);
   });
 
   test("throws with empty stdin", async function () {
     const [account] = accounts;
     const privateKey = account.privateKey.slice(2);
     const stdin = mockStd.stdin();
-    const consoleError = spy(console, "error");
+    const consoleError = spy(logger, "error");
     setTimeout(() => {
       stdin.send("\n").end();
     }, 100);
@@ -186,16 +151,40 @@ describe("commands/create", function () {
     ])
       .command(mod)
       .parse();
-    assert.calledWith(
-      consoleError,
+
+    const value = consoleError.getCall(0).firstArg;
+    equal(
+      value,
       "missing input value (`schema`, `file`, or piped input from stdin required)"
+    );
+  });
+
+  test("throws if prefix not provided", async function () {
+    const [account] = accounts;
+    const privateKey = account.privateKey.slice(2);
+    const consoleError = spy(logger, "error");
+    await yargs([
+      "create",
+      "(id int primary key, desc text)",
+      "--privateKey",
+      privateKey,
+      "--chain",
+      "local-tableland",
+    ])
+      .command(mod)
+      .parse();
+
+    const value = consoleError.getCall(0).firstArg;
+    equal(
+      value,
+      "Must specify --prefix if you do not provide a full Create statement"
     );
   });
 
   test("Create passes with local-tableland", async function () {
     const [account] = accounts;
     const privateKey = account.privateKey.slice(2);
-    const consoleLog = spy(console, "log");
+    const consoleLog = spy(logger, "log");
     await yargs([
       "create",
       "id int primary key, name text",
@@ -208,28 +197,23 @@ describe("commands/create", function () {
     ])
       .command(mod)
       .parse();
-    assert.calledWith(
-      consoleLog,
-      match(function (value: any) {
-        value = JSON.parse(value);
-        const { prefix, name, chainId, tableId, transactionHash } =
-          value.meta.txn;
-        return (
-          prefix === "first_table" &&
-          chainId === 31337 &&
-          name.startsWith(prefix) &&
-          name.endsWith(tableId) &&
-          typeof transactionHash === "string" &&
-          transactionHash.startsWith("0x")
-        );
-      }, "does not match")
-    );
+
+    const res = consoleLog.getCall(0).firstArg;
+    const value = JSON.parse(res);
+    const { prefix, name, chainId, tableId, transactionHash } = value.meta.txn;
+
+    equal(prefix, "first_table");
+    equal(chainId, 31337);
+    equal(name.startsWith(prefix), true);
+    equal(name.endsWith(tableId), true);
+    equal(typeof transactionHash, "string");
+    equal(transactionHash.startsWith("0x"), true);
   });
 
   test("passes with full create statement (override prefix)", async function () {
     const [account] = accounts;
     const privateKey = account.privateKey.slice(2);
-    const consoleLog = spy(console, "log");
+    const consoleLog = spy(logger, "log");
     await yargs([
       "create",
       "create table second_table (id int primary key, name text);",
@@ -242,28 +226,23 @@ describe("commands/create", function () {
     ])
       .command(mod)
       .parse();
-    assert.calledWith(
-      consoleLog,
-      match(function (value: any) {
-        value = JSON.parse(value);
-        const { prefix, name, chainId, tableId, transactionHash } =
-          value.meta.txn;
-        return (
-          prefix === "second_table" &&
-          chainId === 31337 &&
-          name.startsWith(prefix) &&
-          name.endsWith(tableId) &&
-          typeof transactionHash === "string" &&
-          transactionHash.startsWith("0x")
-        );
-      }, "does not match")
-    );
+
+    const res = consoleLog.getCall(0).firstArg;
+    const value = JSON.parse(res);
+    const { prefix, name, chainId, tableId, transactionHash } = value.meta.txn;
+
+    equal(prefix, "second_table");
+    equal(chainId, 31337);
+    equal(name.startsWith(prefix), true);
+    equal(name.endsWith(tableId), true);
+    equal(typeof transactionHash, "string");
+    equal(transactionHash.startsWith("0x"), true);
   });
 
   test("passes with two create statements", async function () {
     const [account] = accounts;
     const privateKey = account.privateKey.slice(2);
-    const consoleLog = spy(console, "log");
+    const consoleLog = spy(logger, "log");
     await yargs([
       "create",
       `create table first_table (id int primary key, name text);
@@ -299,7 +278,7 @@ describe("commands/create", function () {
   test("passes when provided input from file", async function () {
     const [account] = accounts;
     const privateKey = account.privateKey.slice(2);
-    const consoleLog = spy(console, "log");
+    const consoleLog = spy(logger, "log");
     const path = await temporaryWrite(`\nid int primary key,\nname text\n`);
     await yargs([
       "create",
@@ -330,7 +309,7 @@ describe("commands/create", function () {
   test("passes when provided input from stdin", async function () {
     const [account] = accounts;
     const privateKey = account.privateKey.slice(2);
-    const consoleLog = spy(console, "log");
+    const consoleLog = spy(logger, "log");
     const stdin = mockStd.stdin();
     setTimeout(() => {
       stdin
@@ -346,21 +325,73 @@ describe("commands/create", function () {
     ])
       .command(mod)
       .parse();
-    assert.calledWith(
-      consoleLog,
-      match(function (value: any) {
-        value = JSON.parse(value);
-        const { prefix, name, chainId, tableId, transactionHash } =
-          value.meta.txn;
-        return (
-          prefix === "stdin_test" &&
-          chainId === 31337 &&
-          name.startsWith(prefix) &&
-          name.endsWith(tableId) &&
-          typeof transactionHash === "string" &&
-          transactionHash.startsWith("0x")
-        );
-      }, "does not match")
-    );
+
+    const res = consoleLog.getCall(0).firstArg;
+    const value = JSON.parse(res);
+    const { prefix, name, chainId, tableId, transactionHash } = value.meta.txn;
+
+    equal(prefix, "stdin_test");
+    equal(chainId, 31337);
+    equal(name.startsWith(prefix), true);
+    equal(name.endsWith(tableId), true);
+    equal(typeof transactionHash, "string");
+    equal(transactionHash.startsWith("0x"), true);
+  });
+
+  test("create namespace with table using ENS", async () => {
+    const fullReolverStub = stub(
+      ethers.providers.JsonRpcProvider.prototype,
+      "getResolver"
+    ).callsFake(getResolverMock);
+
+    const consoleLog = spy(logger, "log");
+    const [account] = getAccounts();
+    const privateKey = account.privateKey.slice(2);
+    await yargs([
+      "create",
+      "id integer, message text",
+      "hello",
+      "--chain",
+      "local-tableland",
+      "--privateKey",
+      privateKey,
+      "--ns",
+      "foo.bar.eth",
+      "--enableEnsExperiment",
+      "--ensProviderUrl",
+      "https://localhost:8080",
+    ])
+      .command(mod)
+      .parse();
+
+    fullReolverStub.restore();
+
+    const res = consoleLog.getCall(1).firstArg;
+    const value = JSON.parse(res);
+    equal(value.ensNameRegistered, true);
+  });
+
+  test("create can accept custom providerUrl", async function () {
+    const [account] = accounts;
+    const privateKey = account.privateKey.slice(2);
+    const consoleError = spy(logger, "error");
+
+    await yargs([
+      "create",
+      "id int primary key, name text",
+      "--prefix",
+      "custom_url_table",
+      "--chain",
+      "local-tableland",
+      "--privateKey",
+      privateKey,
+      "--providerUrl",
+      "http://localhost:9876",
+    ])
+      .command(mod)
+      .parse();
+
+    const value = consoleError.getCall(0).firstArg;
+    equal(value, "cannot determine provider chain ID");
   });
 });

@@ -4,7 +4,7 @@ import yaml from "js-yaml";
 import { resolve, dirname } from "path";
 import { mkdirSync, createWriteStream, WriteStream } from "fs";
 import inquirer from "inquirer";
-import { getChains } from "../utils.js";
+import { getChains, logger } from "../utils.js";
 import { GlobalOptions } from "../cli.js";
 
 export interface Options extends GlobalOptions {
@@ -111,10 +111,10 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
         break;
     }
     if (path !== ".") {
-      console.log(`Config created at ${filePath}`);
+      logger.log(`Config created at ${filePath}`);
     }
   } catch (err: any) {
-    console.error(err.message);
+    logger.error(err.message);
     return;
   } finally {
     stream.end("\n");

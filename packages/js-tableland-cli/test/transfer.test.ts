@@ -1,18 +1,19 @@
 import { equal } from "node:assert";
 import { describe, test, afterEach, before } from "mocha";
-import { spy, restore, assert } from "sinon";
+import { spy, restore } from "sinon";
 import yargs from "yargs/yargs";
 import { getAccounts, getDatabase } from "@tableland/local";
 import * as mod from "../src/commands/transfer.js";
-import { wait } from "../src/utils.js";
+import { wait, logger } from "../src/utils.js";
 import { helpers } from "@tableland/sdk";
 
 describe("commands/transfer", function () {
   this.timeout("30s");
 
+  // account[0] is the Validator's wallet, try to avoid using that
   const accounts = getAccounts();
-  // account 0 is the Validator's wallet, try to avoid using that
   const db = getDatabase(accounts[1]);
+
   let tableName: string;
   before(async function () {
     await wait(500);
@@ -27,12 +28,14 @@ describe("commands/transfer", function () {
   });
 
   test("throws without privateKey", async function () {
-    const consoleError = spy(console, "error");
+    const consoleError = spy(logger, "error");
     await yargs(["transfer", tableName, "0x0000000000000000000000"])
       .command(mod)
       .parse();
-    assert.calledWith(
-      consoleError,
+
+    const value = consoleError.getCall(0).firstArg;
+    equal(
+      value,
       "No registry. This may be because you did not specify a private key with which to interact with the registry."
     );
   });
@@ -40,7 +43,7 @@ describe("commands/transfer", function () {
   test("throws with invalid chain", async function () {
     const account = accounts[1];
     const privateKey = account.privateKey.slice(2);
-    const consoleError = spy(console, "error");
+    const consoleError = spy(logger, "error");
     await yargs([
       "transfer",
       tableName,
@@ -52,29 +55,27 @@ describe("commands/transfer", function () {
     ])
       .command(mod)
       .parse();
-    assert.calledWith(
-      consoleError,
-      "unsupported chain (see `chains` command for details)"
-    );
+
+    const value = consoleError.getCall(0).firstArg;
+    equal(value, "unsupported chain (see `chains` command for details)");
   });
 
   test("throws with invalid table name", async function () {
     const account = accounts[1];
     const privateKey = account.privateKey.slice(2);
-    const consoleError = spy(console, "error");
+    const consoleError = spy(logger, "error");
     await yargs(["transfer", "fooz", "blah", "-k", privateKey])
       .command(mod)
       .parse();
-    assert.calledWith(
-      consoleError,
-      "error validating name: table name has wrong format: fooz"
-    );
+
+    const value = consoleError.getCall(0).firstArg;
+    equal(value, "error validating name: table name has wrong format: fooz");
   });
 
   test("throws with invalid receiver address", async function () {
     const account = accounts[1];
     const privateKey = account.privateKey.slice(2);
-    const consoleError = spy(console, "error");
+    const consoleError = spy(logger, "error");
     await yargs([
       "transfer",
       tableName,
@@ -86,8 +87,10 @@ describe("commands/transfer", function () {
     ])
       .command(mod)
       .parse();
-    assert.calledWith(
-      consoleError,
+
+    const value = consoleError.getCall(0).firstArg;
+    equal(
+      value,
       'invalid address (argument="address", value="0x00", code=INVALID_ARGUMENT, version=address/5.7.0)'
     );
   });
@@ -96,7 +99,7 @@ describe("commands/transfer", function () {
   test("Write passes with local-tableland", async function () {
     const [, account1, account2] = accounts;
     const account2Address = account2.address;
-    const consoleLog = spy(console, "log");
+    const consoleLog = spy(logger, "log");
     const privateKey = account1.privateKey.slice(2);
     await yargs([
       "transfer",

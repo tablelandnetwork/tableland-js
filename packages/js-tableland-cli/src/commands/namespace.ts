@@ -2,6 +2,7 @@ import type yargs from "yargs";
 import { Arguments, CommandBuilder } from "yargs";
 import { GlobalOptions } from "../cli.js";
 import { setupCommand } from "../lib/commandSetup.js";
+import { logger } from "../utils.js";
 
 export interface Options extends GlobalOptions {
   domain: string;
@@ -16,46 +17,56 @@ async function getHandler(argv: yargs.ArgumentsCamelCase<Options>) {
   const { record } = argv;
   const { ens } = await setupCommand(argv);
   if (!ens) {
-    console.log(
+    logger.log(
       "To use ENS, ensure you have set the enableEnsExperiment flag to true"
     );
     return;
   }
 
-  console.log(JSON.stringify({ value: await ens.resolveTable(record) }));
+  logger.log(JSON.stringify({ value: await ens.resolveTable(record) }));
 }
 
 async function setHandler(argv: yargs.ArgumentsCamelCase<Options>) {
-  const { domain, mappings } = argv;
-  const { ens } = await setupCommand(argv);
-  if (!ens) return;
-
-  const records = mappings.map((entry: any) => {
-    const [key, value] = entry.split("=");
-
-    const keyRegex = /^[a-zA-Z0-9_]*$/;
-    const valueRegex = /^[a-zA-Z_][a-zA-Z0-9_]*_[0-9]+_[0-9]+$/;
-
-    if (keyRegex.exec(key) === null) {
-      throw new Error("Only letters or underscores in key name");
+  try {
+    const { domain, mappings } = argv;
+    const { ens } = await setupCommand(argv);
+    if (!ens) {
+      logger.log(
+        "To use ENS, ensure you have set the enableEnsExperiment flag to true"
+      );
+      return;
     }
-    if (valueRegex.exec(value) === null) {
-      throw new Error("Tablename is invalid");
+
+    const records = mappings.map((entry: any) => {
+      const [key, value] = entry.split("=");
+
+      const keyRegex = /^[a-zA-Z0-9_]*$/;
+      const valueRegex = /^[a-zA-Z_][a-zA-Z0-9_]*_[0-9]+_[0-9]+$/;
+
+      if (keyRegex.exec(key) === null) {
+        throw new Error("Only letters or underscores in key name");
+      }
+      if (valueRegex.exec(value) === null) {
+        throw new Error("Tablename is invalid");
+      }
+      return {
+        key,
+        value,
+      };
+    });
+
+    if (await ens.addTableRecords(domain, records)) {
+      const response = {
+        domain,
+        records,
+        mappings,
+      };
+
+      logger.log(JSON.stringify(response));
     }
-    return {
-      key,
-      value,
-    };
-  });
-
-  if (await ens.addTableRecords(domain, records)) {
-    const response = {
-      domain,
-      records,
-      mappings,
-    };
-
-    console.log(JSON.stringify(response));
+    /* c8 ignore next 3 */
+  } catch (err: any) {
+    logger.error(err?.cause?.message || err?.message);
   }
 }
 
@@ -85,4 +96,5 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
     )
     .usage(``) as yargs.Argv<Options>;
 
+/* c8 ignore next */
 export const handler = async (argv: Arguments<Options>): Promise<void> => {};

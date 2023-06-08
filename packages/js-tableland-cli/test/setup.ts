@@ -1,18 +1,17 @@
 import { after, before } from "mocha";
 import { LocalTableland } from "@tableland/local";
-import fetch, { Headers, Request, Response } from "node-fetch";
 
-if (!globalThis.fetch) {
-  (globalThis as any).fetch = fetch;
-  (globalThis as any).Headers = Headers;
-  (globalThis as any).Request = Request;
-  (globalThis as any).Response = Response;
-}
+const getTimeoutFactor = function (): number {
+  const envFactor = Number(process.env.TEST_TIMEOUT_FACTOR);
+  if (!isNaN(envFactor) && envFactor > 0) {
+    return envFactor;
+  }
+  return 1;
+};
 
-// TODO: most tests rely on a spy on the global `console.log`. This means we must
-//    use silent: true here.  As an alternative we could explore using a `logger`
-//    that can be mocked, or spied on, or expose an extension api depending on the test.
-const lt = new LocalTableland({ silent: true });
+export const TEST_TIMEOUT_FACTOR = getTimeoutFactor();
+
+const lt = new LocalTableland({ silent: false });
 
 before(async function () {
   this.timeout(30000);

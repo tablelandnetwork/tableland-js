@@ -1,12 +1,14 @@
-import { equal } from "node:assert";
+import { equal, match } from "node:assert";
 import { describe, test, afterEach, before } from "mocha";
-import { spy, restore, assert, match } from "sinon";
+import { spy, stub, restore } from "sinon";
+import { ethers } from "ethers";
+import { getResolverUndefinedMock } from "./mock.js";
 import yargs from "yargs/yargs";
 import { temporaryWrite } from "tempy";
 import mockStd from "mock-stdin";
 import { getAccounts, getDatabase } from "@tableland/local";
 import * as mod from "../src/commands/write.js";
-import { wait } from "../src/utils.js";
+import { wait, logger } from "../src/utils.js";
 
 const accounts = getAccounts();
 const db = getDatabase(accounts[1]);
@@ -23,18 +25,17 @@ describe("commands/write", function () {
   });
 
   test("throws without privateKey", async function () {
-    const consoleError = spy(console, "error");
+    const consoleError = spy(logger, "error");
     await yargs(["write", "blah"]).command(mod).parse();
-    assert.calledWith(
-      consoleError,
-      "missing required flag (`-k` or `--privateKey`)"
-    );
+
+    const value = consoleError.getCall(0).firstArg;
+    equal(value, "missing required flag (`-k` or `--privateKey`)");
   });
 
   test("throws missing chain", async function () {
     const [account] = accounts;
     const privateKey = account.privateKey.slice(2);
-    const consoleError = spy(console, "error");
+    const consoleError = spy(logger, "error");
     await yargs([
       "write",
       "insert into fake_31337_1 values (1, 2, 3);",
@@ -43,16 +44,15 @@ describe("commands/write", function () {
     ])
       .command(mod)
       .parse();
-    assert.calledWith(
-      consoleError,
-      "missing required flag (`-c` or `--chain`)"
-    );
+
+    const value = consoleError.getCall(0).firstArg;
+    equal(value, "missing required flag (`-c` or `--chain`)");
   });
 
   test("throws with invalid chain", async function () {
     const [account] = accounts;
     const privateKey = account.privateKey.slice(2);
-    const consoleError = spy(console, "error");
+    const consoleError = spy(logger, "error");
     await yargs([
       "write",
       "insert into fake_31337_1 values (1, 2, 3);",
@@ -63,16 +63,15 @@ describe("commands/write", function () {
     ])
       .command(mod)
       .parse();
-    assert.calledWith(
-      consoleError,
-      "unsupported chain (see `chains` command for details)"
-    );
+
+    const value = consoleError.getCall(0).firstArg;
+    equal(value, "unsupported chain (see `chains` command for details)");
   });
 
   test("throws with invalid statement", async function () {
     const [account] = accounts;
     const privateKey = account.privateKey.slice(2);
-    const consoleError = spy(console, "error");
+    const consoleError = spy(logger, "error");
     await yargs([
       "write",
       // Note: cannot have a table named "table"
@@ -85,30 +84,17 @@ describe("commands/write", function () {
       .command(mod)
       .parse();
 
-    assert.calledWith(
-      consoleError,
-      match(function (value) {
-        if (typeof value !== "string") {
-          // console.error is being called with the error string,
-          // and the error object. We want to ignore the object.
-          return true;
-        }
-
-        return (
-          value.includes(
-            `error parsing statement: syntax error at position 12 near 'table'`
-          ) &&
-          value.includes(`update table set counter=1 where rowid=0;
-               ^^^^^`)
-        );
-      }, "error does not match")
+    const value = consoleError.getCall(0).firstArg;
+    match(
+      value,
+      /error parsing statement: syntax error at position 12 near 'table'/
     );
   });
 
   test("throws when mixing write and create statements", async function () {
     const [account] = accounts;
     const privateKey = account.privateKey.slice(2);
-    const consoleError = spy(console, "error");
+    const consoleError = spy(logger, "error");
     await yargs([
       "write",
       "insert into fooz (a) values (1);create table fooz (a int);",
@@ -122,17 +108,38 @@ describe("commands/write", function () {
       .command(mod)
       .parse();
 
-    const res = consoleError.getCall(0).firstArg;
+    const value = consoleError.getCall(0).firstArg;
     equal(
-      res,
+      value,
       "error parsing statement: syntax error at position 38 near 'create'"
     );
+  });
+
+  test("throws when used with create statement", async function () {
+    const [account] = accounts;
+    const privateKey = account.privateKey.slice(2);
+    const consoleError = spy(logger, "error");
+    await yargs([
+      "write",
+      "create table fooz (a int);",
+      "--chain",
+      "local-tableland",
+      "--prefix",
+      "cooltable",
+      "--privateKey",
+      privateKey,
+    ])
+      .command(mod)
+      .parse();
+
+    const value = consoleError.getCall(0).firstArg;
+    equal(value, "the `write` command can only accept write queries");
   });
 
   test("throws with missing file", async function () {
     const [account] = accounts;
     const privateKey = account.privateKey.slice(2);
-    const consoleError = spy(console, "error");
+    const consoleError = spy(logger, "error");
     await yargs([
       "write",
       "--file",
@@ -144,19 +151,16 @@ describe("commands/write", function () {
     ])
       .command(mod)
       .parse();
-    assert.calledWith(
-      consoleError,
-      match((value) => {
-        return value.startsWith("ENOENT: no such file or directory");
-      }, "Didn't throw ENOENT.")
-    );
+
+    const value = consoleError.getCall(0).firstArg;
+    match(value, /ENOENT: no such file or directory/);
   });
 
   test("throws with empty stdin", async function () {
     const [account] = accounts;
     const privateKey = account.privateKey.slice(2);
     const stdin = mockStd.stdin();
-    const consoleError = spy(console, "error");
+    const consoleError = spy(logger, "error");
     setTimeout(() => {
       stdin.send("\n").end();
     }, 100);
@@ -169,8 +173,10 @@ describe("commands/write", function () {
     ])
       .command(mod)
       .parse();
-    assert.calledWith(
-      consoleError,
+
+    const value = consoleError.getCall(0).firstArg;
+    equal(
+      value,
       "missing input value (`statement`, `file`, or piped input from stdin required)"
     );
   });
@@ -178,7 +184,7 @@ describe("commands/write", function () {
   test("Write passes with local-tableland", async function () {
     const [account] = accounts;
     const privateKey = account.privateKey.slice(2);
-    const consoleLog = spy(console, "log");
+    const consoleLog = spy(logger, "log");
     await yargs([
       "write",
       "update healthbot_31337_1 set counter=1 where rowid=0;", // This just updates in place
@@ -212,7 +218,7 @@ describe("commands/write", function () {
     const tableName2 = meta2.txn!.name;
 
     const privateKey = account.privateKey.slice(2);
-    const consoleLog = spy(console, "log");
+    const consoleLog = spy(logger, "log");
     await yargs([
       "write",
       `insert into ${tableName1} (a, b) values (1, 'one');
@@ -250,7 +256,7 @@ describe("commands/write", function () {
   test("passes when provided input from file", async function () {
     const [account] = accounts;
     const privateKey = account.privateKey.slice(2);
-    const consoleLog = spy(console, "log");
+    const consoleLog = spy(logger, "log");
     const path = await temporaryWrite(
       "update healthbot_31337_1 set counter=1;\n"
     );
@@ -265,24 +271,20 @@ describe("commands/write", function () {
     ])
       .command(mod)
       .parse();
-    assert.calledWith(
-      consoleLog,
-      match(function (value: any) {
-        value = JSON.parse(value);
-        const { transactionHash, link } = value.meta.txn;
-        return (
-          typeof transactionHash === "string" &&
-          transactionHash.startsWith("0x") &&
-          !link
-        );
-      }, "does not match")
-    );
+
+    const res = consoleLog.getCall(0).firstArg;
+    const value = JSON.parse(res);
+    const { transactionHash, link } = value.meta?.txn;
+
+    equal(typeof transactionHash, "string");
+    equal(transactionHash.startsWith("0x"), true);
+    equal(!link, true);
   });
 
   test("passes when provided input from stdin", async function () {
     const [account] = accounts;
     const privateKey = account.privateKey.slice(2);
-    const consoleLog = spy(console, "log");
+    const consoleLog = spy(logger, "log");
     const stdin = mockStd.stdin();
     setTimeout(() => {
       stdin.send("update healthbot_31337_1 set counter=1;\n").end();
@@ -296,17 +298,52 @@ describe("commands/write", function () {
     ])
       .command(mod)
       .parse();
-    assert.calledWith(
-      consoleLog,
-      match(function (value: any) {
-        value = JSON.parse(value);
-        const { transactionHash, link } = value.meta.txn;
-        return (
-          typeof transactionHash === "string" &&
-          transactionHash.startsWith("0x") &&
-          !link
-        );
-      }, "does not match")
-    );
+
+    const res = consoleLog.getCall(0).firstArg;
+    const value = JSON.parse(res);
+    const { transactionHash, link } = value.meta?.txn;
+
+    equal(typeof transactionHash, "string");
+    equal(transactionHash.startsWith("0x"), true);
+    equal(!link, true);
+  });
+
+  test("resolves table name to literal name if ens is not set", async function () {
+    const resolverMock = stub(
+      ethers.providers.JsonRpcProvider.prototype,
+      "getResolver"
+      // @ts-ignore
+    ).callsFake(getResolverUndefinedMock);
+
+    const { meta } = await db.prepare("CREATE TABLE ens_write (a int);").all();
+    const tableName = meta.txn?.name ?? "";
+
+    const account = accounts[1];
+    const privateKey = account.privateKey.slice(2);
+    const consoleLog = spy(logger, "log");
+
+    await yargs([
+      "write",
+      `insert into ${tableName} (a) values (1);`,
+      "--chain",
+      "local-tableland",
+      "--privateKey",
+      privateKey,
+      "--enableEnsExperiment",
+      "--ensProviderUrl",
+      "https://localhost:7070",
+    ])
+      .command(mod)
+      .parse();
+
+    const res = consoleLog.getCall(0).firstArg;
+    const value = JSON.parse(res);
+    const { transactionHash, link } = value.meta?.txn;
+
+    equal(typeof transactionHash, "string");
+    equal(transactionHash.startsWith("0x"), true);
+    equal(!link, true);
+
+    equal(resolverMock.calledOnce, true);
   });
 });

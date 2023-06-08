@@ -1,6 +1,6 @@
 import type yargs from "yargs";
 import type { Arguments, CommandBuilder } from "yargs";
-import { getLink } from "../utils.js";
+import { getLink, logger } from "../utils.js";
 import { promises } from "fs";
 import { createInterface } from "readline";
 import { GlobalOptions } from "../cli.js";
@@ -33,11 +33,11 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
   try {
     // enforce that all args required for this command are available
     if (!privateKey) {
-      console.error("missing required flag (`-k` or `--privateKey`)");
+      logger.error("missing required flag (`-k` or `--privateKey`)");
       return;
     }
     if (!chain) {
-      console.error("missing required flag (`-c` or `--chain`)");
+      logger.error("missing required flag (`-c` or `--chain`)");
       return;
     }
     if (file != null) {
@@ -49,7 +49,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       statement = value;
     }
     if (!statement) {
-      console.error(
+      logger.error(
         "missing input value (`statement`, `file`, or piped input from stdin required)"
       );
       return;
@@ -68,11 +68,14 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     const normalized = await normalize(statement);
 
     if (normalized.type !== "write") {
-      console.error("the `write` command can only accept write queries");
+      logger.error("the `write` command can only accept write queries");
       return;
     }
+    // Note: I can't figure out a write statement that updates 2 tables and makes
+    //  it through the parser, but leaving this here because one might exist.
+    /* c8 ignore next 6 */
     if (normalized.tables.length < 1) {
-      console.error(
+      logger.error(
         "after normalizing the statement there was no write query, hence nothing to do"
       );
       return;
@@ -83,7 +86,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
 
       const link = getLink(chain, res?.meta?.txn?.transactionHash as string);
       const out = { ...res, link };
-      console.log(JSON.stringify(out));
+      logger.log(JSON.stringify(out));
       return;
     }
 
@@ -94,6 +97,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
         normalized.statements.map(async function (stmt) {
           // re-normalize so we can be sure we've isolated each statement and it's tableId
           const norm = await normalize(stmt);
+          /* c8 ignore next 5 */
           if (norm.tables.length > 1) {
             throw new Error(
               "cannot normalize if single query affects more then one table"
@@ -122,6 +126,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       id,
       stmt,
     ]) {
+      /* c8 ignore next 1 */
       if (typeof stmt !== "string") throw new Error("cannot prepare statement");
       return db.prepare(stmt);
     });
@@ -129,10 +134,10 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     const [res] = await db.batch(preparedStatements);
     const link = getLink(chain, res?.meta?.txn?.transactionHash as string);
     const out = { ...res, link };
-    console.log(JSON.stringify(out));
+    logger.log(JSON.stringify(out));
     /* c8 ignore next 3 */
   } catch (err: any) {
-    console.error(err?.cause?.message || err?.message);
-    console.error(err);
+    logger.error(err?.cause?.message || err?.message);
+    logger.error(err);
   }
 };

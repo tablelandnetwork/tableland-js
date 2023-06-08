@@ -1,6 +1,6 @@
 import type { Arguments, CommandBuilder } from "yargs";
 import { GlobalOptions } from "../cli.js";
-import { getChains } from "../utils.js";
+import { getChains, logger } from "../utils.js";
 import type yargs from "yargs";
 
 export interface Options extends GlobalOptions {
@@ -24,11 +24,11 @@ export const handler = async (_argv: Arguments<Options>): Promise<void> => {
   const { format } = _argv;
 
   if (format === "pretty") {
-    console.log(JSON.stringify(chains, null, 4));
+    logger.log(JSON.stringify(chains, null, 4));
     return;
   }
   if (format === "jsonl") {
-    console.log(
+    logger.log(
       Object.entries(chains)
         .map((chain) => JSON.stringify(chain[1]))
         .join("\n")
@@ -36,5 +36,5 @@ export const handler = async (_argv: Arguments<Options>): Promise<void> => {
     return;
   }
   // default is "json"
-  console.log(JSON.stringify(chains));
+  logger.log(JSON.stringify(chains));
 };

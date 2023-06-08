@@ -1,13 +1,17 @@
-import { getAccounts } from "@tableland/local";
+import { equal, match } from "node:assert";
+import { getAccounts, getDatabase } from "@tableland/local";
 import { describe, test, afterEach, before } from "mocha";
-import { spy, restore, assert } from "sinon";
+import { spy, restore } from "sinon";
 import yargs from "yargs/yargs";
-import { Database } from "@tableland/sdk";
-import { getWalletWithProvider, wait } from "../src/utils.js";
+import { wait, logger } from "../src/utils.js";
 import * as mod from "../src/commands/receipt.js";
 
 describe("commands/receipt", function () {
   this.timeout("30s");
+
+  const accounts = getAccounts();
+  // using the validator wallet since the test is updating healthbot
+  const db = getDatabase(accounts[0]);
 
   before(async function () {
     await wait(10000);
@@ -20,20 +24,19 @@ describe("commands/receipt", function () {
   test("Receipt throws without chain", async function () {
     const [account] = getAccounts();
     const privateKey = account.privateKey.slice(2);
-    const consoleError = spy(console, "error");
+    const consoleError = spy(logger, "error");
     await yargs(["receipt", "--privateKey", privateKey, "ignored"])
       .command(mod)
       .parse();
-    assert.calledWith(
-      consoleError,
-      "missing required flag (`-c` or `--chain`)"
-    );
+
+    const value = consoleError.getCall(0).firstArg;
+    equal(value, "missing required flag (`-c` or `--chain`)");
   });
 
   test("Receipt throws with invalid chain", async function () {
     const [account] = getAccounts();
     const privateKey = account.privateKey.slice(2);
-    const consoleError = spy(console, "error");
+    const consoleError = spy(logger, "error");
     await yargs([
       "receipt",
       "--privateKey",
@@ -44,16 +47,15 @@ describe("commands/receipt", function () {
     ])
       .command(mod)
       .parse();
-    assert.calledWith(
-      consoleError,
-      "unsupported chain (see `chains` command for details)"
-    );
+
+    const value = consoleError.getCall(0).firstArg;
+    equal(value, "unsupported chain (see `chains` command for details)");
   });
 
   test("throws with invalid tx hash", async function () {
     const [account] = getAccounts();
     const privateKey = account.privateKey.slice(2);
-    const consoleError = spy(console, "error");
+    const consoleError = spy(logger, "error");
     await yargs([
       "receipt",
       "--privateKey",
@@ -64,38 +66,41 @@ describe("commands/receipt", function () {
     ])
       .command(mod)
       .parse();
-    assert.calledWith(consoleError, "Not Found");
+
+    const value = consoleError.getCall(0).firstArg;
+    equal(value, "Not Found");
   });
 
   test("Receipt passes with local-tableland", async function () {
     const [account] = getAccounts();
     const privateKey = account.privateKey.slice(2);
-    const consoleLog = spy(console, "log");
+    const consoleLog = spy(logger, "log");
 
-    const signer = await getWalletWithProvider({
-      privateKey,
-      chain: "local-tableland",
-      providerUrl: undefined,
-    });
-
-    const db = new Database({ signer })
+    const { meta } = await db
       .prepare("update healthbot_31337_1 set counter=1;")
-      .all() as any;
+      .all();
+    const hash = meta.txn?.transactionHash ?? "";
 
-    db.then(async () => {
-      await yargs([
-        "receipt",
-        "--privateKey",
-        privateKey,
-        "--chain",
-        "local-tableland",
+    equal(typeof hash, "string");
+    equal(hash.length > 0, true);
 
-        db.transactionHash,
-      ])
-        .command(mod)
-        .parse();
-      // TODO: Ideally, we check the response here, but the hashes aren't deterministic
-      assert.calledOnce(consoleLog);
-    });
+    await yargs([
+      "receipt",
+      "--privateKey",
+      privateKey,
+      "--chain",
+      "local-tableland",
+      hash,
+    ])
+      .command(mod)
+      .parse();
+
+    const res = consoleLog.getCall(0).firstArg;
+    const value = JSON.parse(res);
+
+    match(value.transactionHash, /0x[a-f0-9]+/i);
+    equal(typeof value.tableId, "string");
+    equal(typeof value.blockNumber, "number");
+    equal(value.chainId, 31337);
   });
 });

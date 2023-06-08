@@ -4,6 +4,7 @@ import { promises } from "fs";
 import { createInterface } from "readline";
 import { GlobalOptions } from "../cli.js";
 import { setupCommand } from "../lib/commandSetup.js";
+import { logger } from "../utils.js";
 
 export interface Options extends GlobalOptions {
   statement?: string;
@@ -69,7 +70,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       statement = value;
     }
     if (!statement) {
-      console.error(
+      logger.error(
         "missing input value (`statement`, `file`, or piped input from stdin required)"
       );
       return;
@@ -95,11 +96,12 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
           format: "objects",
           unwrap: argv.unwrap,
         });
-      } catch (e: any) {
-        if (e.message.includes("in JSON at position")) {
-          console.log("Can't unwrap multiple rows. Use --unwrap=false");
+      } catch (err: any) {
+        if (err.message.includes("in JSON at position")) {
+          logger.error("Can't unwrap multiple rows. Use --unwrap=false");
+          /* c8 ignore next 3 */
         } else {
-          throw e;
+          throw err;
         }
       }
     } else {
@@ -108,16 +110,16 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
 
     switch (format) {
       case "pretty":
-        console.table(res);
+        logger.table(res);
         break;
       case "objects":
-        console.log(JSON.stringify(res));
+        logger.log(JSON.stringify(res));
         break;
       case "table":
-        console.log(JSON.stringify(transformTableData(res)));
+        logger.log(JSON.stringify(transformTableData(res)));
         break;
       case "raw":
-        console.log(
+        logger.log(
           JSON.stringify(transformTableData(await db.prepare(statement).raw()))
         );
         break;
@@ -125,6 +127,6 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
 
     /* c8 ignore next 3 */
   } catch (err: any) {
-    console.error(err?.cause?.message || err?.message);
+    logger.error(err?.cause?.message || err?.message);
   }
 };

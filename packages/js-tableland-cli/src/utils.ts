@@ -99,3 +99,17 @@ export async function getWalletWithProvider({
   /* c8 ignore stop */
   return wallet.connect(provider);
 }
+
+// Wrap any direct calls to console.log, so that test spies can distinguise between
+// the CLI's output, and messaging that originates outside the CLI
+export const logger = {
+  log: function (message: string) {
+    console.log(message);
+  },
+  table: function (message: unknown[] | undefined) {
+    console.table(message);
+  },
+  error: function (message: string | unknown) {
+    console.error(message);
+  },
+};

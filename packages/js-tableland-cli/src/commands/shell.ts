@@ -2,6 +2,7 @@ import yargs, { Arguments, CommandBuilder } from "yargs";
 import { createInterface } from "readline";
 import { GlobalOptions } from "../cli.js";
 import { Connections, setupCommand } from "../lib/commandSetup.js";
+import { logger } from "../utils.js";
 
 const help = `Commands:
 [query] - run a query
@@ -21,8 +22,8 @@ export const desc =
 export const aliases = ["s", "sh"];
 
 process.on("SIGINT", function () {
-  console.log("Caught interrupt signal");
-
+  /* c8 ignore next 2 */
+  logger.log("Caught interrupt signal");
   process.exit();
 });
 
@@ -42,7 +43,7 @@ async function confirmQuery() {
         if (response === "y" || response === "yes") {
           resolve(true);
         } else {
-          console.log("Aborting.");
+          logger.log("Aborting.");
           resolve(false);
         }
       }
@@ -64,30 +65,23 @@ async function fireFullQuery(
     const { type } = await globalThis.sqlparser.normalize(statement);
     if (type !== "read" && !(await confirmQuery())) return;
 
-    try {
-      const stmt = database.prepare(statement);
-      const response = await stmt.all();
+    const stmt = database.prepare(statement);
+    const response = await stmt.all();
 
-      console.log(JSON.stringify(response.results));
-      switch (type) {
-        case "create":
-          console.log(
-            JSON.stringify({ createdTable: response.meta.txn?.name })
-          );
-          break;
-        case "write":
-          console.log(
-            JSON.stringify({ updatedTable: response.meta.txn?.name })
-          );
-          break;
-        default:
-      }
-    } catch (e) {
-      console.error(e);
+    logger.log(JSON.stringify(response.results));
+    switch (type) {
+      case "create":
+        logger.log(JSON.stringify({ createdTable: response.meta.txn?.name }));
+        break;
+      case "write":
+        logger.log(JSON.stringify({ updatedTable: response.meta.txn?.name }));
+        break;
+      default:
     }
     /* c8 ignore next 3 */
-  } catch (e) {
-    console.error(e);
+  } catch (err: any) {
+    logger.error(err?.cause?.message || err?.message);
+    logger.error(err);
   }
 }
 
@@ -114,6 +108,7 @@ async function shellYeah(
         history = newHistory;
       });
       rl.on("SIGINT", () => {
+        /* c8 ignore next 1 */
         process.exit();
       });
 
@@ -130,7 +125,7 @@ async function shellYeah(
               break;
             case "help":
             default:
-              console.log(help);
+              logger.log(help);
 
               break;
           }
@@ -147,10 +142,11 @@ async function shellYeah(
     }
 
     shellYeah(argv, tablelandConnection, history);
+    /* c8 ignore next 6 */
   } catch (err: any) {
-    console.error(err.message);
+    logger.error(err.message);
     if (argv.verbose) {
-      console.log(err);
+      logger.log(err);
     }
   }
 }
@@ -177,24 +173,24 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
   try {
     const { chain } = argv;
     if (!chain) {
-      console.error("missing required flag (`-c` or `--chain`)");
+      logger.error("missing required flag (`-c` or `--chain`)");
       return;
     }
     const connections = await setupCommand(argv);
     const { signer, network } = connections;
-    console.log("Welcome to Tableland");
-    console.log(`Tableland CLI shell`);
-    console.log(
+    logger.log("Welcome to Tableland");
+    logger.log(`Tableland CLI shell`);
+    logger.log(
       `Connected to ${network.chainName} using ${await signer.getAddress()}`
     );
     if (argv.enableEnsExperiment) {
-      console.log(
+      logger.log(
         "ENS namespace is experimental, no promises that it will exist in future builds"
       );
     }
 
     await shellYeah(argv, connections);
   } catch (e: any) {
-    console.error(e.message);
+    logger.error(e.message);
   }
 };

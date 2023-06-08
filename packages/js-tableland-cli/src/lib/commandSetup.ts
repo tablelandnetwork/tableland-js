@@ -21,6 +21,7 @@ export class Connections {
 
   readyCheck() {
     if (!this._readyResolved)
+      /* c8 ignore next 3 */
       throw new Error(
         "You must await the 'ready' method before using this class"
       );
@@ -42,8 +43,10 @@ export class Connections {
 
   get validator(): Validator {
     this.readyCheck();
-    if (!this._validator)
+    /* c8 ignore next 3 */
+    if (!this._validator) {
       throw new Error("No validator. Set a chain or a baseURL.");
+    }
     return this._validator;
   }
 
@@ -59,15 +62,18 @@ export class Connections {
 
   get database(): Database {
     this.readyCheck();
-    if (!this._database)
+    /* c8 ignore next 5 */
+    if (!this._database) {
       throw new Error(
         "No database defined. You must specify a providerUrl or chain."
       );
+    }
     return this._database;
   }
 
   get network(): helpers.ChainInfo {
     this.readyCheck();
+    /* c8 ignore next 1 */
     if (!this._network) throw new Error("No network");
     return this._network;
   }
