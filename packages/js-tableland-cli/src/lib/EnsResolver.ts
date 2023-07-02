@@ -40,7 +40,6 @@ export default class EnsResolver {
     const domain = domainArray.join(".");
     const address = await this.provider.getResolver(domain);
 
-    // TODO: mock `this.provider.getResolver` so address is undefined and we get coverage on the or clause
     return (await address?.getText(textRecord)) || tablename;
   }
 

@@ -77,8 +77,15 @@ export async function getWalletWithProvider({
   // Finally we use the default provider
   /* c8 ignore start */
   if (!provider) {
-    // This will be significantly rate limited, but we only need to run it once
-    provider = getDefaultProvider({ ...network, name: network.chainName });
+    try {
+      // This will be significantly rate limited, but we only need to run it once
+      provider = getDefaultProvider({ ...network, name: network.chainName });
+    } catch (err: any) {
+      // ethers.js only gives away default provider keys for some networks
+      throw new Error(
+        "no default provider is available for this network, you must provide one via flag (`-p` or `--providerUrl`)"
+      );
+    }
   }
 
   if (!provider) {
