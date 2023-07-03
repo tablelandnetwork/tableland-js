@@ -40,7 +40,8 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
   try {
     let { schema } = argv;
-    const { chain, file, prefix, privateKey } = argv;
+    const { chain, file, privateKey } = argv;
+    let { prefix } = argv;
     // enforce that all args required for this command are available
     if (!privateKey) {
       logger.error("missing required flag (`-k` or `--privateKey`)");
@@ -69,11 +70,10 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     const check = /CREATE TABLE/gim.exec(schema.toString());
     if (check) {
       statement = schema;
-    } else if (prefix === undefined) {
-      logger.error(
-        "Must specify --prefix if you do not provide a full Create statement"
-      );
     } else {
+      if (prefix == null || prefix.trim() === "") {
+        prefix = '""';
+      }
       statement = `CREATE TABLE ${prefix} (${schema})`;
     }
 
@@ -103,12 +103,6 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       logger.error("the `create` command can only accept create queries");
       return;
     }
-    if (statements.length < 1) {
-      logger.error(
-        "after normalizing the statement there was no create query, hence nothing to do"
-      );
-      return;
-    }
 
     if (statements.length < 2) {
       // send the original statement as a single create
@@ -135,8 +129,6 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     const link = getLink(chain, res.meta.txn?.transactionHash as string);
     const out = { ...res, link, ensNameRegistered: false };
 
-    // TODO: I'm not sure how `check` would be false and statements.length < 2
-    //    so I didn't write a test for it
     /* c8 ignore next 6 */
     if (!check && argv.ns && argv.enableEnsExperiment && prefix) {
       const register = (await ens?.addTableRecords(argv.ns, [

@@ -159,13 +159,13 @@ describe("commands/create", function () {
     );
   });
 
-  test("throws if prefix not provided", async function () {
+  test("creates table if prefix not provided", async function () {
     const [account] = accounts;
     const privateKey = account.privateKey.slice(2);
-    const consoleError = spy(logger, "error");
+    const consoleLog = spy(logger, "log");
     await yargs([
       "create",
-      "(id int primary key, desc text)",
+      "id int primary key, name text",
       "--privateKey",
       privateKey,
       "--chain",
@@ -174,11 +174,11 @@ describe("commands/create", function () {
       .command(mod)
       .parse();
 
-    const value = consoleError.getCall(0).firstArg;
-    equal(
-      value,
-      "Must specify --prefix if you do not provide a full Create statement"
-    );
+    const res = consoleLog.getCall(0).firstArg;
+    const value = JSON.parse(res);
+    const { prefix, name } = value.meta.txn;
+    equal(prefix, "");
+    match(name, /^_31337_[0-9]+$/);
   });
 
   test("Create passes with local-tableland", async function () {
