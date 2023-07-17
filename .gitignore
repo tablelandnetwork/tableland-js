@@ -1,1 +1,42 @@
+# general
+.DS_Store
 node_modules/
+
+# config
+.vscode
+.idea
+.env
+.envrc
+.tableland*
+
+# build
+dist/
+docs/
+tmp/
+typechain/
+typechain-types/
+cache/
+artifacts/
+.openzeppelin/*
+
+
+
+# test
+coverage/
+test-results/
+playwright-report/
+playwright/.cache/
+coverage.json
+
+
+# local specifics
+
+# local has a prebuild step that creates this file,
+# it should not be committed to version control
+src/get-dirname.ts
+
+# Validator artifacts
+validator/*.db
+validator/*.db*
+validator/backups
+

@@ -41,10 +41,7 @@
   "scripts": {
     "postinstall": "cd registry && npm install",
     "test": "npm run build && node --experimental-fetch --experimental-vm-modules ./node_modules/mocha/bin/mocha --bail",
-    "lint": "eslint src/ test/ --ext .js,.ts,.mjs",
     "prepublishOnly": "npm run build",
-    "prettier": "prettier '**/*.{ts,json,md}' --check",
-    "prettier:fix": "npm run prettier -- --write",
     "clean": "rm -rf dist/*",
     "build:esm": "cp src/get-dirname-esm.ts src/get-dirname.ts && tsc -p tsconfig.json",
     "build:cjs": "cp src/get-dirname-cjs.ts src/get-dirname.ts && tsc -p tsconfig.cjs.json",

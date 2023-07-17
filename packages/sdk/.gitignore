@@ -1,9 +1,0 @@
-/node_modules/
-/dist/
-/coverage/
-.vscode
-.DS_Store
-/docs/
-/test-results/
-/playwright-report/
-/playwright/.cache/

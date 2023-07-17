@@ -4,8 +4,16 @@
   "workspaces": [
     "packages/*"
   ],
-  "dependencies": {},
+  "scripts": {
+    "lint": "eslint '**/*.{js,ts}'",
+    "lint:fix": "npm run lint -- --fix",
+    "prettier": "prettier '**/*.{ts,json,sol,md}' --check",
+    "prettier:fix": "npm run prettier -- --write",
+    "format": "npm run prettier:fix && npm run lint:fix"
+  },
   "devDependencies": {
-    "lerna": "^7.1.1"
+    "lerna": "^7.1.1",
+    "prettier": "^3.0.0",
+    "prettier-plugin-solidity": "^1.1.3"
   }
 }

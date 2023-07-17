@@ -3,44 +3,26 @@
     "default": {
       "runner": "nx/tasks-runners/default",
       "options": {
-        "cacheableOperations": [
-          "lint",
-          "prettier",
-          "test",
-          "coverage",
-          "build"
-        ]
+        "cacheableOperations": ["lint", "prettier", "test", "coverage", "build"]
       }
     }
   },
   "targetDefaults": {
     "lint": {
-      "dependsOn": [
-        "^lint"
-      ]
+      "dependsOn": ["^lint"]
     },
     "prettier": {
-      "dependsOn": [
-        "^prettier"
-      ]
+      "dependsOn": ["^prettier"]
     },
     "test": {
-      "dependsOn": [
-        "^test"
-      ]
+      "dependsOn": ["^test"]
     },
     "clean": {
-      "dependsOn": [
-        "^clean"
-      ]
+      "dependsOn": ["^clean"]
     },
     "build": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "{projectRoot}/dist"
-      ]
+      "dependsOn": ["^build"],
+      "outputs": ["{projectRoot}/dist"]
     }
   }
 }

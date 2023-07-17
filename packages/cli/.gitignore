@@ -1,9 +1,0 @@
-/node_modules/
-/build/
-/dist/
-.idea/*
-.vscode
-.env
-.DS_Store
-.tableland*
-coverage/

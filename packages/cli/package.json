@@ -28,11 +28,6 @@
     "dist/**/*.js"
   ],
   "scripts": {
-    "lint": "eslint \"**/*.{js,ts}\"",
-    "lint:fix": "npm run lint -- --fix",
-    "prettier": "prettier \"**/*.{ts,json,sol,md}\" --check",
-    "prettier:fix": "npm run prettier -- --write",
-    "format": "npm run prettier:fix && npm run lint:fix",
     "prepublishOnly": "npm run build",
     "test": "mocha",
     "coverage": "TEST_TIMEOUT_FACTOR=3 c8 --100 --exclude test mocha --exit",
