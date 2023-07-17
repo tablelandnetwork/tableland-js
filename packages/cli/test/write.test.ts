@@ -346,4 +346,133 @@ describe("commands/write", function () {
 
     equal(resolverMock.calledOnce, true);
   });
+
+  test("Write works with GRANT statement", async function () {
+    const account1 = accounts[1];
+    const account2 = accounts[2];
+    const privateKey1 = account1.privateKey.slice(2);
+    const privateKey2 = account2.privateKey.slice(2);
+
+    // db is configged with account 1
+    const { meta } = await db.prepare("CREATE TABLE test_grant (a int);").all();
+    const tableName = meta.txn?.name ?? "";
+
+    const consoleError = spy(logger, "error");
+
+    // first ensure account 2 cannot insert
+    await yargs([
+      "write",
+      `INSERT INTO ${tableName} (a) VALUES (333);`,
+      "--chain",
+      "local-tableland",
+      "--privateKey",
+      privateKey2,
+    ])
+      .command(mod)
+      .parse();
+
+    match(consoleError.getCall(0).firstArg, /not enough privileges/);
+    consoleError.restore();
+
+    await yargs([
+      "write",
+      `GRANT INSERT ON ${tableName} TO '${account2.address}';`,
+      "--chain",
+      "local-tableland",
+      "--privateKey",
+      privateKey1,
+    ])
+      .command(mod)
+      .parse();
+
+    await yargs([
+      "write",
+      `INSERT INTO ${tableName} (a) VALUES (1);`,
+      "--chain",
+      "local-tableland",
+      "--privateKey",
+      privateKey2,
+    ])
+      .command(mod)
+      .parse();
+
+    const { results } = await db
+      .prepare(`SELECT * FROM ${tableName}`)
+      .all<{ a: number }>();
+
+    equal(results instanceof Array, true);
+    equal(results.length, 1);
+    equal(results[0].a, 1);
+  });
+
+  test("Write works with REVOKE statement", async function () {
+    const account1 = accounts[1];
+    const account2 = accounts[2];
+    const privateKey1 = account1.privateKey.slice(2);
+    const privateKey2 = account2.privateKey.slice(2);
+
+    // db is configged with account 1
+    const { meta } = await db
+      .prepare("CREATE TABLE test_revoke (a int);")
+      .all();
+    const tableName = meta.txn?.name ?? "";
+
+    await yargs([
+      "write",
+      `GRANT INSERT ON ${tableName} TO '${account2.address}';`,
+      "--chain",
+      "local-tableland",
+      "--privateKey",
+      privateKey1,
+    ])
+      .command(mod)
+      .parse();
+
+    // ensure account 2 can insert
+    await yargs([
+      "write",
+      `INSERT INTO ${tableName} (a) VALUES (1);`,
+      "--chain",
+      "local-tableland",
+      "--privateKey",
+      privateKey2,
+    ])
+      .command(mod)
+      .parse();
+
+    const { results } = await db
+      .prepare(`SELECT * FROM ${tableName}`)
+      .all<{ a: number }>();
+
+    equal(results instanceof Array, true);
+    equal(results.length, 1);
+    equal(results[0].a, 1);
+
+    await yargs([
+      "write",
+      `REVOKE INSERT ON ${tableName} FROM '${account2.address}';`,
+      "--chain",
+      "local-tableland",
+      "--privateKey",
+      privateKey1,
+    ])
+      .command(mod)
+      .parse();
+
+    const consoleError = spy(logger, "error");
+
+    // ensure account 2 can no longer insert
+    await yargs([
+      "write",
+      `INSERT INTO ${tableName} (a) VALUES (333);`,
+      "--chain",
+      "local-tableland",
+      "--privateKey",
+      privateKey2,
+    ])
+      .command(mod)
+      .parse();
+
+    match(consoleError.getCall(0).firstArg, /not enough privileges/);
+  });
 });

@@ -39,7 +39,7 @@
     "coverage:report": "c8 report --reporter=html",
     "clean": "rm -rf dist",
     "build": "npx tsc && chmod +x dist/cli.js",
-    "tableland": "node --experimental-specifier-resolution=node ./dist/cli.js"
+    "tableland": "node ./dist/cli.js"
   },
   "license": "MIT AND Apache-2.0",
   "devDependencies": {

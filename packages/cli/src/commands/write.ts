@@ -67,7 +67,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     statement = statement.replace(/\n/i, "").replace(/\r/, "");
     const normalized = await normalize(statement);
 
-    if (normalized.type !== "write") {
+    if (normalized.type !== "write" && normalized.type !== "acl") {
       logger.error("the `write` command can only accept write queries");
       return;
     }
