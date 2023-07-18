@@ -20,6 +20,12 @@ class ValidatorPkg {
   process?: ChildProcess;
   validatorDir = resolve(_dirname, "..", "..", "validator");
 
+  constructor(validatorDir?: string) {
+    if (typeof validatorDir === "string") {
+      this.validatorDir = validatorDir;
+    }
+  }
+
   start() {
     const binPath = getBinPath();
     if (!binPath) {

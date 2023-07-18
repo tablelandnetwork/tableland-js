@@ -9,19 +9,25 @@ import { projectBuilder } from "./project-builder.js";
 const argv = yargs(hideBin(process.argv)).options({
   validator: {
     type: "string",
-    description: "Path the the Tableland Validator repository",
+    description:
+      "Path the the Tableland Validator directory.  If docker flag is set this must be the full repository.",
   },
   registry: {
     type: "string",
-    description: "Path the the Tableland Registry contract repository",
+    description: "Path the the Tableland Registry contract repository.",
+  },
+  docker: {
+    type: "boolean",
+    default: false,
+    description: "Use Docker to run the Validator.",
   },
   verbose: {
     type: "boolean",
-    description: "Output verbose logs to stdout",
+    description: "Output verbose logs to stdout.",
   },
   silent: {
     type: "boolean",
-    description: "Silence all output to stdout",
+    description: "Silence all output to stdout.",
   },
   init: {
     type: "boolean",
@@ -46,6 +52,7 @@ const go = async function () {
 
   if (tsArgv.validator) opts.validator = tsArgv.validator;
   if (tsArgv.registry) opts.registry = tsArgv.registry;
+  if (tsArgv.docker) opts.docker = tsArgv.docker;
   if (typeof tsArgv.verbose === "boolean") opts.verbose = tsArgv.verbose;
   if (typeof tsArgv.silent === "boolean") opts.silent = tsArgv.silent;
 

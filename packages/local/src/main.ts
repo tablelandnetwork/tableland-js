@@ -35,6 +35,7 @@ class LocalTableland {
 
   validatorDir?: string;
   registryDir?: string;
+  docker?: boolean;
   verbose?: boolean;
   silent?: boolean;
 
@@ -56,6 +57,7 @@ class LocalTableland {
     } else {
       this.registryDir = await defaultRegistryDir();
     }
+    if (typeof config.docker === "boolean") this.docker = config.docker;
     if (typeof config.verbose === "boolean") this.verbose = config.verbose;
     if (typeof config.silent === "boolean") this.silent = config.silent;
 
@@ -120,7 +122,7 @@ class LocalTableland {
 
     // need to determine if we are starting the validator via docker
     // and a local repo, or if are running a binary etc...
-    const ValidatorClass = this.validatorDir ? ValidatorDev : ValidatorPkg;
+    const ValidatorClass = this.docker ? ValidatorDev : ValidatorPkg;
 
     this.validator = new ValidatorClass(this.validatorDir);
 

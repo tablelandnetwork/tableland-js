@@ -22,9 +22,9 @@ overrideDefaults(getChainId("local-tableland"), {
 
 export type ConfigDescriptor = {
   name: string;
-  env: "VALIDATOR_DIR" | "REGISTRY_DIR" | "VERBOSE" | "SILENT";
-  file: "validatorDir" | "registryDir" | "verbose" | "silent";
-  arg: "validator" | "registry" | "verbose" | "silent";
+  env: "VALIDATOR_DIR" | "REGISTRY_DIR" | "VERBOSE" | "SILENT" | "DOCKER";
+  file: "validatorDir" | "registryDir" | "verbose" | "silent" | "docker";
+  arg: "validator" | "registry" | "verbose" | "silent" | "docker";
   isPath: boolean;
 };
 
@@ -49,6 +49,13 @@ const configDescriptors: ConfigDescriptor[] = [
     isPath: true,
   },
   {
+    name: "docker",
+    env: "DOCKER",
+    file: "docker",
+    arg: "docker",
+    isPath: false,
+  },
+  {
     name: "verbose",
     env: "VERBOSE",
     file: "verbose",
@@ -69,6 +76,7 @@ export type Config = {
   validatorDir?: string;
   registry?: string;
   registryDir?: string;
+  docker?: boolean;
   verbose?: boolean;
   silent?: boolean;
 };
