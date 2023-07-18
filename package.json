@@ -12,6 +12,15 @@
     "format": "npm run prettier:fix && npm run lint:fix"
   },
   "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.39.0",
+    "@typescript-eslint/parser": "^5.39.0",
+    "eslint": "^8.32.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-config-standard": "^17.0.0",
+    "eslint-config-standard-with-typescript": "^36.1.0",
+    "eslint-plugin-import": "^2.27.4",
+    "eslint-plugin-n": "^16.0.1",
+    "eslint-plugin-promise": "^6.1.1",
     "lerna": "^7.1.1",
     "prettier": "^3.0.0",
     "prettier-plugin-solidity": "^1.1.3"
