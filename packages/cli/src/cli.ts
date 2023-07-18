@@ -4,9 +4,9 @@ import * as dotenv from "dotenv";
 import fetch, { Headers, Request, Response } from "node-fetch";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { commands } from "./commands/index.js";
 import { cosmiconfigSync } from "cosmiconfig";
 import { helpers } from "@tableland/sdk";
+import { commands } from "./commands/index.js";
 
 process.on("warning", (warning) => {
   if (warning.name !== "ExperimentalWarning") {
@@ -14,6 +14,7 @@ process.on("warning", (warning) => {
   }
 });
 
+// eslint-disable-next-line
 if (!globalThis.fetch) {
   (globalThis as any).fetch = fetch;
   (globalThis as any).Headers = Headers;
