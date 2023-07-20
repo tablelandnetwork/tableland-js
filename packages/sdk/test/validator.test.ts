@@ -149,7 +149,9 @@ describe("validator", function () {
           .prepare(`INSERT INTO ${txn.name}(name) VALUES('Lucas');`)
           .run();
 
-        const { chainId, transactionHash } = localTxn!;
+        const localTransaction = localTxn;
+
+        const { chainId, transactionHash } = localTransaction!;
 
         const response = await api.pollForReceiptByTransactionHash({
           chainId,
@@ -158,8 +160,8 @@ describe("validator", function () {
         strictEqual(response.transactionHash, transactionHash);
         strictEqual(response.chainId, chainId);
         strictEqual(response.error, undefined);
-        strictEqual(response.tableId, localTxn!.tableId);
-        strictEqual(response.blockNumber, localTxn!.blockNumber);
+        strictEqual(response.tableId, localTransaction!.tableId);
+        strictEqual(response.blockNumber, localTransaction!.blockNumber);
       });
     });
   });
@@ -288,17 +290,12 @@ describe("validator", function () {
   });
   describe("query", function () {
     test("where we get no rows back from a query", async function () {
-      // The remote API returns 404 here, but downstream (in the sdk) we catch it
-      await rejects(
-        api.queryByStatement<{ counter: number }>({
-          statement: `select * from ${txn.name} where id=-1;`,
-          format: "objects",
-        }),
-        (err: any) => {
-          strictEqual(err.message, "Row not found");
-          return true;
-        }
-      );
+      const res = await api.queryByStatement<{ counter: number }>({
+        statement: `select * from ${txn.name} where id=-1;`,
+        format: "objects",
+      });
+
+      deepStrictEqual(res, []);
     });
 
     test("where query is called with an invalid statement", async function () {
@@ -418,9 +415,7 @@ describe("validator", function () {
           "CREATE TABLE test_apis_json (id integer, json text not null);"
         )
         .run();
-
       const jsonTableName = meta.txn!.name;
-
       await getDelay(500);
       await db
         .prepare(
