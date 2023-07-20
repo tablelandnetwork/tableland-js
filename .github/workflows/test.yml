@@ -46,17 +46,7 @@ jobs:
         run: npm install
 
       - name: Build 🛠
-        run: npm run build
+        run: npx lerna run build
 
       - name: Test/Coverage 🧪
-        run: TEST_TIMEOUT_FACTOR=3 npm run coverage
-
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps
-
-      - name: Test/Browser 🧪
-        run: |
-          cd test/browser/server
-          npm install
-          cd ../../
-          npm run test:browser
+        run: TEST_TIMEOUT_FACTOR=3 npx lerna run --concurrency 1 test:ci

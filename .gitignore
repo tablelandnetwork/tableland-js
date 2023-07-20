@@ -40,3 +40,5 @@ validator/*.db
 validator/*.db*
 validator/backups
 
+# registry artifacts
+packages/local/registry/.openzeppelin/

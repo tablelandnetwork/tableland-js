@@ -1,6 +1,6 @@
 {
   "name": "@tableland/cli",
-  "version": "0.0.0",
+  "version": "5.2.3",
   "description": "Tableland command line tools",
   "repository": "https://github.com/tablelandnetwork/js-tableland-cli",
   "publishConfig": {
@@ -30,6 +30,7 @@
   "scripts": {
     "prepublishOnly": "npm run build",
     "test": "mocha",
+    "test:ci": "npm run coverage",
     "coverage": "TEST_TIMEOUT_FACTOR=3 c8 --100 --exclude test mocha --exit",
     "coverage:report": "c8 report --reporter=html",
     "clean": "rm -rf dist",

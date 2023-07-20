@@ -149,9 +149,7 @@ describe("validator", function () {
           .prepare(`INSERT INTO ${txn.name}(name) VALUES('Lucas');`)
           .run();
 
-        const localTransaction = localTxn;
-
-        const { chainId, transactionHash } = localTransaction!;
+        const { chainId, transactionHash } = localTxn!;
 
         const response = await api.pollForReceiptByTransactionHash({
           chainId,
@@ -160,8 +158,8 @@ describe("validator", function () {
         strictEqual(response.transactionHash, transactionHash);
         strictEqual(response.chainId, chainId);
         strictEqual(response.error, undefined);
-        strictEqual(response.tableId, localTransaction.tableId);
-        strictEqual(response.blockNumber, localTransaction.blockNumber);
+        strictEqual(response.tableId, localTxn!.tableId);
+        strictEqual(response.blockNumber, localTxn!.blockNumber);
       });
     });
   });
@@ -420,7 +418,9 @@ describe("validator", function () {
           "CREATE TABLE test_apis_json (id integer, json text not null);"
         )
         .run();
-      const jsonTableName = meta.txn.name;
+
+      const jsonTableName = meta.txn!.name;
+
       await getDelay(500);
       await db
         .prepare(
