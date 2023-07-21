@@ -8,17 +8,8 @@
     }
   },
   "targetDefaults": {
-    "lint": {
-      "dependsOn": ["^lint"]
-    },
-    "prettier": {
-      "dependsOn": ["^prettier"]
-    },
     "test": {
-      "dependsOn": ["^test"]
-    },
-    "clean": {
-      "dependsOn": ["^clean"]
+      "dependsOn": ["build"]
     },
     "build": {
       "dependsOn": ["^build"],

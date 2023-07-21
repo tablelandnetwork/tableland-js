@@ -52,6 +52,9 @@
     "dist/**/package.json",
     "src/**/*.ts"
   ],
+  "nx": {
+    "implicitDependencies": ["!@tableland/local"]
+  },
   "scripts": {
     "prepublishOnly": "npm run build",
     "test": "mocha",
