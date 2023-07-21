@@ -58,7 +58,7 @@
   "scripts": {
     "prepublishOnly": "npm run build",
     "test": "mocha",
-    "test:browser": "PW_TS_ESM_ON=true playwright test",
+    "test:browser": "npx playwright install --with-deps && PW_TS_ESM_ON=true playwright test",
     "test:browser-show-report": "npx playwright show-report",
     "test:ci": "npm run coverage && npm run test:browser",
     "test-server": "cd test/browser/server && npm install && npm run dev",

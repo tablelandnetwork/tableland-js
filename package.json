@@ -10,7 +10,7 @@
     "prettier": "prettier '**/*.{ts,json,sol,md}' --check",
     "prettier:fix": "npm run prettier -- --write",
     "format": "npm run prettier:fix && npm run lint:fix",
-    "test": "npx lerna run --concurrency 1 test:ci"
+    "test": "npx lerna run --concurrency 1 --stream test:ci"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.39.0",
