@@ -36,9 +36,9 @@ coverage.json
 src/get-dirname.ts
 
 # Validator artifacts
-validator/*.db
-validator/*.db*
-validator/backups
+packages/local/validator/*.db
+packages/local/validator/*.db*
+packages/local/validator/backups
 
 # registry artifacts
 packages/local/registry/.openzeppelin/
