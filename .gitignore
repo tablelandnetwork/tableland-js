@@ -19,8 +19,6 @@ cache/
 artifacts/
 .openzeppelin/*
 
-
-
 # test
 coverage/
 test-results/
@@ -28,8 +26,10 @@ playwright-report/
 playwright/.cache/
 coverage.json
 
+### sdk ###
+packages/sdk/test/aliases/json-file-aliases.json
 
-# local specifics
+### local ###
 
 # local has a prebuild step that creates this file,
 # it should not be committed to version control
