@@ -9,18 +9,21 @@ import { chalk } from "./chalk.js";
 import { ValidatorDev, ValidatorPkg } from "./validators.js";
 import {
   buildConfig,
-  defaultRegistryDir,
-  getConfigFile,
   Config,
-  pipeNamedSubprocess,
-  waitForReady,
+  defaultRegistryDir,
+  inDebugMode,
+  isValidPort,
+  isWindows,
   getAccounts,
+  getConfigFile,
   getDatabase,
   getRegistry,
+  getRegistryPort,
   getValidator,
   logSync,
-  isWindows,
-  inDebugMode,
+  pipeNamedSubprocess,
+  probePortInUse,
+  waitForReady,
 } from "./util.js";
 
 const spawnSync = spawn.sync;
@@ -32,15 +35,18 @@ class LocalTableland {
   #_readyResolves: Function[] = [];
   registry?: ChildProcess;
   validator?: ValidatorDev | ValidatorPkg;
+  readonly defaultRegistryPort: number = 8545;
 
   validatorDir?: string;
   registryDir?: string;
   docker?: boolean;
   verbose?: boolean;
   silent?: boolean;
+  registryPort: number;
 
   constructor(configParams: Config = {}) {
     this.config = configParams;
+    this.registryPort = this.defaultRegistryPort;
 
     // an emitter to help with init logic across the multiple sub-processes
     this.initEmitter = new EventEmitter();
@@ -60,6 +66,12 @@ class LocalTableland {
     if (typeof config.docker === "boolean") this.docker = config.docker;
     if (typeof config.verbose === "boolean") this.verbose = config.verbose;
     if (typeof config.silent === "boolean") this.silent = config.silent;
+    if (typeof config.registryPort === "number") {
+      // Make sure the port is in the valid range
+      if (!isValidPort(config.registryPort))
+        throw new Error("invalid Registry port");
+      this.registryPort = config.registryPort;
+    }
 
     await this.#_start(config);
   }
@@ -73,18 +85,41 @@ class LocalTableland {
     // TODO: I don't think this is doing anything anymore...
     this.#_cleanup();
 
+    // Check if the hardhat port is in use (defaults to 5 retries, 300ms b/w each try)
+    const registryPortIsTaken = await probePortInUse(this.registryPort);
+    // Note: this generally works, but there is a chance that the port will be
+    // taken but returns `false`. E.g., try racing two instances at *exactly*
+    // the same, and `EADDRINUSE` occurs. But generally, it'll work as expected.
+
+    // If the Registry port it taken, throw an error.
+    // Else, notify the user only if it's a not the default and is custom.
+    if (registryPortIsTaken) {
+      throw new Error(`port ${this.registryPort} already in use`);
+    } else {
+      // Notify that we're using a custom port since it's not the default 8545
+      this.registryPort !== this.defaultRegistryPort &&
+        shell.echo(
+          `[${chalk.magenta.bold("Notice")}] Registry is using custom port ${
+            this.registryPort
+          }`
+        );
+    }
+
+    // You *must* store these in `process.env` to access within the hardhat subprocess
+    process.env.HARDHAT_NETWORK = "hardhat";
+    process.env.HARDHAT_UNLIMITED_CONTRACT_SIZE = "true";
+    process.env.HARDHAT_PORT = this.registryPort.toString();
+
     // Run a local hardhat node
     this.registry = spawn(
       isWindows() ? "npx.cmd" : "npx",
-      ["hardhat", "node"],
+      ["hardhat", "node", "--port", this.registryPort.toString()], // Use a custom hardhat port
       {
         // we can't run in windows if we use detached mode
         detached: !isWindows(),
         cwd: this.registryDir,
         env: {
           ...process.env,
-          HARDHAT_NETWORK: "hardhat",
-          HARDHAT_UNLIMITED_CONTRACT_SIZE: "true",
         },
       }
     );
@@ -120,11 +155,11 @@ class LocalTableland {
       !inDebugMode()
     );
 
-    // need to determine if we are starting the validator via docker
+    // Need to determine if we are starting the validator via docker
     // and a local repo, or if are running a binary etc...
     const ValidatorClass = this.docker ? ValidatorDev : ValidatorPkg;
 
-    this.validator = new ValidatorClass(this.validatorDir);
+    this.validator = new ValidatorClass(this.validatorDir, this.registryPort);
 
     // run this before starting in case the last instance of the validator didn't get cleanup after
     // this might be needed if a test runner force quits the parent local-tableland process
@@ -200,9 +235,14 @@ class LocalTableland {
   }
 
   async shutdown() {
-    await this.shutdownValidator();
-    await this.shutdownRegistry();
-    this.#_cleanup();
+    try {
+      await this.shutdownValidator();
+      await this.shutdownRegistry();
+    } catch (err: any) {
+      throw new Error(`unexpected error during shutdown: ${err.message}`);
+    } finally {
+      this.#_cleanup();
+    }
   }
 
   shutdownRegistry(): Promise<void> {
@@ -213,8 +253,20 @@ class LocalTableland {
       // If this Class is imported and run by a test runner then the ChildProcess instances are
       // sub-processes of a ChildProcess instance which means in order to kill them in a way that
       // enables graceful shut down they have to run in detached mode and be killed by the pid
-      // @ts-ignore
-      process.kill(-this.registry.pid);
+
+      // Although this shouldn't be an issue, catch an error if the registry
+      // process was already killed—it *is* possible with the validator process
+      // but doesn't seem to happen with the Registry
+      try {
+        // @ts-ignore
+        process.kill(-this.registry.pid);
+      } catch (err: any) {
+        if (err.code === "ESRCH") {
+          throw new Error(`registry process already killed`);
+        } else {
+          throw err;
+        }
+      }
     });
   }
 
@@ -228,16 +280,25 @@ class LocalTableland {
   }
 
   // cleanup should restore everything to the starting state.
-  // e.g. remove docker images and database backups
+  // e.g. remove docker images, database backups, resetting state
   #_cleanup() {
     shell.rm("-rf", "./tmp");
-
     // If the directory hasn't been specified there isn't anything to clean up
     if (!this.validator) return;
 
     this.validator.cleanup();
+    // Reset validator and registry state since these are no longer needed
+    this.registry = undefined;
+    this.validator = undefined;
   }
 }
 
-export { LocalTableland, getAccounts, getDatabase, getRegistry, getValidator };
+export {
+  LocalTableland,
+  getAccounts,
+  getDatabase,
+  getRegistry,
+  getRegistryPort,
+  getValidator,
+};
 export type { Config };

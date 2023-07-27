@@ -11,7 +11,7 @@ export const projectBuilder = async function () {
   // @ts-ignore https://github.com/enquirer/enquirer/issues/379
   const select = new prompt.Select({
     name: "wtd",
-    message: "Welcome to tableland, do you want to create a new project?",
+    message: "Welcome to Tableland, do you want to create a new project?",
     choices: [...choices],
   });
 

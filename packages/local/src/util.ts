@@ -1,3 +1,4 @@
+import { Socket } from "net";
 import inspector from "node:inspector";
 import { isAbsolute, join, resolve } from "node:path";
 import { EventEmitter } from "node:events";
@@ -6,8 +7,9 @@ import { ChildProcess, SpawnSyncReturns } from "node:child_process";
 import { getDefaultProvider, Wallet } from "ethers";
 import { helpers, Database, Registry, Validator } from "@tableland/sdk";
 import { chalk } from "./chalk.js";
+import { type LocalTableland } from "./main.js";
 
-// NOTE: We are creating this file in the prebuild.sh script so that we can support cjs and esm
+// NOTE: We are creating this file in the fixup.sh script so that we can support cjs and esm
 import { getDirname } from "./get-dirname.js";
 const _dirname = getDirname();
 
@@ -22,9 +24,27 @@ overrideDefaults(getChainId("local-tableland"), {
 
 export type ConfigDescriptor = {
   name: string;
-  env: "VALIDATOR_DIR" | "REGISTRY_DIR" | "VERBOSE" | "SILENT" | "DOCKER";
-  file: "validatorDir" | "registryDir" | "verbose" | "silent" | "docker";
-  arg: "validator" | "registry" | "verbose" | "silent" | "docker";
+  env:
+    | "VALIDATOR_DIR"
+    | "REGISTRY_DIR"
+    | "VERBOSE"
+    | "SILENT"
+    | "DOCKER"
+    | "REGISTRY_PORT";
+  file:
+    | "validatorDir"
+    | "registryDir"
+    | "verbose"
+    | "silent"
+    | "docker"
+    | "registryPort";
+  arg:
+    | "validator"
+    | "registry"
+    | "verbose"
+    | "silent"
+    | "docker"
+    | "registryPort";
   isPath: boolean;
 };
 
@@ -32,7 +52,7 @@ export type ConfigDescriptor = {
 //       1. env vars
 //       2. command line args, e.g. `npx local-tableland --validator ../go-tableland`
 //       3. a `tableland.config.js` file, which is either inside `process.pwd()` or specified
-//          via command line arg.  e.g. `npx local-tableland --config ../tlb-confib.js`
+//          via command line arg.  e.g. `npx local-tableland --config ../tbl-config.js`
 const configDescriptors: ConfigDescriptor[] = [
   {
     name: "validatorDir",
@@ -69,20 +89,60 @@ const configDescriptors: ConfigDescriptor[] = [
     arg: "silent",
     isPath: false,
   },
+  {
+    name: "registryPort",
+    env: "REGISTRY_PORT",
+    file: "registryPort",
+    arg: "registryPort",
+    isPath: false,
+  },
 ];
 
+/**
+ * Configuration object for a Local Tableland instance.
+ */
 export type Config = {
+  /**
+   * Instance of a Tableland Validator. If docker flag is set, this must be the
+   * full repository.
+   */
   validator?: string;
+  /**
+   * IPath to the Tableland Validator directory.
+   */
   validatorDir?: string;
+  /**
+   * Instance of a Tableland Registry.
+   */
   registry?: string;
+  /**
+   * Instance of a Tableland Registry.
+   */
   registryDir?: string;
+  /**
+   * Path to the Tableland Registry contract repository.
+   */
   docker?: boolean;
+  /**
+   * Use Docker to run the Validator.
+   */
   verbose?: boolean;
+  /**
+   * Silence all output to stdout.
+   */
   silent?: boolean;
+  /**
+   * Use a custom Registry hardhat port, e.g., `http://127.0.0.1:<registryPort>`.
+   * Note that clients will need to be configured to use this port over the
+   * default port, e.g., connect to `http://127.0.0.1:<registryPort>`
+   * instead of `http://127.0.0.1:8545`.
+   */
+  registryPort?: number;
 };
 
 export const buildConfig = function (config: Config) {
-  const configObject: { [x: string]: string | boolean | undefined } = {};
+  const configObject: { [x: string]: string | number | boolean | undefined } =
+    {};
   for (let i = 0; i < configDescriptors.length; i++) {
     const configDescriptor = configDescriptors[i];
 
@@ -90,7 +150,7 @@ export const buildConfig = function (config: Config) {
     const arg = config[configDescriptor.arg];
     const env = process.env[configDescriptor.env];
 
-    let val: string | boolean | undefined;
+    let val: string | number | boolean | undefined;
     // priority is: command argument, then environment variable, then config file
     val = arg || env || file;
 
@@ -147,9 +207,18 @@ export const isWindows = function () {
 };
 
 export const inDebugMode = function () {
-  // This seems to be the only relyable way to determine if the process
+  // This seems to be the only reliable way to determine if the process
   // is being debugged either at startup, or during runtime (e.g. vscode)
   return inspector.url() !== undefined;
+};
+
+/**
+ * Check if a port is in the valid range (1-65535).
+ * @param port The port number.
+ * @returns Whether or not the port is valid.
+ */
+export const isValidPort = function (port: number): boolean {
+  return Number.isInteger(port) && port >= 1 && port <= 65535;
 };
 
 export const logSync = function (
@@ -198,7 +267,7 @@ export const pipeNamedSubprocess = async function (
     let lines = data.split("\n");
     if (!verbose) {
       lines = lines.filter((line) => !isExtraneousLog(line));
-      // if not verbose we are going to elliminate multiple empty
+      // if not verbose we are going to eliminate multiple empty
       // lines and any messages that don't have at least one character
       if (!lines.filter((line) => line.trim()).length) {
         lines = [];
@@ -268,6 +337,83 @@ export const defaultRegistryDir = async function () {
   return resolve(_dirname, "..", "..", "registry");
 };
 
+/**
+ * Set up a socket connection to check if a port is in use.
+ * @param port The port number.
+ * @returns true if the port is in use, false otherwise.
+ */
+export function checkPortInUse(port: number): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    const timeout = 200;
+    const host = "127.0.0.1";
+    const socket = new Socket();
+
+    // Socket connection established, so port is in use
+    const onConnect = () => {
+      cleanup();
+      resolve(true);
+    };
+
+    // If no response on timeout, assume port is in use
+    const onTimeout = () => {
+      cleanup();
+      resolve(true);
+    };
+
+    // If connection is refused, the port is open
+    const onError = (err: Error & { code: string }) => {
+      cleanup();
+      if (err.code === "ECONNREFUSED") {
+        resolve(false);
+      } else {
+        reject(err);
+      }
+    };
+
+    // Attach event listeners
+    socket.once("connect", onConnect);
+    socket.once("timeout", onTimeout);
+    socket.once("error", onError);
+
+    // Clean up event listeners
+    const cleanup = () => {
+      socket.off("connect", onConnect);
+      socket.off("timeout", onTimeout);
+      socket.off("error", onError);
+      socket.destroy();
+    };
+
+    // Set timeout and connect to the port
+    socket.setTimeout(timeout);
+    socket.connect(port, host);
+  });
+}
+
+/**
+ * Probe a port with retries to check if it is in use.
+ * @param port The port number.
+ * @param tries Number of retries to attempt. Defaults to 5.
+ * @param delay Time to wait between retries (in milliseconds). Defaults to 300.
+ * @returns true if the port is in use, false otherwise
+ */
+export async function probePortInUse(
+  port: number,
+  tries: number = 5,
+  delay: number = 300
+): Promise<boolean> {
+  let numTries = 0;
+  while (numTries < tries) {
+    // Note: consider splitting the delay into before and after this check
+    // Racing two instances might cause this to incorrectly return `false`
+    const portIsTaken = await checkPortInUse(port);
+    if (!portIsTaken) return false;
+
+    await new Promise((resolve) => setTimeout(resolve, delay));
+    numTries++;
+  }
+  return true;
+}
+
 const hardhatAccounts = [
   "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
   "59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
@@ -291,6 +437,12 @@ const hardhatAccounts = [
   "df57089febbacf7ba0bc227dafbffa9fc08a93fdc68e1e42411a14efcf23656e",
 ];
 
+/**
+ * Get an instance of a Tableland `Database` for a signer.
+ * @param account The account to use for signing transactions.
+ * @returns An instance of a Tableland `Database` with the account as the
+ * signer, base URL, and auto-await enabled.
+ */
 export const getDatabase = function (account: Wallet): Database {
   return new Database({
     signer: account,
@@ -299,23 +451,51 @@ export const getDatabase = function (account: Wallet): Database {
   });
 };
 
+/**
+ * Get an instance of a Tableland `Registry` for a signer.
+ * @param account The account to use for signing transactions.
+ * @returns An instance of a Tableland `Registry` with the account as the
+ * signer.
+ */
 export const getRegistry = function (account: Wallet): Registry {
   return new Registry({
     signer: account,
   });
 };
 
+/**
+ * Get an instance of a Tableland `Validator`.
+ * @param baseUrl The validator's base URL to perform queries at.
+ * @returns An instance of a Tableland `Validator` with the correct `baseUrl`
+ */
 export const getValidator = function (baseUrl?: string): Validator {
   return new Validator({
     baseUrl: baseUrl || getBaseUrl("local-tableland"),
   });
 };
 
-export const getAccounts = function (): Wallet[] {
+/**
+ * Get all of the connected accounts available for signing transactions.
+ * Defaults to RPC URL `http://127.0.0.1:8545` if no instance is provided.
+ * @param instance An instance of Local Tableland.
+ * @returns An instance of a Tableland `Validator` with the correct `baseUrl`.
+ */
+export const getAccounts = function (instance?: LocalTableland): Wallet[] {
   // explicitly use IPv4 127.0.0.1
   // node resolves localhost to IPv4 or IPv6 depending on env
   return hardhatAccounts.map((account) => {
     const wallet = new Wallet(account);
-    return wallet.connect(getDefaultProvider("http://127.0.0.1:8545"));
+    const port = instance ? getRegistryPort(instance) : 8545;
+    return wallet.connect(getDefaultProvider(`http://127.0.0.1:${port}`));
   });
+};
+
+/**
+ * Retrieve the port being used by the Registry on a local hardhat network.
+ * Defaults to port 8545 if no instance is provided.
+ * @param instance An instance of Local Tableland.
+ * @returns The port number being used by the Registry.
+ */
+export const getRegistryPort = (instance?: LocalTableland): number => {
+  return instance ? instance.registryPort : 8545;
 };

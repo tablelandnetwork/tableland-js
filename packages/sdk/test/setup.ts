@@ -1,3 +1,4 @@
+import { resolve } from "node:path";
 import { after, before } from "mocha";
 import { LocalTableland } from "@tableland/local";
 
@@ -12,6 +13,8 @@ const getTimeoutFactor = function (): number {
 export const TEST_TIMEOUT_FACTOR = getTimeoutFactor();
 
 const lt = new LocalTableland({
+  validator: resolve(process.cwd(), "test", "validator"),
+  registryPort: 8546,
   silent: true,
 });
 

@@ -6,7 +6,7 @@ import { getBinPath } from "@tableland/validator";
 import shell from "shelljs";
 import { logSync, isWindows } from "./util.js";
 
-// NOTE: We are creating this file in the prebuild.sh script so that we can support cjs and esm
+// NOTE: We are creating this file in the fixup.sh script so that we can support cjs and esm
 import { getDirname } from "./get-dirname.js";
 const _dirname = getDirname();
 
@@ -19,10 +19,18 @@ let ORIGINAL_VALIDATOR_CONFIG: string | undefined;
 class ValidatorPkg {
   process?: ChildProcess;
   validatorDir = resolve(_dirname, "..", "..", "validator");
+  registryPort: number;
+  readonly defaultRegistryPort: number = 8545;
 
-  constructor(validatorDir?: string) {
+  constructor(validatorDir?: string, registryPort?: number) {
     if (typeof validatorDir === "string") {
       this.validatorDir = validatorDir;
+    }
+    if (typeof registryPort === "number") {
+      // Port sanitization happens in the parent Local Tableland process
+      this.registryPort = registryPort;
+    } else {
+      this.registryPort = this.defaultRegistryPort;
     }
   }
 
@@ -50,6 +58,25 @@ class ValidatorPkg {
       validatorUri = this.validatorDir;
     }
 
+    // get the validator config file
+    const configFilePath = join(this.validatorDir, "config.json");
+    const configFile = readFileSync(configFilePath);
+    const validatorConfig = JSON.parse(configFile.toString());
+
+    // save the validator config state
+    ORIGINAL_VALIDATOR_CONFIG = JSON.stringify(validatorConfig, null, 2);
+
+    // make sure the value in the config file matches the port we are using
+    // if not, update the validator config file with a new `EthEndpoint` port
+    if (
+      validatorConfig.Chains[0].Registry.EthEndpoint !==
+      `ws://localhost:${this.registryPort}`
+    ) {
+      validatorConfig.Chains[0].Registry.EthEndpoint = `ws://localhost:${this.registryPort}`;
+      writeFileSync(configFilePath, JSON.stringify(validatorConfig, null, 2));
+    }
+
+    // start the validator
     this.process = spawn(binPath, ["--dir", validatorUri], {
       // we can't run in windows if we use detached mode
       detached: !isWindows(),
@@ -61,11 +88,22 @@ class ValidatorPkg {
     // If this Class is imported and run by a test runner then the ChildProcess instances are
     // sub-processes of a ChildProcess instance which means in order to kill them in a way that
     // enables graceful shut down they have to run in detached mode and be killed by the pid
-    // @ts-ignore
-    process.kill(-this.process.pid);
+    try {
+      // @ts-ignore
+      process.kill(-this.process.pid);
+    } catch (err: any) {
+      // It's possible that a pid will exist, but the process is terminated
+      // e.g., try running two Local Tableland instances at the same time. If
+      // this happens, `cleanup` never gets called (e.g., files not reset).
+      if (err.code === "ESRCH") {
+        throw new Error(`validator process already killed`);
+      } else {
+        throw err;
+      }
+    }
   }
 
-  // fully nuke the database
+  // fully nuke the database and reset the config file
   cleanup() {
     shell.rm("-rf", resolve(this.validatorDir, "backups"));
 
@@ -76,22 +114,37 @@ class ValidatorPkg {
     for (const filepath of dbFiles) {
       shell.rm("-f", filepath);
     }
+
+    // reset the Validator config file in case it was modified with a custom
+    // Registry hardhat port
+    if (ORIGINAL_VALIDATOR_CONFIG) {
+      const configFilePath = join(this.validatorDir, "config.json");
+      writeFileSync(configFilePath, ORIGINAL_VALIDATOR_CONFIG);
+    }
   }
 }
 
 class ValidatorDev {
   validatorDir: string;
   process?: ChildProcess;
+  registryPort: number;
+  readonly defaultRegistryPort: number = 8545;
 
-  constructor(validatorDir?: string) {
+  constructor(validatorDir?: string, registryPort?: number) {
     if (!validatorDir) throw new Error("must supply path to validator");
     this.validatorDir = validatorDir;
+    if (typeof registryPort === "number") {
+      // Port sanitization happens in the parent Local Tableland process
+      this.registryPort = registryPort;
+    } else {
+      this.registryPort = this.defaultRegistryPort;
+    }
   }
 
   start() {
     // Add the registry address to the Validator config
     // TODO: when https://github.com/tablelandnetwork/go-tableland/issues/317 is
-    //       resolved we may be able to refactor alot of this
+    //       resolved we may be able to refactor a lot of this
     const configFilePath = join(
       this.validatorDir,
       "docker",
@@ -104,6 +157,14 @@ class ValidatorDev {
 
     // save the validator config state before this script modifies it
     ORIGINAL_VALIDATOR_CONFIG = JSON.stringify(validatorConfig, null, 2);
+
+    // make sure the value in the config file matches the port we are using
+    // if not, update the validator config file with a new `EthEndpoint` port
+    if (
+      validatorConfig.Chains[0].Registry.EthEndpoint !==
+      `ws://localhost:${this.registryPort}`
+    )
+      validatorConfig.Chains[0].Registry.EthEndpoint = `ws://localhost:${this.registryPort}`;
 
     // TODO: this could be parsed out of the deploy process, but since
     //       it's always the same address just hardcoding it here
@@ -129,8 +190,19 @@ class ValidatorDev {
     // If this Class is imported and run by a test runner then the ChildProcess instances are
     // sub-processes of a ChildProcess instance which means in order to kill them in a way that
     // enables graceful shut down they have to run in detached mode and be killed by the pid
-    // @ts-ignore
-    process.kill(-this.process.pid);
+    try {
+      // @ts-ignore
+      process.kill(-this.process.pid);
+    } catch (err: any) {
+      // It's possible that a pid will exist, but the process is terminated
+      // e.g., try running two Local Tableland instances at the same time. If
+      // this happens, `cleanup` never gets called (e.g., files not reset).
+      if (err.code === "ESRCH") {
+        throw new Error(`validator process already killed`);
+      } else {
+        throw err;
+      }
+    }
   }
 
   cleanup() {
@@ -149,7 +221,8 @@ class ValidatorDev {
       spawnSync("rm", ["-f", filepath]);
     }
 
-    // reset the Validator config file that is modified on startup
+    // reset the Validator config file that is modified on startup and/or custom
+    // Registry port configurations
     if (ORIGINAL_VALIDATOR_CONFIG) {
       const configFilePath = join(
         this.validatorDir,

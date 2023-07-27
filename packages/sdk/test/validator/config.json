@@ -1,16 +1,16 @@
 {
   "Impl": "mesa",
   "HTTP": {
-    "Port": "8080",
+    "Port": "8081",
     "RateLimInterval": "1s",
     "MaxRequestPerInterval": 10
   },
   "Gateway": {
-    "ExternalURIPrefix": "http://localhost:8080",
+    "ExternalURIPrefix": "http://localhost:8081",
     "AnimationRendererURI": "https://render.tableland.xyz"
   },
   "DB": {
-    "Port": "5432"
+    "Port": "5433"
   },
   "TableConstraints": {
     "MaxRowCount": 500000
@@ -20,7 +20,7 @@
     "MaxReadQuerySize": 35000
   },
   "Metrics": {
-    "Port": "9090"
+    "Port": "9091"
   },
   "Log": {
     "Human": true,
@@ -41,7 +41,7 @@
       "ChainID": 31337,
       "AllowTransactionRelay": true,
       "Registry": {
-        "EthEndpoint": "ws://localhost:8545",
+        "EthEndpoint": "ws://localhost:8546",
         "ContractAddress": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512"
       },
       "Signer": {

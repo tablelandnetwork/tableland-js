@@ -10,7 +10,7 @@ const argv = yargs(hideBin(process.argv)).options({
   validator: {
     type: "string",
     description:
-      "Path the the Tableland Validator directory.  If docker flag is set this must be the full repository.",
+      "Path the the Tableland Validator directory. If docker flag is set, this must be the full repository.",
   },
   registry: {
     type: "string",
@@ -28,6 +28,13 @@ const argv = yargs(hideBin(process.argv)).options({
   silent: {
     type: "boolean",
     description: "Silence all output to stdout.",
+  },
+  // note: if a new Registry port is used, clients (SDK, CLI, etc.) that expect port
+  // 8545 will not work unless the RPC is explicity passed with this port—but, tests
+  // w/ Local Tableland can retrieve it with `getRegistryPort(lt)` and run as intended.
+  registryPort: {
+    type: "number",
+    description: "Use a custom Registry port for hardhat.",
   },
   init: {
     type: "boolean",
@@ -55,6 +62,8 @@ const go = async function () {
   if (tsArgv.docker) opts.docker = tsArgv.docker;
   if (typeof tsArgv.verbose === "boolean") opts.verbose = tsArgv.verbose;
   if (typeof tsArgv.silent === "boolean") opts.silent = tsArgv.silent;
+  if (typeof tsArgv.registryPort === "number")
+    opts.registryPort = tsArgv.registryPort;
 
   const tableland = new LocalTableland(opts);
 
@@ -68,8 +77,12 @@ const go = async function () {
 
 // start a tableland network, then catch any uncaught errors and exit loudly
 go().catch((err) => {
-  console.error("unrecoverable error");
-  console.error(err);
+  if (err.message.includes(`port already in use`)) {
+    console.error(err.message);
+  } else {
+    console.error("unrecoverable error");
+    console.error(err);
+  }
 
   // eslint-disable-next-line no-process-exit
   process.exit();

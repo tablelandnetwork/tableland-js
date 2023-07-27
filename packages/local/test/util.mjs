@@ -1,5 +1,6 @@
 import fs from "fs";
 import { expect } from "chai";
+import { Server } from "net";
 import yaml from "js-yaml";
 
 export const HOST = "http://localhost:8080";
@@ -41,7 +42,7 @@ export const testHttpResponse = async function (res, expected) {
   testSameTypes(json, expected);
 };
 
-// This is a fairly simple test that the response and the spec's example resonses have the same types
+// This is a fairly simple test that the response and the spec's example responses have the same types
 export const testSameTypes = function (res, expected) {
   // log in case someone wants to manually inspect
   console.log(res, expected);
@@ -64,7 +65,7 @@ export const getSafe = function (obj, location) {
   }, obj);
 };
 
-// The open api spec file routes are templated with single squiggle brakets {}
+// The open api spec file routes are templated with single squiggle brackets {}
 // This is a simple implementation of rendering that type of template
 export const renderPath = function (tmpl, data) {
   let rendered = "";
@@ -206,3 +207,80 @@ export const loadSpecTestData = function (specPath) {
 
   return tests;
 };
+
+// Create a mock server to test against
+export async function startMockServer(port) {
+  const server = new Server();
+
+  try {
+    await new Promise((resolve, reject) => {
+      server.listen(port, resolve).on("error", reject);
+    });
+  } catch (err) {
+    throw new Error(`mock server error: port ${port} already in use`);
+  }
+
+  server.on("error", (err) => {
+    if (err.code !== "EADDRINUSE") {
+      throw err;
+    }
+  });
+
+  return server;
+}
+
+// Stop the mock server
+export function stopMockServer(server) {
+  return new Promise((resolve, reject) => {
+    if (!server.listening) {
+      return resolve();
+    }
+
+    server.close((err) => {
+      if (err) {
+        reject(new Error("mock server error while stopping: " + err));
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
+// Measure the execution time of a function, e.g., start/shutdown
+export async function measureExecutionTime(fn) {
+  const start = process.hrtime.bigint();
+  await fn();
+  const end = process.hrtime.bigint();
+
+  // execution time in milliseconds
+  const executionTime = Number(end - start) / 1e6;
+  return executionTime;
+}
+
+// Calculate the median execution time
+function calculateMedian(values) {
+  values.sort((a, b) => a - b);
+  const half = Math.floor(values.length / 2);
+  if (values.length % 2) return values[half];
+  return (values[half - 1] + values[half]) / 2.0;
+}
+
+// Log metrics for min, max, average, and median execution times
+export function logMetrics(metricName, metricArray) {
+  if (metricArray.length === 0) {
+    console.log(`  ${metricName}: no data`);
+    return;
+  }
+
+  const min = Math.min(...metricArray);
+  const max = Math.max(...metricArray);
+  const average =
+    metricArray.reduce((a, b) => a + b, 0) / metricArray.length || 0;
+  const median = calculateMedian(metricArray);
+
+  console.log(`  ${metricName}`);
+  console.log(`    min: ${Math.round(min)}ms`);
+  console.log(`    max: ${Math.round(max)}ms`);
+  console.log(`    average: ${Math.round(average)}ms`);
+  console.log(`    median: ${Math.round(median)}ms`);
+}

@@ -30,6 +30,9 @@ const config: HardhatUserConfig = {
       gas: 40 * 1000 * 1000,
       allowUnlimitedContractSize: true,
     },
+    localhost: {
+      url: `http://127.0.0.1:${process.env.HARDHAT_PORT || 8545}`,
+    },
   },
   baseURIs,
   proxies,
