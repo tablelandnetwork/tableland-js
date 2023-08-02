@@ -1,7 +1,7 @@
 import type { Arguments, CommandBuilder } from "yargs";
-import { GlobalOptions } from "../cli.js";
-import { getChains, logger } from "../utils.js";
 import type yargs from "yargs";
+import { type GlobalOptions } from "../cli.js";
+import { getChains, logger } from "../utils.js";
 
 export interface Options extends GlobalOptions {
   format: "pretty" | "json" | "jsonl";
@@ -10,7 +10,9 @@ export interface Options extends GlobalOptions {
 export const command = "chains";
 export const desc = "List information about supported chains";
 
-export const builder: CommandBuilder<{}, Options> = (yargs) =>
+export const builder: CommandBuilder<Record<string, unknown>, Options> = (
+  yargs
+) =>
   yargs.option("format", {
     type: "string",
     choices: ["pretty", "json", "jsonl"] as const,

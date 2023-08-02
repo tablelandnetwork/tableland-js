@@ -1,7 +1,8 @@
-import yargs, { Arguments, CommandBuilder } from "yargs";
 import { createInterface } from "readline";
-import { GlobalOptions } from "../cli.js";
-import { Connections, setupCommand } from "../lib/commandSetup.js";
+import { type Arguments, type CommandBuilder } from "yargs";
+import type yargs from "yargs";
+import { type GlobalOptions } from "../cli.js";
+import { type Connections, setupCommand } from "../lib/commandSetup.js";
 import { logger } from "../utils.js";
 
 const help = `Commands:
@@ -27,8 +28,8 @@ process.on("SIGINT", function () {
   process.exit();
 });
 
-async function confirmQuery() {
-  return new Promise((resolve) => {
+async function confirmQuery(): Promise<boolean> {
+  return await new Promise((resolve) => {
     const rl = createInterface({
       input: process.stdin,
       output: process.stdout,
@@ -55,15 +56,15 @@ async function fireFullQuery(
   statement: string,
   argv: any,
   tablelandConnection: Connections
-) {
+): Promise<void> {
   try {
     const { database, ens } = tablelandConnection;
-    if (argv.enableEnsExperiment && ens) {
+    if (argv.enableEnsExperiment != null && ens != null) {
       statement = await ens.resolve(statement);
     }
 
     const { type } = await globalThis.sqlparser.normalize(statement);
-    if (type !== "read" && !(await confirmQuery())) return;
+    if (type !== "read" && (await confirmQuery()) == null) return;
 
     const stmt = database.prepare(statement);
     const response = await stmt.all();
@@ -80,7 +81,11 @@ async function fireFullQuery(
     }
     /* c8 ignore next 3 */
   } catch (err: any) {
-    logger.error(err?.cause?.message || err?.message);
+    logger.error(
+      typeof err?.cause?.message === "string"
+        ? err?.cause?.message
+        : err?.message
+    );
     logger.error(err);
   }
 }
@@ -89,9 +94,9 @@ async function shellYeah(
   argv: any,
   tablelandConnection: Connections,
   history: string[] = []
-) {
+): Promise<void> {
   try {
-    if (argv.statement) {
+    if (argv.statement != null) {
       await fireFullQuery(argv.statement, argv, tablelandConnection);
       delete argv.statement;
     } else {
@@ -141,17 +146,23 @@ async function shellYeah(
       }
     }
 
-    shellYeah(argv, tablelandConnection, history);
+    // NOTE: we must use catch here instead of awaiting because this is calling
+    //       itself and the tests will hang forever if we use `await`
+    shellYeah(argv, tablelandConnection, history).catch((err) => {
+      logger.error(err);
+    });
     /* c8 ignore next 6 */
   } catch (err: any) {
     logger.error(err.message);
-    if (argv.verbose) {
+    if (argv.verbose === true) {
       logger.log(err);
     }
   }
 }
 
-export const builder: CommandBuilder<{}, Options> = (yargs) =>
+export const builder: CommandBuilder<Record<string, unknown>, Options> = (
+  yargs
+) =>
   yargs
     .positional("statement", {
       type: "string",
@@ -172,7 +183,7 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
   try {
     const { chain } = argv;
-    if (!chain) {
+    if (chain == null) {
       logger.error("missing required flag (`-c` or `--chain`)");
       return;
     }
@@ -183,7 +194,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     logger.log(
       `Connected to ${network.chainName} using ${await signer.getAddress()}`
     );
-    if (argv.enableEnsExperiment) {
+    if (argv.enableEnsExperiment != null) {
       logger.log(
         "ENS namespace is experimental, no promises that it will exist in future builds"
       );

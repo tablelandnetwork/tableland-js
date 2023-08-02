@@ -5,9 +5,9 @@ import yargs from "yargs/yargs";
 import { temporaryWrite } from "tempy";
 import mockStd from "mock-stdin";
 import { getAccounts } from "@tableland/local";
+import { ethers } from "ethers";
 import * as mod from "../src/commands/create.js";
 import { wait, logger } from "../src/utils.js";
-import { ethers } from "ethers";
 import { getResolverMock } from "./mock.js";
 
 const accounts = getAccounts();
@@ -141,7 +141,7 @@ describe("commands/create", function () {
     const consoleError = spy(logger, "error");
     setTimeout(() => {
       stdin.send("\n").end();
-    }, 100);
+    }, 300);
     await yargs([
       "create",
       "--chain",

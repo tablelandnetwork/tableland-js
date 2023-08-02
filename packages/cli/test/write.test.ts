@@ -2,13 +2,13 @@ import { equal, match } from "node:assert";
 import { describe, test, afterEach, before } from "mocha";
 import { spy, stub, restore } from "sinon";
 import { ethers } from "ethers";
-import { getResolverUndefinedMock } from "./mock.js";
 import yargs from "yargs/yargs";
 import { temporaryWrite } from "tempy";
 import mockStd from "mock-stdin";
 import { getAccounts, getDatabase } from "@tableland/local";
 import * as mod from "../src/commands/write.js";
 import { wait, logger } from "../src/utils.js";
+import { getResolverUndefinedMock } from "./mock.js";
 
 const accounts = getAccounts();
 const db = getDatabase(accounts[1]);
@@ -181,7 +181,7 @@ describe("commands/write", function () {
     );
   });
 
-  test("Write passes with local-tableland", async function () {
+  test("passes when writing with local-tableland", async function () {
     const [account] = accounts;
     const privateKey = account.privateKey.slice(2);
     const consoleLog = spy(logger, "log");
@@ -202,10 +202,10 @@ describe("commands/write", function () {
 
     equal(typeof transactionHash, "string");
     equal(transactionHash.startsWith("0x"), true);
-    equal(!link, true);
+    equal(link, undefined);
   });
 
-  test("Write to two tables passes", async function () {
+  test("passes when writing to two different tables", async function () {
     const account = accounts[1];
     const { meta: meta1 } = await db
       .prepare("create table multi_tbl_1 (a int, b text);")
@@ -237,7 +237,7 @@ describe("commands/write", function () {
 
     equal(typeof transactionHash, "string");
     equal(transactionHash.startsWith("0x"), true);
-    equal(!link, true);
+    equal(link, undefined);
 
     const results = await db.batch([
       db.prepare(`select * from ${tableName1};`),
@@ -278,7 +278,7 @@ describe("commands/write", function () {
 
     equal(typeof transactionHash, "string");
     equal(transactionHash.startsWith("0x"), true);
-    equal(!link, true);
+    equal(link, undefined);
   });
 
   test("passes when provided input from stdin", async function () {
@@ -305,14 +305,14 @@ describe("commands/write", function () {
 
     equal(typeof transactionHash, "string");
     equal(transactionHash.startsWith("0x"), true);
-    equal(!link, true);
+    equal(link, undefined);
   });
 
   test("resolves table name to literal name if ens is not set", async function () {
     const resolverMock = stub(
       ethers.providers.JsonRpcProvider.prototype,
       "getResolver"
-      // @ts-ignore
+      // @ts-expect-error type does not match since we are testing undefined response
     ).callsFake(getResolverUndefinedMock);
 
     const { meta } = await db.prepare("CREATE TABLE ens_write (a int);").all();
@@ -342,12 +342,12 @@ describe("commands/write", function () {
 
     equal(typeof transactionHash, "string");
     equal(transactionHash.startsWith("0x"), true);
-    equal(!link, true);
+    equal(link, undefined);
 
     equal(resolverMock.calledOnce, true);
   });
 
-  test("Write works with GRANT statement", async function () {
+  test("passes with GRANT statement", async function () {
     const account1 = accounts[1];
     const account2 = accounts[2];
     const privateKey1 = account1.privateKey.slice(2);
@@ -405,13 +405,13 @@ describe("commands/write", function () {
     equal(results[0].a, 1);
   });
 
-  test("Write works with REVOKE statement", async function () {
+  test("passes with REVOKE statement", async function () {
     const account1 = accounts[1];
     const account2 = accounts[2];
     const privateKey1 = account1.privateKey.slice(2);
     const privateKey2 = account2.privateKey.slice(2);
 
-    // db is configged with account 1
+    // db is configured with account 1
     const { meta } = await db
       .prepare("CREATE TABLE test_revoke (a int);")
       .all();
@@ -474,5 +474,64 @@ describe("commands/write", function () {
       .parse();
 
     match(consoleError.getCall(0).firstArg, /not enough privileges/);
+  });
+
+  test("passes with insert and subselect", async function () {
+    const account = accounts[1];
+    // create a "main" (mutable target) table and an "admin" (subselect target) table
+    const [batchCreate] = await db.batch([
+      db.prepare(`CREATE TABLE main (id INTEGER PRIMARY KEY, data TEXT);`),
+      db.prepare(`CREATE TABLE admin (id INTEGER PRIMARy KEY, address TEXT);`),
+    ]);
+    const response = await batchCreate.meta.txn?.wait();
+    const names = response?.names ?? [];
+    const tableToMutate = names[0];
+    const tableToSubselect = names[1];
+
+    // seed the target subselect table with data
+    const privateKey = account.privateKey.slice(2);
+    const consoleLog = spy(logger, "log");
+    await yargs([
+      "write",
+      `INSERT INTO ${tableToSubselect} (address) VALUES ('${account.address}');`,
+      "--chain",
+      "local-tableland",
+      "--privateKey",
+      privateKey,
+    ])
+      .command(mod)
+      .parse();
+    let res = consoleLog.getCall(0).firstArg;
+    let value = JSON.parse(res);
+    let { transactionHash, link } = value.meta?.txn;
+    equal(typeof transactionHash, "string");
+    equal(transactionHash.startsWith("0x"), true);
+    equal(link, undefined);
+
+    // insert into the "main" table using a subselect from the "admin" table
+    const data = "test";
+    await yargs([
+      "write",
+      `INSERT INTO ${tableToMutate} (data) select '${data}' from ${tableToSubselect} where address = '${account.address}';`,
+      "--chain",
+      "local-tableland",
+      "--privateKey",
+      privateKey,
+    ])
+      .command(mod)
+      .parse();
+    res = consoleLog.getCall(0).firstArg;
+    value = JSON.parse(res);
+    ({ transactionHash, link } = value.meta?.txn);
+    equal(typeof transactionHash, "string");
+    equal(transactionHash.startsWith("0x"), true);
+    equal(link, undefined);
+
+    // verify the data was inserted, including the auto-incremented `id`
+    const { results } = (await db
+      .prepare(`select * from ${tableToMutate};`)
+      .run()) as any;
+    equal(results[0].id, 1);
+    equal(results[0].data, data);
   });
 });

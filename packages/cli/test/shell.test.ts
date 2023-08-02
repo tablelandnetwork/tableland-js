@@ -4,9 +4,9 @@ import { spy, restore, stub, assert } from "sinon";
 import yargs from "yargs/yargs";
 import mockStd from "mock-stdin";
 import { getAccounts, getDatabase } from "@tableland/local";
+import { ethers } from "ethers";
 import * as mod from "../src/commands/shell.js";
 import { wait, logger } from "../src/utils.js";
-import { ethers } from "ethers";
 import { getResolverMock } from "./mock.js";
 
 describe("commands/shell", function () {

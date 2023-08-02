@@ -1,15 +1,15 @@
 /**
  *  Run end to end Tableland
  **/
-import spawn from "cross-spawn";
-import { ChildProcess } from "node:child_process";
+import { type ChildProcess } from "node:child_process";
 import { EventEmitter } from "node:events";
+import spawn from "cross-spawn";
 import shell from "shelljs";
 import { chalk } from "./chalk.js";
 import { ValidatorDev, ValidatorPkg } from "./validators.js";
 import {
   buildConfig,
-  Config,
+  type Config,
   defaultRegistryDir,
   inDebugMode,
   isValidPort,
@@ -32,7 +32,7 @@ class LocalTableland {
   config;
   initEmitter;
   ready: boolean = false;
-  #_readyResolves: Function[] = [];
+  #_readyResolves: Array<(value: unknown) => any> = [];
   registry?: ChildProcess;
   validator?: ValidatorDev | ValidatorPkg;
   readonly defaultRegistryPort: number = 8545;
@@ -52,16 +52,19 @@ class LocalTableland {
     this.initEmitter = new EventEmitter();
   }
 
-  async start() {
+  async start(): Promise<void> {
     const configFile = await getConfigFile();
     const config = buildConfig({ ...configFile, ...this.config });
 
     if (typeof config.validatorDir === "string")
       this.validatorDir = config.validatorDir;
-    if (typeof config.registryDir === "string" && config.registryDir) {
+    if (
+      typeof config.registryDir === "string" &&
+      config.registryDir.trim() !== ""
+    ) {
       this.registryDir = config.registryDir;
     } else {
-      this.registryDir = await defaultRegistryDir();
+      this.registryDir = defaultRegistryDir();
     }
     if (typeof config.docker === "boolean") this.docker = config.docker;
     if (typeof config.verbose === "boolean") this.verbose = config.verbose;
@@ -76,8 +79,11 @@ class LocalTableland {
     await this.#_start(config);
   }
 
-  async #_start(config: Config = {}) {
-    if (!this.registryDir) {
+  async #_start(config: Config = {}): Promise<void> {
+    if (
+      typeof this.registryDir !== "string" ||
+      this.registryDir.trim() === ""
+    ) {
       throw new Error("cannot start a local network without Registry");
     }
 
@@ -125,7 +131,7 @@ class LocalTableland {
     );
 
     this.registry.on("error", (err) => {
-      throw new Error(`registry errored with: ${err}`);
+      throw new Error(`registry errored with: ${err.toString()}`);
     });
 
     const registryReadyEvent = "hardhat ready";
@@ -157,7 +163,9 @@ class LocalTableland {
 
     // Need to determine if we are starting the validator via docker
     // and a local repo, or if are running a binary etc...
-    const ValidatorClass = this.docker ? ValidatorDev : ValidatorPkg;
+    const ValidatorClass = (this.docker as boolean)
+      ? ValidatorDev
+      : ValidatorPkg;
 
     this.validator = new ValidatorClass(this.validatorDir, this.registryPort);
 
@@ -168,12 +176,12 @@ class LocalTableland {
 
     // TODO: It seems like this check isn't sufficient to see if the process is gonna get to a point
     //       where the on error listener can be attached.
-    if (!this.validator.process) {
+    if (this.validator.process == null) {
       throw new Error("could not start Validator process");
     }
 
     this.validator.process.on("error", (err) => {
-      throw new Error(`validator errored with: ${err}`);
+      throw new Error(`validator errored with: ${err.toString()}`);
     });
 
     const validatorReadyEvent = "validator ready";
@@ -200,7 +208,7 @@ class LocalTableland {
     await waitForReady(validatorReadyEvent, this.initEmitter);
     await this.#_setReady();
 
-    if (this.silent) return;
+    if (this.silent as boolean) return;
 
     console.log("\n\n******  Tableland is running!  ******");
     console.log("             _________");
@@ -212,42 +220,44 @@ class LocalTableland {
     console.log("\n\n*************************************\n");
   }
 
-  async #_setReady() {
+  async #_setReady(): Promise<void> {
     this.ready = true;
-    while (this.#_readyResolves.length) {
+    while (this.#_readyResolves.length > 0) {
       // readyResolves is an array of the resolve functions for all registered
       // promises we want to pop and call each of them synchronously
       const resolve = this.#_readyResolves.pop();
-      if (typeof resolve === "function") resolve();
+      if (typeof resolve === "function") resolve(undefined);
     }
   }
 
   // module consumers can await this method if they want to
   // wait until the network fully started to do something
-  isReady() {
-    if (this.ready) return Promise.resolve();
+  async isReady(): Promise<unknown> {
+    if (this.ready) return await Promise.resolve();
 
     const prom = new Promise((resolve) => {
       this.#_readyResolves.push(resolve);
     });
 
-    return prom;
+    return await prom;
   }
 
-  async shutdown() {
+  async shutdown(): Promise<void> {
     try {
       await this.shutdownValidator();
       await this.shutdownRegistry();
     } catch (err: any) {
-      throw new Error(`unexpected error during shutdown: ${err.message}`);
+      throw new Error(
+        `unexpected error during shutdown: ${err.message as string}`
+      );
     } finally {
       this.#_cleanup();
     }
   }
 
-  shutdownRegistry(): Promise<void> {
-    return new Promise((resolve) => {
-      if (!this.registry) return resolve();
+  async shutdownRegistry(): Promise<void> {
+    return await new Promise((resolve) => {
+      if (this.registry == null) return resolve();
 
       this.registry.once("close", () => resolve());
       // If this Class is imported and run by a test runner then the ChildProcess instances are
@@ -258,7 +268,7 @@ class LocalTableland {
       // process was already killed—it *is* possible with the validator process
       // but doesn't seem to happen with the Registry
       try {
-        // @ts-ignore
+        // @ts-expect-error pic is possibly undefined, which is fine
         process.kill(-this.registry.pid);
       } catch (err: any) {
         if (err.code === "ESRCH") {
@@ -270,9 +280,11 @@ class LocalTableland {
     });
   }
 
-  shutdownValidator(): Promise<void> {
-    return new Promise((resolve) => {
-      if (!(this.validator && this.validator.process)) return resolve();
+  async shutdownValidator(): Promise<void> {
+    return await new Promise((resolve) => {
+      if (this.validator?.process == null) {
+        return resolve();
+      }
 
       this.validator.process.on("close", () => resolve());
       this.validator.shutdown();
@@ -281,10 +293,10 @@ class LocalTableland {
 
   // cleanup should restore everything to the starting state.
   // e.g. remove docker images, database backups, resetting state
-  #_cleanup() {
+  #_cleanup(): void {
     shell.rm("-rf", "./tmp");
     // If the directory hasn't been specified there isn't anything to clean up
-    if (!this.validator) return;
+    if (this.validator == null) return;
 
     this.validator.cleanup();
     // Reset validator and registry state since these are no longer needed

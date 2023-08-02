@@ -1,7 +1,7 @@
-import spawn from "cross-spawn";
-import { ChildProcess } from "node:child_process";
+import { type ChildProcess } from "node:child_process";
 import { join, resolve } from "node:path";
 import { readFileSync, writeFileSync } from "node:fs";
+import spawn from "cross-spawn";
 import { getBinPath } from "@tableland/validator";
 import shell from "shelljs";
 import { logSync, isWindows } from "./util.js";
@@ -34,9 +34,9 @@ class ValidatorPkg {
     }
   }
 
-  start() {
+  start(): void {
     const binPath = getBinPath();
-    if (!binPath) {
+    if (binPath == null) {
       throw new Error(
         `cannot start with: arch ${process.arch}, platform ${process.platform}`
       );
@@ -60,11 +60,11 @@ class ValidatorPkg {
 
     // get the validator config file
     const configFilePath = join(this.validatorDir, "config.json");
-    const configFile = readFileSync(configFilePath);
-    const validatorConfig = JSON.parse(configFile.toString());
+    const configFileStr = readFileSync(configFilePath).toString();
+    const validatorConfig = JSON.parse(configFileStr);
 
     // save the validator config state
-    ORIGINAL_VALIDATOR_CONFIG = JSON.stringify(validatorConfig, null, 2);
+    ORIGINAL_VALIDATOR_CONFIG = configFileStr;
 
     // make sure the value in the config file matches the port we are using
     // if not, update the validator config file with a new `EthEndpoint` port
@@ -83,13 +83,13 @@ class ValidatorPkg {
     });
   }
 
-  shutdown() {
-    if (!this.process) throw new Error("Cannot find validator process");
+  shutdown(): void {
+    if (this.process == null) throw new Error("Cannot find validator process");
     // If this Class is imported and run by a test runner then the ChildProcess instances are
     // sub-processes of a ChildProcess instance which means in order to kill them in a way that
     // enables graceful shut down they have to run in detached mode and be killed by the pid
     try {
-      // @ts-ignore
+      // @ts-expect-error pid is possibly undefined, which is fine
       process.kill(-this.process.pid);
     } catch (err: any) {
       // It's possible that a pid will exist, but the process is terminated
@@ -104,7 +104,7 @@ class ValidatorPkg {
   }
 
   // fully nuke the database and reset the config file
-  cleanup() {
+  cleanup(): void {
     shell.rm("-rf", resolve(this.validatorDir, "backups"));
 
     const dbFiles = [
@@ -117,7 +117,7 @@ class ValidatorPkg {
 
     // reset the Validator config file in case it was modified with a custom
     // Registry hardhat port
-    if (ORIGINAL_VALIDATOR_CONFIG) {
+    if (ORIGINAL_VALIDATOR_CONFIG != null) {
       const configFilePath = join(this.validatorDir, "config.json");
       writeFileSync(configFilePath, ORIGINAL_VALIDATOR_CONFIG);
     }
@@ -131,7 +131,7 @@ class ValidatorDev {
   readonly defaultRegistryPort: number = 8545;
 
   constructor(validatorDir?: string, registryPort?: number) {
-    if (!validatorDir) throw new Error("must supply path to validator");
+    if (validatorDir == null) throw new Error("must supply path to validator");
     this.validatorDir = validatorDir;
     if (typeof registryPort === "number") {
       // Port sanitization happens in the parent Local Tableland process
@@ -141,7 +141,7 @@ class ValidatorDev {
     }
   }
 
-  start() {
+  start(): void {
     // Add the registry address to the Validator config
     // TODO: when https://github.com/tablelandnetwork/go-tableland/issues/317 is
     //       resolved we may be able to refactor a lot of this
@@ -156,7 +156,7 @@ class ValidatorDev {
     const validatorConfig = JSON.parse(configFileStr);
 
     // save the validator config state before this script modifies it
-    ORIGINAL_VALIDATOR_CONFIG = JSON.stringify(validatorConfig, null, 2);
+    ORIGINAL_VALIDATOR_CONFIG = configFileStr;
 
     // make sure the value in the config file matches the port we are using
     // if not, update the validator config file with a new `EthEndpoint` port
@@ -182,7 +182,7 @@ class ValidatorDev {
     });
   }
 
-  shutdown() {
+  shutdown(): void {
     // The validator uses make to shutdown when run via docker
     spawnSync("make", ["local-down"], {
       cwd: join(this.validatorDir, "docker"),
@@ -191,7 +191,7 @@ class ValidatorDev {
     // sub-processes of a ChildProcess instance which means in order to kill them in a way that
     // enables graceful shut down they have to run in detached mode and be killed by the pid
     try {
-      // @ts-ignore
+      // @ts-expect-error pid is possibly undefined, which is fine
       process.kill(-this.process.pid);
     } catch (err: any) {
       // It's possible that a pid will exist, but the process is terminated
@@ -205,7 +205,7 @@ class ValidatorDev {
     }
   }
 
-  cleanup() {
+  cleanup(): void {
     logSync(spawnSync("docker", ["container", "prune", "-f"]));
 
     spawnSync("docker", ["image", "rm", "docker-api", "-f"]);
@@ -223,7 +223,7 @@ class ValidatorDev {
 
     // reset the Validator config file that is modified on startup and/or custom
     // Registry port configurations
-    if (ORIGINAL_VALIDATOR_CONFIG) {
+    if (ORIGINAL_VALIDATOR_CONFIG != null) {
       const configFilePath = join(
         this.validatorDir,
         "docker",

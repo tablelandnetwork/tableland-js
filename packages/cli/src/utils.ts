@@ -1,21 +1,37 @@
 import { Wallet, providers, getDefaultProvider } from "ethers";
 import { helpers } from "@tableland/sdk";
 
-export const getChains = () =>
-  Object.fromEntries(
+export const getChains = function (): typeof helpers.supportedChains {
+  return Object.fromEntries(
     Object.entries(helpers.supportedChains).filter(
       ([name]) => !name.includes("staging")
     )
-  );
+  ) as Record<helpers.ChainName, helpers.ChainInfo>;
+};
+export function getChainName(
+  chain: number | helpers.ChainName
+): helpers.ChainName {
+  if (typeof chain === "number") {
+    // convert chainId to chain name
+    return helpers.getChainInfo(chain)?.chainName;
+  }
+  return chain;
+}
 
 export interface Options {
   privateKey: string;
-  chain: helpers.ChainName;
+  chain: number | helpers.ChainName;
   providerUrl: string | undefined;
 }
 
-export const wait = (timeout: number) =>
-  new Promise((resolve) => setTimeout(resolve, timeout));
+export interface NormalizedStatement {
+  tables: string[];
+  statements: string[];
+  type: string;
+}
+
+export const wait = async (timeout: number): Promise<void> =>
+  await new Promise((resolve) => setTimeout(resolve, timeout));
 
 export function getLink(chain: helpers.ChainName, hash: string): string {
   /* c8 ignore start */
@@ -64,19 +80,19 @@ export async function getWalletWithProvider({
   // We want to aquire a provider using the params given by the caller.
   let provider: providers.BaseProvider | undefined;
   // first we check if a providerUrl was given.
-  if (providerUrl) {
+  if (typeof providerUrl === "string") {
     provider = new providers.JsonRpcProvider(providerUrl, network.name);
   }
 
   // Second we will check if the "local-tableland" chain is being used,
   // because the default provider won't work with this chain.
-  if (!provider && network.chainName === "local-tableland") {
+  if (provider == null && network.chainName === "local-tableland") {
     provider = new providers.JsonRpcProvider("http://127.0.0.1:8545");
   }
 
   // Finally we use the default provider
   /* c8 ignore start */
-  if (!provider) {
+  if (provider == null) {
     try {
       // This will be significantly rate limited, but we only need to run it once
       provider = getDefaultProvider({ ...network, name: network.chainName });
@@ -88,7 +104,7 @@ export async function getWalletWithProvider({
     }
   }
 
-  if (!provider) {
+  if (provider == null) {
     throw new Error("unable to create ETH API provider");
   }
 

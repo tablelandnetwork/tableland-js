@@ -32,7 +32,7 @@ describe("commands/info", function () {
     await yargs(["info", "valid_9999_0"]).command(mod).parse();
 
     const value = consoleError.getCall(0).firstArg;
-    equal(value, "cannot use unsupported chain: 9999");
+    equal(value, "unsupported chain (see `chains` command for details)");
   });
 
   test("Info passes with local-tableland", async function () {

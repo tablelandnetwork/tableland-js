@@ -30,7 +30,7 @@ describe("commands/schema", function () {
     await yargs(["schema", "valid_9999_0"]).command(mod).parse();
 
     const value = consoleError.getCall(0).firstArg;
-    equal(value, "cannot use unsupported chain: 9999");
+    equal(value, "unsupported chain (see `chains` command for details)");
   });
 
   test("throws with missing table", async function () {

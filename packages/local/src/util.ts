@@ -3,13 +3,14 @@ import inspector from "node:inspector";
 import { isAbsolute, join, resolve } from "node:path";
 import { EventEmitter } from "node:events";
 import { Readable } from "node:stream";
-import { ChildProcess, SpawnSyncReturns } from "node:child_process";
+import { type ChildProcess, type SpawnSyncReturns } from "node:child_process";
 import { getDefaultProvider, Wallet } from "ethers";
 import { helpers, Database, Registry, Validator } from "@tableland/sdk";
 import { chalk } from "./chalk.js";
 import { type LocalTableland } from "./main.js";
 
-// NOTE: We are creating this file in the fixup.sh script so that we can support cjs and esm
+// NOTE: this file exists in a way that works for tests, but we replace it before
+//       building cjs and esm with versions specific to those js flavors
 import { getDirname } from "./get-dirname.js";
 const _dirname = getDirname();
 
@@ -22,7 +23,7 @@ overrideDefaults(getChainId("local-tableland"), {
   contractAddress: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
 });
 
-export type ConfigDescriptor = {
+export interface ConfigDescriptor {
   name: string;
   env:
     | "VALIDATOR_DIR"
@@ -46,7 +47,7 @@ export type ConfigDescriptor = {
     | "docker"
     | "registryPort";
   isPath: boolean;
-};
+}
 
 // build a config object from
 //       1. env vars
@@ -101,14 +102,14 @@ const configDescriptors: ConfigDescriptor[] = [
 /**
  * Configuration object for a Local Tableland instance.
  */
-export type Config = {
+export interface Config {
   /**
    * Instance of a Tableland Validator. If docker flag is set, this must be the
    * full repository.
    */
   validator?: string;
   /**
-   * IPath to the Tableland Validator directory.
+   * Path to the Tableland Validator directory.
    */
   validatorDir?: string;
   /**
@@ -116,15 +117,15 @@ export type Config = {
    */
   registry?: string;
   /**
-   * Instance of a Tableland Registry.
+   * Path to the Tableland Registry contract repository.
    */
   registryDir?: string;
   /**
-   * Path to the Tableland Registry contract repository.
+   * Use Docker to run the Validator.
    */
   docker?: boolean;
   /**
-   * Use Docker to run the Validator.
+   * Output verbose logs to stdout.
    */
   verbose?: boolean;
   /**
@@ -138,10 +139,10 @@ export type Config = {
    * instead of `http://127.0.0.1:8545`.
    */
   registryPort?: number;
-};
+}
 
-export const buildConfig = function (config: Config) {
-  const configObject: { [x: string]: string | number | boolean | undefined } =
+export const buildConfig = function (config: Config): Config {
+  const configObject: Record<string, string | number | boolean | undefined> =
     {};
   for (let i = 0; i < configDescriptors.length; i++) {
     const configDescriptor = configDescriptors[i];
@@ -152,12 +153,13 @@ export const buildConfig = function (config: Config) {
 
     let val: string | number | boolean | undefined;
     // priority is: command argument, then environment variable, then config file
+    // eslint-disable-next-line
     val = arg || env || file;
 
     if (
       configDescriptor.isPath &&
       typeof val === "string" &&
-      val &&
+      val !== "" &&
       !isAbsolute(val)
     ) {
       // if path is not absolute treat it as if it's relative
@@ -171,9 +173,10 @@ export const buildConfig = function (config: Config) {
   return configObject;
 };
 
-export const getConfigFile = async function () {
+export const getConfigFile = async function (): Promise<
+  Record<string, unknown>
+> {
   try {
-    // eslint-disable-next-line node/no-unsupported-features/es-syntax
     const { default: confFile } = await import(
       join(process.cwd(), "tableland.config.js")
     );
@@ -184,29 +187,30 @@ export const getConfigFile = async function () {
   }
 };
 
-const isExtraneousLog = function (log: string) {
+const isExtraneousLog = function (log: string): boolean {
   log = log.toLowerCase();
 
-  if (log.match(/eth_getLogs/i)) return true;
-  if (log.match(/Mined empty block/i)) return true;
-  if (log.match(/eth_getBlockByNumber/i)) return true;
-  if (log.match(/eth_getBalance/i)) return true;
-  if (log.match(/processing height/i)) return true;
-  if (log.match(/new last processed height/i)) return true;
-  if (log.match(/eth_unsubscribe/i)) return true;
-  if (log.match(/eth_subscribe/i)) return true;
-  if (log.match(/new blocks subscription is quiet, rebuilding/i)) return true;
-  if (log.match(/received new chain header/i)) return true;
-  if (log.match(/dropping new height/i)) return true;
+  if (log.match(/eth_getLogs/i) != null) return true;
+  if (log.match(/Mined empty block/i) != null) return true;
+  if (log.match(/eth_getBlockByNumber/i) != null) return true;
+  if (log.match(/eth_getBalance/i) != null) return true;
+  if (log.match(/processing height/i) != null) return true;
+  if (log.match(/new last processed height/i) != null) return true;
+  if (log.match(/eth_unsubscribe/i) != null) return true;
+  if (log.match(/eth_subscribe/i) != null) return true;
+  if (log.match(/new blocks subscription is quiet, rebuilding/i) != null)
+    return true;
+  if (log.match(/received new chain header/i) != null) return true;
+  if (log.match(/dropping new height/i) != null) return true;
 
   return false;
 };
 
-export const isWindows = function () {
+export const isWindows = function (): boolean {
   return process.platform === "win32";
 };
 
-export const inDebugMode = function () {
+export const inDebugMode = function (): boolean {
   // This seems to be the only reliable way to determine if the process
   // is being debugged either at startup, or during runtime (e.g. vscode)
   return inspector.url() !== undefined;
@@ -224,12 +228,12 @@ export const isValidPort = function (port: number): boolean {
 export const logSync = function (
   prcss: SpawnSyncReturns<Buffer>,
   shouldThrow = true
-) {
+): void {
   // make sure this blows up if Docker isn't running
-  const psError = prcss.stderr && prcss.stderr.toString();
-  if (shouldThrow && psError) {
+  const psError = prcss.stderr?.toString();
+  if (shouldThrow && psError != null && psError.trim() !== "") {
     console.log(chalk.red(psError));
-    throw psError;
+    throw new Error(psError);
   }
 };
 
@@ -245,12 +249,16 @@ export interface PipeOptions {
   readyEvent?: string;
 }
 
-export const pipeNamedSubprocess = async function (
+export const pipeNamedSubprocess = function (
   prefix: string,
   prcss: ChildProcess,
   options?: PipeOptions
-) {
-  let ready = !(options && options.message);
+): void {
+  let ready = !(
+    options != null &&
+    typeof options.message === "string" &&
+    options.message !== ""
+  );
   const fails = options?.fails;
   const verbose = options?.verbose;
   const silent = options?.silent;
@@ -262,36 +270,41 @@ export const pipeNamedSubprocess = async function (
   prcss.stdout.on("data", function (data: string) {
     // data is going to be a buffer at runtime
     data = data.toString();
-    if (!data) return;
+    if (data === "") return;
 
     let lines = data.split("\n");
-    if (!verbose) {
+    if (verbose == null || !verbose) {
       lines = lines.filter((line) => !isExtraneousLog(line));
       // if not verbose we are going to eliminate multiple empty
       // lines and any messages that don't have at least one character
-      if (!lines.filter((line) => line.trim()).length) {
+      if (lines.filter((line) => line.trim()).length === 0) {
         lines = [];
       } else {
-        lines = lines.reduce((acc, cur) => {
-          if (acc.length && !acc[acc.length - 1] && !cur.trim()) return acc;
+        lines = lines.reduce<string[]>((acc, cur) => {
+          if (
+            acc.length > 0 &&
+            (acc[acc.length - 1] == null || acc[acc.length - 1] === "") &&
+            cur.trim() === ""
+          ) {
+            return acc;
+          }
 
-          // @ts-ignore
           return acc.concat([cur.trim()]);
         }, []);
       }
     }
 
-    if (!silent) {
+    if (silent == null || !silent) {
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
-        if (!verbose && isExtraneousLog(line)) continue;
+        if ((verbose == null || !verbose) && isExtraneousLog(line)) continue;
         console.log(`[${prefix}] ${line}`);
       }
     }
 
     if (!ready) {
       if (
-        options &&
+        options != null &&
         typeof options.message === "string" &&
         data.includes(options.message) &&
         typeof options.readyEvent === "string" &&
@@ -304,10 +317,10 @@ export const pipeNamedSubprocess = async function (
   });
 
   prcss.stderr.on("data", function (data: string) {
-    if (!(data && data.toString)) return;
+    if (data?.toString == null) return;
     // data is going to be a buffer at runtime
     data = data.toString();
-    if (!data.trim()) return;
+    if (data.trim() === "") return;
 
     const lines = data
       .split("\n")
@@ -317,23 +330,23 @@ export const pipeNamedSubprocess = async function (
       const line = lines[i];
       console.error(`[${prefix}] ${line}`);
     }
-    if (fails && data.includes(fails.message)) {
+    if (fails != null && data.includes(fails.message)) {
       throw new Error(fails.message);
     }
   });
 };
 
 // enable async/await for underlying event pattern
-export const waitForReady = function (
+export const waitForReady = async function (
   readyEvent: string,
   emitter: EventEmitter
 ): Promise<void> {
-  return new Promise(function (resolve) {
+  return await new Promise(function (resolve) {
     emitter.once(readyEvent, () => resolve());
   });
 };
 
-export const defaultRegistryDir = async function () {
+export const defaultRegistryDir = function (): string {
   return resolve(_dirname, "..", "..", "registry");
 };
 
@@ -342,26 +355,26 @@ export const defaultRegistryDir = async function () {
  * @param port The port number.
  * @returns true if the port is in use, false otherwise.
  */
-export function checkPortInUse(port: number): Promise<boolean> {
-  return new Promise((resolve, reject) => {
+export async function checkPortInUse(port: number): Promise<boolean> {
+  return await new Promise((resolve, reject) => {
     const timeout = 200;
     const host = "127.0.0.1";
     const socket = new Socket();
 
     // Socket connection established, so port is in use
-    const onConnect = () => {
+    const onConnect = (): void => {
       cleanup();
       resolve(true);
     };
 
     // If no response on timeout, assume port is in use
-    const onTimeout = () => {
+    const onTimeout = (): void => {
       cleanup();
       resolve(true);
     };
 
     // If connection is refused, the port is open
-    const onError = (err: Error & { code: string }) => {
+    const onError = (err: Error & { code: string }): void => {
       cleanup();
       if (err.code === "ECONNREFUSED") {
         resolve(false);
@@ -376,7 +389,7 @@ export function checkPortInUse(port: number): Promise<boolean> {
     socket.once("error", onError);
 
     // Clean up event listeners
-    const cleanup = () => {
+    const cleanup = (): void => {
       socket.off("connect", onConnect);
       socket.off("timeout", onTimeout);
       socket.off("error", onError);
@@ -470,7 +483,7 @@ export const getRegistry = function (account: Wallet): Registry {
  */
 export const getValidator = function (baseUrl?: string): Validator {
   return new Validator({
-    baseUrl: baseUrl || getBaseUrl("local-tableland"),
+    baseUrl: baseUrl ?? getBaseUrl("local-tableland"),
   });
 };
 
@@ -485,7 +498,7 @@ export const getAccounts = function (instance?: LocalTableland): Wallet[] {
   // node resolves localhost to IPv4 or IPv6 depending on env
   return hardhatAccounts.map((account) => {
     const wallet = new Wallet(account);
-    const port = instance ? getRegistryPort(instance) : 8545;
+    const port = instance != null ? getRegistryPort(instance) : 8545;
     return wallet.connect(getDefaultProvider(`http://127.0.0.1:${port}`));
   });
 };
@@ -497,5 +510,5 @@ export const getAccounts = function (instance?: LocalTableland): Wallet[] {
  * @returns The port number being used by the Registry.
  */
 export const getRegistryPort = (instance?: LocalTableland): number => {
-  return instance ? instance.registryPort : 8545;
+  return instance != null ? instance.registryPort : 8545;
 };

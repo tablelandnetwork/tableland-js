@@ -1,8 +1,9 @@
-import ethers, { Signer } from "ethers";
+import { type Signer } from "ethers";
+import type ethers from "ethers";
 import { JsonRpcProvider } from "@ethersproject/providers";
-import { ENS } from "@ensdomains/ensjs";
-import ensLib from "./EnsCommand.js";
+import { type ENS } from "@ensdomains/ensjs";
 import { logger } from "../utils.js";
+import ensLib from "./EnsCommand.js";
 
 interface EnsResolverOptions {
   ensProviderUrl: string;
@@ -22,7 +23,7 @@ export default class EnsResolver {
   constructor(options: EnsResolverOptions) {
     const { signer, ensProviderUrl } = options;
     /* c8 ignore next 3 */
-    if (!ensProviderUrl) {
+    if (ensProviderUrl == null) {
       throw new Error("No ensProviderUrl given");
     }
     this.signer = signer;
@@ -40,16 +41,16 @@ export default class EnsResolver {
     const domain = domainArray.join(".");
     const address = await this.provider.getResolver(domain);
 
-    return (await address?.getText(textRecord)) || tablename;
+    return (await address?.getText(textRecord)) ?? tablename;
   }
 
-  async addTableRecords(domain: string, maps: TableMap[]) {
+  async addTableRecords(domain: string, maps: TableMap[]): Promise<boolean> {
     try {
       await this.ENS.setRecords(domain, {
         records: {
           texts: maps,
         },
-        // @ts-ignore
+        // @ts-expect-error TODO: this needs a description for linting
         signer: this.signer,
       });
       return true;

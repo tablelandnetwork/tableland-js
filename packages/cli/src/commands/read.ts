@@ -1,8 +1,8 @@
-import type { Arguments, CommandBuilder } from "yargs";
-import yargs from "yargs";
 import { promises } from "fs";
 import { createInterface } from "readline";
-import { GlobalOptions } from "../cli.js";
+import type { Arguments, CommandBuilder } from "yargs";
+import type yargs from "yargs";
+import { type GlobalOptions } from "../cli.js";
 import { setupCommand } from "../lib/commandSetup.js";
 import { logger } from "../utils.js";
 
@@ -19,14 +19,16 @@ export const command = "read [statement]";
 export const desc = "Run a read-only query against a remote table";
 export const aliases = ["r", "query", "q"];
 
-function transformTableData(obj: any) {
+function transformTableData(obj: any): { columns: unknown; rows: unknown } {
   if (obj.length < 1) return { columns: [], rows: [] };
   const columns = Object.keys(obj[0]).map((key) => ({ name: key }));
   const rows = obj.map((row: any) => Object.values(row));
   return { columns, rows };
 }
 
-export const builder: CommandBuilder<{}, Options> = (yargs) =>
+export const builder: CommandBuilder<Record<string, unknown>, Options> = (
+  yargs
+) =>
   yargs
     .positional("statement", {
       type: "string",
@@ -63,13 +65,13 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
   try {
     if (file != null) {
       statement = await promises.readFile(file, { encoding: "utf-8" });
-    } else if (statement == null) {
+    } else if (statement == null || statement === "") {
       const rl = createInterface({ input: process.stdin });
       const it = rl[Symbol.asyncIterator]();
       const { value } = await it.next();
       statement = value;
     }
-    if (!statement) {
+    if (statement == null || statement === "") {
       logger.error(
         "missing input value (`statement`, `file`, or piped input from stdin required)"
       );
@@ -79,13 +81,15 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     const setup = await setupCommand(argv);
     const { database: db, ens } = setup;
 
-    if (argv.enableEnsExperiment && ens) {
+    if (argv.enableEnsExperiment != null && ens != null) {
       statement = await ens.resolve(statement);
     }
 
     let res;
+    // TODO: linting really complains about this kind of conditional. need to refactor.
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/prefer-nullish-coalescing
     if ((format === "table" || format === "objects") && (unwrap || extract)) {
-      if (!argv.chain) {
+      if (argv.chain == null) {
         throw new Error("Chain ID is required to use unwrap or extract");
       }
       const { validator } = setup;
@@ -97,7 +101,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
           unwrap: argv.unwrap,
         });
       } catch (err: any) {
-        if (err.message.includes("in JSON at position")) {
+        if (err.message.includes("in JSON at position") as boolean) {
           logger.error("Can't unwrap multiple rows. Use --unwrap=false");
           /* c8 ignore next 3 */
         } else {
@@ -127,6 +131,10 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
 
     /* c8 ignore next 3 */
   } catch (err: any) {
-    logger.error(err?.cause?.message || err?.message);
+    logger.error(
+      typeof err?.cause?.message === "string"
+        ? err?.cause?.message
+        : err?.message
+    );
   }
 };

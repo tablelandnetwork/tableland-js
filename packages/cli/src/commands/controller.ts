@@ -1,8 +1,13 @@
 import type yargs from "yargs";
 import type { Arguments, CommandBuilder } from "yargs";
 import { Registry } from "@tableland/sdk";
-import { getWalletWithProvider, getLink, logger } from "../utils.js";
-import { GlobalOptions } from "../cli.js";
+import {
+  getWalletWithProvider,
+  getLink,
+  logger,
+  getChainName,
+} from "../utils.js";
+import { type GlobalOptions } from "../cli.js";
 
 export interface Options extends GlobalOptions {
   name: string;
@@ -13,7 +18,9 @@ export const command = "controller <sub>";
 export const desc =
   "Get, set, and lock the controller contract for a given table";
 
-export const builder: CommandBuilder<{}, Options> = (yargs) =>
+export const builder: CommandBuilder<Record<string, unknown>, Options> = (
+  yargs
+) =>
   yargs
     .command(
       "get <name>",
@@ -24,7 +31,8 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
           description: "The target table name",
         }) as yargs.Argv<Options>,
       async (argv) => {
-        const { name, chain, privateKey, providerUrl } = argv;
+        const { name, privateKey, providerUrl } = argv;
+        const chain = getChainName(argv.chain);
 
         try {
           const signer = await getWalletWithProvider({
@@ -57,7 +65,8 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
             description: "The target table name",
           }) as yargs.Argv<Options>,
       async (argv) => {
-        const { name, controller, chain, privateKey, providerUrl } = argv;
+        const { name, controller, privateKey, providerUrl } = argv;
+        const chain = getChainName(argv.chain);
 
         try {
           const signer = await getWalletWithProvider({
@@ -87,7 +96,8 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
           description: "The target table name",
         }) as yargs.Argv<Options>,
       async (argv) => {
-        const { name, chain, privateKey, providerUrl } = argv;
+        const { name, privateKey, providerUrl } = argv;
+        const chain = getChainName(argv.chain);
 
         try {
           const signer = await getWalletWithProvider({

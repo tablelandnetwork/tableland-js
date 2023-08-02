@@ -112,7 +112,7 @@ describe("commands/controller", function () {
     const { hash, link } = JSON.parse(res);
     equal(typeof hash, "string");
     equal(hash.startsWith("0x"), true);
-    equal(!link, true);
+    equal(link, "");
   });
 
   test("passes when getting a controller", async function () {

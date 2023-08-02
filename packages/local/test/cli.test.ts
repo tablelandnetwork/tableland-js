@@ -1,31 +1,40 @@
+import { join } from "path";
 import chai from "chai";
 import shell from "shelljs";
-import { join } from "path";
 
 const expect = chai.expect;
 
 describe("Project builder", function () {
   // Tests need some extra time running `up.js` (async CLI inputs & spins up LT)
   this.timeout(20000); // Starting up LT takes 3000-7000ms; shutting down takes <10-10000ms
+
+  before(function () {
+    // Create tmp dir to run the project builder in
+    shell.rm("-rf", "tmp/*");
+    shell.mkdir("-p", "tmp");
+  });
+
+  after(function () {
+    shell.rm("-rf", "tmp/*");
+  });
+
   beforeEach(function () {
     // Create tmp dir to run the project builder in
-    shell.rm("-rf", "tmp");
-    shell.mkdir("-p", "tmp");
+    shell.rm("-rf", "tmp/*");
     shell.cd("tmp");
   });
 
   afterEach(function () {
     // Cleanup tmp dir
     shell.cd("..");
-    shell.rm("-rf", "tmp");
   });
 
   it("should create a config file", async function () {
-    /* eslint-disable node/no-unsupported-features/es-syntax */
     // Pass input from `choose-yes.txt` to `up.js` to answer `y` to prompt
     shell
       .cat(join("..", "test", "choose-yes.txt"))
       .exec(join("..", "dist", "esm", "up.js --init"));
+
     // Import the created config file & example config file
     const createdFile = await import(join("..", "tmp", "tableland.config.js"));
     const exampleFile = await import(
@@ -66,8 +75,8 @@ describe("Project builder", function () {
     expect(cliOut.toString()).to.match(/run this again anytime/);
 
     // No file should have been created
-    expect(import(join("..", "tmp", "tableland.config.js"))).to.be.rejectedWith(
-      "Cannot find module"
-    );
+    await expect(
+      import(join("..", "tmp", "tableland.config.js"))
+    ).to.be.rejectedWith("Cannot find module");
   });
 });

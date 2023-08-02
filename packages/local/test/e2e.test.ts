@@ -1,3 +1,6 @@
+import { type Server } from "node:net";
+import { join } from "node:path";
+import { readFileSync } from "node:fs";
 import chai from "chai";
 import {
   checkPortInUse,
@@ -6,41 +9,42 @@ import {
   getRegistry,
   getRegistryPort,
   getValidator,
-} from "../dist/esm/util.js";
-import { LocalTableland } from "../dist/esm/main.js";
+} from "../src/util.js";
+import { LocalTableland } from "../src/main.js";
 import {
   logMetrics,
   measureExecutionTime,
   startMockServer,
   stopMockServer,
-} from "./util.mjs";
-import { join } from "node:path";
-import { readFileSync } from "node:fs";
+} from "./util.js";
 
 const expect = chai.expect;
 const localTablelandChainId = 31337;
-const executionTimes = {
+const executionTimes: {
+  start: number[];
+  shutdown: number[];
+} = {
   start: [],
   shutdown: [],
 };
 
 describe("Validator and Chain startup and shutdown", function () {
-  let server;
-  let lt;
+  let server: Server | undefined;
+  let lt: LocalTableland | undefined;
   const defaultPort = 8545; // Used for hardhat
 
   this.timeout(30000); // Starting up LT takes 3000-7000ms; shutting down takes <10-10000ms
   afterEach(async function () {
     // Ensure all processes are cleaned up after each test
-    if (server) {
+    if (server != null) {
       await stopMockServer(server);
       server = undefined;
     }
     // Ensure both validator and registry haven't already been shut down & cleaned up
     // before attempting to shut them down
-    if (lt.validator !== undefined && lt.registry !== undefined) {
-      const shutdownExecutionTime = await measureExecutionTime(() =>
-        lt.shutdown()
+    if (lt?.validator !== undefined && lt?.registry !== undefined) {
+      const shutdownExecutionTime = await measureExecutionTime(
+        async () => await lt?.shutdown()
       );
       executionTimes.shutdown.push(shutdownExecutionTime);
       lt = undefined;
@@ -49,13 +53,15 @@ describe("Validator and Chain startup and shutdown", function () {
 
   it("successfully starts and shuts down", async function () {
     lt = new LocalTableland({ silent: true });
-    const startupExecutionTime = await measureExecutionTime(() => lt.start());
+    const startupExecutionTime = await measureExecutionTime(
+      async () => await lt?.start()
+    );
     executionTimes.start.push(startupExecutionTime);
     expect(lt.validator).to.not.equal(undefined);
     expect(lt.registry).to.not.equal(undefined);
 
-    const shutdownExecutionTime = await measureExecutionTime(() =>
-      lt.shutdown()
+    const shutdownExecutionTime = await measureExecutionTime(
+      async () => await lt?.shutdown()
     );
     executionTimes.shutdown.push(shutdownExecutionTime);
     expect(lt.validator).to.be.equal(undefined);
@@ -70,20 +76,19 @@ describe("Validator and Chain startup and shutdown", function () {
     const portInUse = await checkPortInUse(defaultPort);
     expect(portInUse).to.equal(true);
 
-    // Start Local Tableland with a promise that will resolve when the server is closed
-    let startLt;
-    const startFn = async () => {
-      startLt = lt.start();
-      return startLt;
-    };
-    const measureStartLt = measureExecutionTime(startFn);
     // Shut down the server after 300ms, allowing Local Tableland to use port 8545
     // This will execute 2 of 5 retries on port 8545 before opening the port
-    setTimeout(async function () {
-      await stopMockServer(server);
+    setTimeout(() => {
+      // TODO: eslint typescript is complaining about a promise as an argument to setTimeout,
+      //       but this is really ugly. Need to consider changing linting rules
+      (async function () {
+        await stopMockServer(server as Server);
+      })().catch((err) => console.log(err));
     }, 300);
 
-    const startupExecutionTime = await measureStartLt;
+    const startupExecutionTime = await measureExecutionTime(async () => {
+      return await lt?.start();
+    });
     executionTimes.start.push(startupExecutionTime);
 
     // Check that the network is running and can be queried
@@ -91,7 +96,7 @@ describe("Validator and Chain startup and shutdown", function () {
     const signer = accounts[1];
     const db = getDatabase(signer);
     // Make sure LT materialized the healthbot table
-    await new Promise((resolve) => setTimeout(() => resolve(), 2000));
+    await new Promise((resolve) => setTimeout(() => resolve(undefined), 2000));
     const { results } = await db
       .prepare(`SELECT * FROM healthbot_31337_1;`)
       .all();
@@ -127,7 +132,9 @@ describe("Validator and Chain startup and shutdown", function () {
       expect(portInUse).to.equal(false);
 
       // Local Tableland should start successfully on custom Registry port
-      const startupExecutionTime = await measureExecutionTime(() => lt.start());
+      const startupExecutionTime = await measureExecutionTime(
+        async () => await lt?.start()
+      );
       executionTimes.start.push(startupExecutionTime);
       const ltPort = getRegistryPort(lt);
       expect(ltPort).to.equal(customPort);
@@ -155,13 +162,18 @@ describe("Validator and Chain startup and shutdown", function () {
       expect(portInUse).to.equal(false);
 
       // Local Tableland should start successfully on custom Registry port
-      const startupExecutionTime = await measureExecutionTime(() => lt.start());
+      const startupExecutionTime = await measureExecutionTime(
+        async () => await lt?.start()
+      );
       executionTimes.start.push(startupExecutionTime);
       const ltPort = getRegistryPort(lt);
       expect(ltPort).to.equal(customPort);
 
       // Config file should have been updated to use custom port 9999
-      const configFilePath = join(lt.validator.validatorDir, "config.json");
+      const configFilePath = join(
+        lt.validator?.validatorDir ?? "",
+        "config.json"
+      );
       let configFile = readFileSync(configFilePath);
       let validatorConfig = JSON.parse(configFile.toString());
       expect(validatorConfig.Chains[0].Registry.EthEndpoint).to.equal(
@@ -169,8 +181,8 @@ describe("Validator and Chain startup and shutdown", function () {
       );
 
       // Shut down Local Tableland and ensure validator config file is reset
-      const shutdownExecutionTime = await measureExecutionTime(() =>
-        lt.shutdown()
+      const shutdownExecutionTime = await measureExecutionTime(
+        async () => await lt?.shutdown()
       );
       executionTimes.shutdown.push(shutdownExecutionTime);
       configFile = readFileSync(configFilePath);
@@ -210,14 +222,16 @@ describe("Validator, Chain, and SDK work end to end", function () {
   // These tests take a bit longer than normal since we are running them against an actual network
   this.timeout(30000);
   before(async function () {
-    const startupExecutionTime = await measureExecutionTime(() => lt.start());
+    const startupExecutionTime = await measureExecutionTime(
+      async () => await lt.start()
+    );
     executionTimes.start.push(startupExecutionTime);
-    await new Promise((resolve) => setTimeout(() => resolve(), 2000));
+    await new Promise((resolve) => setTimeout(() => resolve(undefined), 2000));
   });
 
   after(async function () {
-    const shutdownExecutionTime = await measureExecutionTime(() =>
-      lt.shutdown()
+    const shutdownExecutionTime = await measureExecutionTime(
+      async () => await lt.shutdown()
     );
     executionTimes.shutdown.push(shutdownExecutionTime);
     // Calculate & log the min, max, median, and average start and shutdown times
@@ -235,7 +249,9 @@ describe("Validator, Chain, and SDK work end to end", function () {
       `CREATE TABLE test_create_read (keyy TEXT, val TEXT);`
     );
 
-    const data = await db.prepare(`SELECT * FROM ${res.meta.txn.name};`).all();
+    const data = await db
+      .prepare(`SELECT * FROM ${res.meta.txn?.name as string};`)
+      .all();
     expect(data.results).to.eql([]);
   });
 
@@ -298,6 +314,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
   });
 
   it("create a table can have a row deleted", async function () {
+    this.timeout(30000);
     const signer = accounts[1];
     const db = getDatabase(signer);
 
@@ -312,7 +329,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
       )
       .all();
 
-    expect(typeof write1.meta.txn.transactionHash).to.eql("string");
+    expect(typeof write1.meta.txn?.transactionHash).to.eql("string");
 
     const write2 = await db
       .prepare(
@@ -320,7 +337,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
       )
       .all();
 
-    expect(typeof write2.meta.txn.transactionHash).to.eql("string");
+    expect(typeof write2.meta.txn?.transactionHash).to.eql("string");
 
     const data = await db.prepare(`SELECT * FROM ${queryableName};`).all();
     expect(data.results.length).to.eql(2);
@@ -329,11 +346,11 @@ describe("Validator, Chain, and SDK work end to end", function () {
       .prepare(`DELETE FROM ${queryableName} WHERE val = 'pine';`)
       .all();
 
-    expect(typeof delete1.meta.txn.transactionHash).to.eql("string");
+    expect(typeof delete1.meta.txn?.transactionHash).to.eql("string");
 
     const data2 = await db.prepare(`SELECT * FROM ${queryableName};`).all();
-    await expect(data2.results.length).to.eql(1);
-  }, 30000);
+    expect(data2.results.length).to.eql(1);
+  });
 
   // TODO: make this a test for some kind of results formatting function
   //       assuming that is still appropriate
@@ -352,11 +369,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
       )
       .all();
 
-    const data = await db
-      .prepare(`SELECT * FROM ${queryableName};`, {
-        output: "table",
-      })
-      .raw();
+    const data = await db.prepare(`SELECT * FROM ${queryableName};`).raw();
 
     expect(data).to.eql([["tree", "aspen"]]);
   });
@@ -431,7 +444,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     const table = tablesMeta.find((table) => table.tableId === tableId);
 
     expect(typeof table).to.equal("object");
-    expect(table.chainId).to.eql(localTablelandChainId);
+    expect(table?.chainId).to.eql(localTablelandChainId);
   });
 
   it("write statement validates table name prefix", async function () {

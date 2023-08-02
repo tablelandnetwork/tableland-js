@@ -3,7 +3,7 @@
 import yargs from "yargs/yargs";
 import { hideBin } from "yargs/helpers";
 import { LocalTableland } from "./main.js";
-import { Config } from "./util.js";
+import { type Config } from "./util.js";
 import { projectBuilder } from "./project-builder.js";
 
 const argv = yargs(hideBin(process.argv)).options({
@@ -43,12 +43,12 @@ const argv = yargs(hideBin(process.argv)).options({
   },
 }).argv;
 
-const go = async function () {
+const go = async function (): Promise<void> {
   // casting argv to `any` for the reasons explained in the yargs readme.
   // https://github.com/yargs/yargs/blob/main/docs/typescript.md#typescript-usage-examples
   // TODO: try `parseSync`
   const tsArgv = argv as any;
-  if (tsArgv.init) {
+  if (tsArgv.init as boolean) {
     // If init arg is given we want to open a terminal prompt that will
     // help the user setup their project directory then exit when finished
     await projectBuilder();
@@ -57,9 +57,13 @@ const go = async function () {
 
   const opts: Config = {};
 
-  if (tsArgv.validator) opts.validator = tsArgv.validator;
-  if (tsArgv.registry) opts.registry = tsArgv.registry;
-  if (tsArgv.docker) opts.docker = tsArgv.docker;
+  if (tsArgv.validator != null && tsArgv.validator !== "") {
+    opts.validator = tsArgv.validator;
+  }
+  if (tsArgv.registry != null && tsArgv.registry !== "") {
+    opts.registry = tsArgv.registry;
+  }
+  if (tsArgv.docker as boolean) opts.docker = tsArgv.docker;
   if (typeof tsArgv.verbose === "boolean") opts.verbose = tsArgv.verbose;
   if (typeof tsArgv.silent === "boolean") opts.silent = tsArgv.silent;
   if (typeof tsArgv.registryPort === "number")
@@ -67,6 +71,9 @@ const go = async function () {
 
   const tableland = new LocalTableland(opts);
 
+  // typescript eslint is complaining here becasue the Promise returned from this handler
+  // isn't be handled this seems ok to me since the entire process is being killed anyway
+  // eslint-disable-next-line
   process.on("SIGINT", async () => {
     console.log("got SIGINT, killing...");
     await tableland.shutdown();
@@ -77,8 +84,8 @@ const go = async function () {
 
 // start a tableland network, then catch any uncaught errors and exit loudly
 go().catch((err) => {
-  if (err.message.includes(`port already in use`)) {
-    console.error(err.message);
+  if (err.message.includes(`port already in use`) as boolean) {
+    console.error(err);
   } else {
     console.error("unrecoverable error");
     console.error(err);

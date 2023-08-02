@@ -3,9 +3,9 @@ import { describe, test, afterEach, before } from "mocha";
 import { spy, restore } from "sinon";
 import yargs from "yargs/yargs";
 import { getAccounts, getDatabase } from "@tableland/local";
+import { helpers } from "@tableland/sdk";
 import * as mod from "../src/commands/transfer.js";
 import { wait, logger } from "../src/utils.js";
-import { helpers } from "@tableland/sdk";
 
 describe("commands/transfer", function () {
   this.timeout("30s");
