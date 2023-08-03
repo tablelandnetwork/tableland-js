@@ -68,7 +68,7 @@ async function setHandler(
 
       logger.log(JSON.stringify(response));
     }
-    /* c8 ignore next 3 */
+    /* c8 ignore next 7 */
   } catch (err: any) {
     logger.error(
       typeof err?.cause?.message === "string"

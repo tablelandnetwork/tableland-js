@@ -139,7 +139,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     const link = getLink(chain, res.meta.txn?.transactionHash as string);
     const out = { ...res, link, ensNameRegistered: false };
 
-    /* c8 ignore next 6 */
+    /* c8 ignore next 11 */
     if (
       check == null &&
       argv.ns != null &&
@@ -153,7 +153,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     }
 
     logger.log(JSON.stringify(out));
-    /* c8 ignore next 3 */
+    /* c8 ignore next 7 */
   } catch (err: any) {
     logger.error(
       typeof err?.cause?.message === "string"

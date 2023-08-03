@@ -48,7 +48,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       chainId: parseInt(chainId),
     });
     logger.log(JSON.stringify(res));
-    /* c8 ignore next 3 */
+    /* c8 ignore next 7 */
   } catch (err: any) {
     logger.error(
       typeof err?.cause?.message === "string"

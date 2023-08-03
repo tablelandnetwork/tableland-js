@@ -1,6 +1,6 @@
 {
   "name": "@tableland/local",
-  "version": "2.0.0",
+  "version": "0.0.0",
   "description": "Tooling to start a sandboxed Tableland network.",
   "repository": "https://github.com/tablelandnetwork/local-tableland",
   "license": "MIT",
@@ -15,8 +15,12 @@
   "engines": {
     "node": ">=14.0.0"
   },
+  "type": "module",
   "main": "./dist/cjs/main.js",
   "module": "./dist/esm/main.js",
+  "bin": {
+    "local-tableland": "dist/esm/up.js"
+  },
   "types": "./dist/esm/main.d.ts",
   "exports": {
     ".": {
@@ -40,18 +44,19 @@
   ],
   "scripts": {
     "postinstall": "cd registry && npm install",
-    "test": "npm run build && node --experimental-fetch --experimental-vm-modules ./node_modules/mocha/bin/mocha --bail",
-    "test:ci": "node --experimental-fetch --experimental-vm-modules ../../node_modules/mocha/bin/mocha --bail",
+    "test": "mocha",
+    "lint": "eslint '**/*.{js,ts}'",
+    "lint:fix": "npm run lint -- --fix",
     "prepublishOnly": "npm run build",
+    "prettier": "prettier '**/*.{ts,json,md}' --check",
+    "prettier:fix": "npm run prettier -- --write",
+    "format": "npm run prettier:fix && npm run lint:fix",
     "clean": "rm -rf dist/*",
-    "build:esm": "cp src/get-dirname-esm.ts src/get-dirname.ts && tsc -p tsconfig.json",
-    "build:cjs": "cp src/get-dirname-cjs.ts src/get-dirname.ts && tsc -p tsconfig.cjs.json",
+    "build:esm": "mv src/get-dirname.ts og-get-dirname.ts && cp src/get-dirname-esm.ts src/get-dirname.ts && tsc -p tsconfig.json && mv og-get-dirname.ts src/get-dirname.ts",
+    "build:cjs": "mv src/get-dirname.ts og-get-dirname.ts && cp src/get-dirname-cjs.ts src/get-dirname.ts && tsc -p tsconfig.cjs.json && mv og-get-dirname.ts src/get-dirname.ts",
     "build": "npm run clean && npm run build:esm && npm run build:cjs && ./fixup.sh",
     "up": "node dist/esm/up.js",
     "up:dev": "node dist/esm/up.js --validator ../go-tableland --registry ../evm-tableland"
-  },
-  "bin": {
-    "local-tableland": "dist/esm/up.js"
   },
   "dependencies": {
     "@tableland/sdk": "^4.4.1",
@@ -61,17 +66,5 @@
     "ethers": "^5.7.2",
     "shelljs": "^0.8.5",
     "yargs": "^17.5.1"
-  },
-  "devDependencies": {
-    "@types/cross-spawn": "^6.0.2",
-    "@types/node": "^20.1.1",
-    "@types/shelljs": "^0.8.11",
-    "@types/yargs": "^17.0.12",
-    "chai": "^4.3.6",
-    "chai-as-promised": "^7.1.1",
-    "hardhat": "^2.12.0",
-    "js-yaml": "^4.1.0",
-    "mocha": "^10.1.0",
-    "prettier": "^2.7.1"
   }
 }

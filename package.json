@@ -10,9 +10,12 @@
     "prettier": "prettier '**/*.{ts,json,sol,md}' --check",
     "prettier:fix": "npm run prettier -- --write",
     "format": "npm run prettier:fix && npm run lint:fix",
-    "test": "npx lerna run --stream test:ci"
+    "test": "npx lerna run test:ci --stream",
+    "build": "npx lerna run build"
   },
   "devDependencies": {
+    "@types/chai": "^4.3.5",
+    "@types/chai-as-promised": "^7.1.5",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
     "eslint": "^8.32.0",

@@ -210,6 +210,35 @@ describe("commands/create", function () {
     equal(transactionHash.startsWith("0x"), true);
   });
 
+  test("Create works with chain as number", async function () {
+    const [account] = accounts;
+    const privateKey = account.privateKey.slice(2);
+    const consoleLog = spy(logger, "log");
+    await yargs([
+      "create",
+      "id int primary key, name text",
+      "--chain",
+      "31337",
+      "--privateKey",
+      privateKey,
+      "--prefix",
+      "chainid_table",
+    ])
+      .command(mod)
+      .parse();
+
+    const res = consoleLog.getCall(0).firstArg;
+    const value = JSON.parse(res);
+    const { prefix, name, chainId, tableId, transactionHash } = value.meta.txn;
+
+    equal(prefix, "chainid_table");
+    equal(chainId, 31337);
+    equal(name.startsWith(prefix), true);
+    equal(name.endsWith(tableId), true);
+    equal(typeof transactionHash, "string");
+    equal(transactionHash.startsWith("0x"), true);
+  });
+
   test("passes with full create statement (override prefix)", async function () {
     const [account] = accounts;
     const privateKey = account.privateKey.slice(2);

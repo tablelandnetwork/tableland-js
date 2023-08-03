@@ -119,6 +119,9 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       cur: { statement: string; tableId: string }
     ) {
       // take the re-normalized statements and concatenate the ones that share a tableId
+      // NOTE: need to ignore the coverage here since the type checks are only to keep typescript happy.
+      //       There's no good way to test cases where these types aren't strings.
+      /* c8 ignore next 4 */
       const accStatement: string =
         typeof acc[cur.tableId] === "string" ? acc[cur.tableId] : "";
       const curStatement: string =
