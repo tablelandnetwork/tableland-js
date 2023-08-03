@@ -28,7 +28,9 @@
     "dist/**/*.js"
   ],
   "nx": {
-    "implicitDependencies": ["!@tableland/local"]
+    "implicitDependencies": [
+      "!@tableland/local"
+    ]
   },
   "scripts": {
     "prepublishOnly": "npm run build",
