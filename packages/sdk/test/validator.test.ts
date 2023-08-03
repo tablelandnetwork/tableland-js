@@ -183,10 +183,7 @@ describe("validator", function () {
         "https://render.tableland.xyz/31337/1.html"
       );
       // TODO: This is correct, but shouldn't it be updated to the new API endpoints?
-      strictEqual(
-        response.externalUrl,
-        `${TEST_VALIDATOR_URL}/tables/31337/1`
-      );
+      strictEqual(response.externalUrl, `${TEST_VALIDATOR_URL}/tables/31337/1`);
       strictEqual(
         response.image,
         "https://bafkreifhuhrjhzbj4onqgbrmhpysk2mop2jimvdvfut6taiyzt2yqzt43a.ipfs.dweb.link"

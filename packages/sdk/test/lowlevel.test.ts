@@ -35,13 +35,13 @@ describe("lowlevel", function () {
   const provider = getDefaultProvider(TEST_PROVIDER_URL);
   const signer = wallet.connect(provider);
   const baseUrl = getBaseUrl("localhost");
-console.log();
-console.log();
-console.log();
-console.log("baseUrl is:", baseUrl);
-console.log();
-console.log();
-console.log();
+  console.log();
+  console.log();
+  console.log();
+  console.log("baseUrl is:", baseUrl);
+  console.log();
+  console.log();
+  console.log();
   describe("exec()", function () {
     let tableName: string;
     this.beforeAll(async function () {

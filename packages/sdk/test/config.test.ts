@@ -25,9 +25,7 @@ describe("config", function () {
 
     test("where baseUrl is obtained via the chainId", async function () {
       const [, wallet] = getAccounts();
-      const signer = wallet.connect(
-        getDefaultProvider(TEST_PROVIDER_URL)
-      );
+      const signer = wallet.connect(getDefaultProvider(TEST_PROVIDER_URL));
       const conn: SignerConfig = { signer };
       const extracted = await extractBaseUrl(conn);
       strictEqual(extracted, TEST_VALIDATOR_URL);

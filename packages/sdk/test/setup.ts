@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import { after, before } from "mocha";
 import { LocalTableland } from "@tableland/local";
-import { overrideDefaults,  } from "../src/helpers";
+import { overrideDefaults } from "../src/helpers";
 
 const getTimeoutFactor = function (): number {
   const envFactor = Number(process.env.TEST_TIMEOUT_FACTOR);
