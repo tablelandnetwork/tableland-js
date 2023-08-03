@@ -31,10 +31,6 @@ packages/sdk/test/aliases/json-file-aliases.json
 
 ### local ###
 
-# local has a prebuild step that creates this file,
-# it should not be committed to version control
-src/get-dirname.ts
-
 # Validator artifacts
 packages/local/validator/*.db
 packages/local/validator/*.db*
