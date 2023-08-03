@@ -28,6 +28,10 @@ coverage.json
 
 ### sdk ###
 packages/sdk/test/aliases/json-file-aliases.json
+packages/sdk/test/validator/database.db
+packages/sdk/test/validator/*.db
+packages/sdk/test/validator/*.db*
+packages/sdk/test/validator/backups
 
 ### local ###
 
