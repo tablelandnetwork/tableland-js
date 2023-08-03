@@ -6,7 +6,11 @@ import { getDefaultProvider } from "ethers";
 import { Database } from "../src/database.js";
 import { Statement } from "../src/statement.js";
 import { getAbortSignal } from "../src/helpers/await.js";
-import { TEST_TIMEOUT_FACTOR } from "./setup";
+import {
+  TEST_TIMEOUT_FACTOR,
+  TEST_PROVIDER_URL,
+  TEST_VALIDATOR_URL,
+} from "./setup";
 
 describe("database", function () {
   this.timeout(TEST_TIMEOUT_FACTOR * 10000);
@@ -14,7 +18,7 @@ describe("database", function () {
   const accounts = getAccounts();
   // Note that we're using the second account here
   const wallet = accounts[1];
-  const provider = getDefaultProvider("http://127.0.0.1:8545");
+  const provider = getDefaultProvider(TEST_PROVIDER_URL);
   const signer = wallet.connect(provider);
   const db = new Database({ signer, autoWait: true });
 
@@ -33,7 +37,7 @@ describe("database", function () {
   test("when initialized via .forSigner()", async function () {
     const db = await Database.forSigner(signer);
     strictEqual(db.config.signer, signer);
-    strictEqual(db.config.baseUrl, "http://localhost:8080/api/v1");
+    strictEqual(db.config.baseUrl, TEST_VALIDATOR_URL);
   });
 
   describe(".prepare()", function () {
@@ -390,7 +394,7 @@ describe("database", function () {
     describe("grant and revoke statements", function () {
       // note we are using the third account
       const wallet = accounts[2];
-      const provider = getDefaultProvider("http://127.0.0.1:8545");
+      const provider = getDefaultProvider(TEST_PROVIDER_URL);
       const signer = wallet.connect(provider);
       const db2 = new Database({ signer, autoWait: true });
 

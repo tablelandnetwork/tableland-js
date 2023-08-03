@@ -17,7 +17,11 @@ import {
 import { Database } from "../src/index.js";
 import { Validator } from "../src/validator/index.js";
 import type { WaitableTransactionReceipt } from "../src/registry/index.js";
-import { TEST_TIMEOUT_FACTOR } from "./setup";
+import {
+  TEST_TIMEOUT_FACTOR,
+  TEST_PROVIDER_URL,
+  TEST_VALIDATOR_URL,
+} from "./setup";
 
 const chainId = getChainId("local-tableland");
 
@@ -25,7 +29,7 @@ describe("validator", function () {
   this.timeout(TEST_TIMEOUT_FACTOR * 10000);
   // Note that we're using the second account here
   const [, wallet] = getAccounts();
-  const provider = getDefaultProvider("http://127.0.0.1:8545");
+  const provider = getDefaultProvider(TEST_PROVIDER_URL);
   const baseUrl = getBaseUrl(chainId);
   const signer = wallet.connect(provider);
   const db = new Database({ signer, autoWait: true, baseUrl });
@@ -181,7 +185,7 @@ describe("validator", function () {
       // TODO: This is correct, but shouldn't it be updated to the new API endpoints?
       strictEqual(
         response.externalUrl,
-        "http://localhost:8080/api/v1/tables/31337/1"
+        `${TEST_VALIDATOR_URL}/tables/31337/1`
       );
       strictEqual(
         response.image,

@@ -11,13 +11,13 @@ import { getAccounts } from "@tableland/local";
 import { getDelay } from "../src/helpers/utils.js";
 import { getDefaultProvider } from "../src/helpers/index.js";
 import { Database, Statement } from "../src/index.js";
-import { TEST_TIMEOUT_FACTOR } from "./setup";
+import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
 
 describe("statement", function () {
   this.timeout(TEST_TIMEOUT_FACTOR * 10000);
   // Note that we're using the second account here
   const [, wallet, wallet2] = getAccounts();
-  const provider = getDefaultProvider("http://127.0.0.1:8545");
+  const provider = getDefaultProvider(TEST_PROVIDER_URL);
   const signer = wallet.connect(provider);
   const db = new Database({ signer });
 
@@ -197,7 +197,7 @@ CREATE TABLE test_run (counter blurg);
       });
 
       test("when non-owner tries to alter table", async function () {
-        const provider = getDefaultProvider("http://127.0.0.1:8545");
+        const provider = getDefaultProvider(TEST_PROVIDER_URL);
         const signer = wallet2.connect(provider);
         const db2 = new Database({ signer });
 

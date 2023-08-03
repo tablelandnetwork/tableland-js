@@ -13,6 +13,7 @@ import {
   type ExternalProvider,
   getChainId,
 } from "../src/helpers/index.js";
+import { TEST_PROVIDER_URL, TEST_VALIDATOR_URL } from "./setup";
 
 describe("config", function () {
   describe("extractBaseUrl()", function () {
@@ -25,18 +26,18 @@ describe("config", function () {
     test("where baseUrl is obtained via the chainId", async function () {
       const [, wallet] = getAccounts();
       const signer = wallet.connect(
-        getDefaultProvider("http://127.0.0.1:8545")
+        getDefaultProvider(TEST_PROVIDER_URL)
       );
       const conn: SignerConfig = { signer };
       const extracted = await extractBaseUrl(conn);
-      strictEqual(extracted, "http://localhost:8080/api/v1");
+      strictEqual(extracted, TEST_VALIDATOR_URL);
     });
 
     test("where baseUrl is obtained via a fallback chainId", async function () {
       const chainNameOrId = getChainId("localhost");
       const conn: Config = {};
       const extracted = await extractBaseUrl(conn, chainNameOrId);
-      strictEqual(extracted, "http://localhost:8080/api/v1");
+      strictEqual(extracted, TEST_VALIDATOR_URL);
     });
 
     test("where baseUrl cannot be extracted", async function () {
