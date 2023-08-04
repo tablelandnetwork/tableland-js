@@ -4,17 +4,26 @@ import { spy, restore, stub } from "sinon";
 import yargs from "yargs/yargs";
 import { temporaryWrite } from "tempy";
 import mockStd from "mock-stdin";
-import { getAccounts, getDatabase } from "@tableland/local";
-import { ethers } from "ethers";
+import { ethers, getDefaultProvider } from "ethers";
+import { Database } from "@tableland/sdk";
+import { getAccounts } from "@tableland/local";
 import * as mod from "../src/commands/read.js";
 import { wait, logger } from "../src/utils.js";
 import { getResolverMock } from "./mock.js";
+import {
+  TEST_TIMEOUT_FACTOR,
+  TEST_PROVIDER_URL,
+  TEST_VALIDATOR_URL,
+} from "./setup";
+
+const accounts = getAccounts();
+const wallet = accounts[1];
+const provider = getDefaultProvider(TEST_PROVIDER_URL);
+const signer = wallet.connect(provider);
+const db = new Database({ signer, autoWait: true });
 
 describe("commands/read", function () {
-  this.timeout(10000);
-
-  const accounts = getAccounts();
-  const db = getDatabase(accounts[1]);
+  this.timeout(10000 * TEST_TIMEOUT_FACTOR);
 
   before(async function () {
     await wait(5000);
@@ -30,7 +39,7 @@ describe("commands/read", function () {
     const consoleError = spy(logger, "error");
     const tableName = "something";
     const statement = `select * from ${tableName};`;
-    await yargs(["read", statement, "--baseUrl", "http://127.0.0.1:8080"])
+    await yargs(["read", statement, "--baseUrl", TEST_VALIDATOR_URL])
       .command(mod)
       .parse();
 
@@ -43,7 +52,7 @@ describe("commands/read", function () {
 
   test("fails with invalid statement", async function () {
     const consoleError = spy(logger, "error");
-    await yargs(["read", "invalid;", "--baseUrl", "http://127.0.0.1:8080"])
+    await yargs(["read", "invalid;", "--baseUrl", TEST_VALIDATOR_URL])
       .command(mod)
       .parse();
 
@@ -102,7 +111,7 @@ describe("commands/read", function () {
       "--file",
       "missing.sql",
       "--baseUrl",
-      "http://127.0.0.1:8080",
+      TEST_VALIDATOR_URL,
     ])
       .command(mod)
       .parse();
@@ -117,9 +126,7 @@ describe("commands/read", function () {
     setTimeout(() => {
       stdin.send("\n").end();
     }, 300);
-    await yargs(["read", "--baseUrl", "http://127.0.0.1:8080"])
-      .command(mod)
-      .parse();
+    await yargs(["read", "--baseUrl", TEST_VALIDATOR_URL]).command(mod).parse();
 
     const value = consoleError.getCall(0).firstArg;
     equal(

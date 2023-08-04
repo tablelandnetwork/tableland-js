@@ -13,7 +13,7 @@ import {
 } from "./setup";
 
 describe("database", function () {
-  this.timeout(TEST_TIMEOUT_FACTOR * 10000);
+  this.timeout(TEST_TIMEOUT_FACTOR * 15000);
 
   const accounts = getAccounts();
   // Note that we're using the second account here

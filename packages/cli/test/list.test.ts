@@ -5,6 +5,9 @@ import { getAccounts } from "@tableland/local";
 import yargs from "yargs/yargs";
 import * as mod from "../src/commands/list.js";
 import { logger } from "../src/utils.js";
+import { TEST_PROVIDER_URL } from "./setup";
+
+const defaultArgs = ["--providerUrl", TEST_PROVIDER_URL];
 
 describe("commands/list", function () {
   before(async function () {
@@ -17,7 +20,9 @@ describe("commands/list", function () {
 
   test("throws without privateKey or address", async function () {
     const consoleError = spy(logger, "error");
-    await yargs(["list", "--chain", "maticmum"]).command(mod).parse();
+    await yargs(["list", "--chain", "maticmum", ...defaultArgs])
+      .command(mod)
+      .parse();
 
     const value = consoleError.getCall(0).firstArg;
     equal(value, "must supply `--privateKey` or `address` positional");
@@ -27,7 +32,9 @@ describe("commands/list", function () {
     const [account] = getAccounts();
     const privateKey = account.privateKey.slice(2);
     const consoleError = spy(logger, "error");
-    await yargs(["list", "--privateKey", privateKey]).command(mod).parse();
+    await yargs(["list", "--privateKey", privateKey, ...defaultArgs])
+      .command(mod)
+      .parse();
 
     const value = consoleError.getCall(0).firstArg;
     equal(value, "missing required flag (`-c` or `--chain`)");
@@ -37,7 +44,14 @@ describe("commands/list", function () {
     const [account] = getAccounts();
     const privateKey = account.privateKey.slice(2);
     const consoleError = spy(logger, "error");
-    await yargs(["list", "--privateKey", privateKey, "--chain", "foozbazz"])
+    await yargs([
+      "list",
+      "--privateKey",
+      privateKey,
+      "--chain",
+      "foozbazz",
+      ...defaultArgs,
+    ])
       .command(mod)
       .parse();
 
@@ -49,7 +63,14 @@ describe("commands/list", function () {
     const [account] = getAccounts();
     const privateKey = account.privateKey.slice(2);
     const consoleError = spy(logger, "error");
-    await yargs(["list", "--chain", "custom", "--privateKey", privateKey])
+    await yargs([
+      "list",
+      "--chain",
+      "custom",
+      "--privateKey",
+      privateKey,
+      ...defaultArgs,
+    ])
       .command(mod)
       .parse();
 
@@ -67,6 +88,7 @@ describe("commands/list", function () {
       "local-tableland",
       "--privateKey",
       privateKey,
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();

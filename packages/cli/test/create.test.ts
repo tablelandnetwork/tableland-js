@@ -9,11 +9,13 @@ import { ethers } from "ethers";
 import * as mod from "../src/commands/create.js";
 import { wait, logger } from "../src/utils.js";
 import { getResolverMock } from "./mock.js";
+import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
 
+const defaultArgs = ["--providerUrl", TEST_PROVIDER_URL];
 const accounts = getAccounts();
 
 describe("commands/create", function () {
-  this.timeout("30s");
+  this.timeout(30000 * TEST_TIMEOUT_FACTOR);
 
   before(async function () {
     await wait(1000);
@@ -40,6 +42,7 @@ describe("commands/create", function () {
       "(id int primary key, desc text)",
       "--privateKey",
       privateKey,
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -61,6 +64,7 @@ describe("commands/create", function () {
       "invalid_chain_table",
       "--chain",
       "foozbaaz",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -82,6 +86,7 @@ describe("commands/create", function () {
       "cooltable",
       "--privateKey",
       privateKey,
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -106,6 +111,7 @@ describe("commands/create", function () {
       "cooltable",
       "--privateKey",
       privateKey,
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -126,6 +132,7 @@ describe("commands/create", function () {
       "local-tableland",
       "--privateKey",
       privateKey,
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -148,6 +155,7 @@ describe("commands/create", function () {
       "local-tableland",
       "--privateKey",
       privateKey,
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -170,6 +178,7 @@ describe("commands/create", function () {
       privateKey,
       "--chain",
       "local-tableland",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -194,6 +203,7 @@ describe("commands/create", function () {
       privateKey,
       "--prefix",
       "first_table",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -223,6 +233,7 @@ describe("commands/create", function () {
       privateKey,
       "--prefix",
       "chainid_table",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -252,6 +263,7 @@ describe("commands/create", function () {
       privateKey,
       "--prefix",
       "ignore_me",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -282,6 +294,7 @@ describe("commands/create", function () {
       privateKey,
       "--prefix",
       "ignore_me",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -319,6 +332,7 @@ describe("commands/create", function () {
       privateKey,
       "--prefix",
       "file_test",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -351,6 +365,7 @@ describe("commands/create", function () {
       "local-tableland",
       "--privateKey",
       privateKey,
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -388,7 +403,8 @@ describe("commands/create", function () {
       "foo.bar.eth",
       "--enableEnsExperiment",
       "--ensProviderUrl",
-      "https://localhost:8080",
+      "https://localhost:8082",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();

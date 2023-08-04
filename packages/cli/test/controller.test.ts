@@ -1,17 +1,29 @@
 import { equal, match } from "node:assert";
+import { getDefaultProvider } from "ethers";
 import { describe, test, afterEach, before } from "mocha";
 import { spy, restore } from "sinon";
 import yargs from "yargs/yargs";
-import { getAccounts, getDatabase } from "@tableland/local";
+import { Database } from "@tableland/sdk";
+import { getAccounts } from "@tableland/local";
 import * as mod from "../src/commands/controller.js";
 import { wait, logger } from "../src/utils.js";
+import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
+
+const defaultArgs = [
+  "--providerUrl",
+  TEST_PROVIDER_URL,
+  "--chain",
+  "local-tableland",
+];
+
+const accounts = getAccounts();
+const wallet = accounts[1];
+const provider = getDefaultProvider(TEST_PROVIDER_URL, { chainId: 31337 });
+const signer = wallet.connect(provider);
+const db = new Database({ signer, autoWait: true });
 
 describe("commands/controller", function () {
-  this.timeout("30s");
-
-  // account[0] is the Validator's wallet, try to avoid using that
-  const accounts = getAccounts();
-  const db = getDatabase(accounts[1]);
+  this.timeout(30000 * TEST_TIMEOUT_FACTOR);
 
   let tableName: string;
   before(async function () {
@@ -28,7 +40,9 @@ describe("commands/controller", function () {
 
   test("throws without privateKey", async function () {
     const consoleError = spy(logger, "error");
-    await yargs(["controller", "get", "blah"]).command(mod).parse();
+    await yargs(["controller", "get", "blah", ...defaultArgs])
+      .command(mod)
+      .parse();
 
     const value = consoleError.getCall(0).firstArg;
     equal(value, "missing required flag (`-k` or `--privateKey`)");
@@ -44,6 +58,10 @@ describe("commands/controller", function () {
       "another",
       "--privateKey",
       privateKey,
+      "--providerUrl",
+      TEST_PROVIDER_URL,
+      "--chain",
+      "fooz",
     ])
       .command(mod)
       .parse();
@@ -61,8 +79,7 @@ describe("commands/controller", function () {
       "invalid",
       "--privateKey",
       privateKey,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -81,8 +98,7 @@ describe("commands/controller", function () {
       "invalid",
       "--privateKey",
       privateKey,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -102,8 +118,7 @@ describe("commands/controller", function () {
       tableName,
       "--privateKey",
       privateKey,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -124,8 +139,7 @@ describe("commands/controller", function () {
       tableName,
       "--privateKey",
       privateKey,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -143,8 +157,7 @@ describe("commands/controller", function () {
       tableName,
       "--privateKey",
       privateKey,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();

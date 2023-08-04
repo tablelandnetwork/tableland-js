@@ -1,17 +1,25 @@
 import { equal, match } from "node:assert";
-import { getAccounts, getDatabase } from "@tableland/local";
+import { getDefaultProvider } from "ethers";
+import { Database } from "@tableland/sdk";
+import { getAccounts } from "@tableland/local";
 import { describe, test, afterEach, before } from "mocha";
 import { spy, restore } from "sinon";
 import yargs from "yargs/yargs";
 import { wait, logger } from "../src/utils.js";
 import * as mod from "../src/commands/receipt.js";
+import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
+
+const defaultArgs = ["--providerUrl", TEST_PROVIDER_URL];
+
+const accounts = getAccounts();
+// using the validator wallet since the test is updating healthbot
+const wallet = accounts[0];
+const provider = getDefaultProvider(TEST_PROVIDER_URL);
+const signer = wallet.connect(provider);
+const db = new Database({ signer, autoWait: true });
 
 describe("commands/receipt", function () {
-  this.timeout("30s");
-
-  const accounts = getAccounts();
-  // using the validator wallet since the test is updating healthbot
-  const db = getDatabase(accounts[0]);
+  this.timeout(30000 * TEST_TIMEOUT_FACTOR);
 
   before(async function () {
     await wait(10000);
@@ -25,7 +33,13 @@ describe("commands/receipt", function () {
     const [account] = getAccounts();
     const privateKey = account.privateKey.slice(2);
     const consoleError = spy(logger, "error");
-    await yargs(["receipt", "--privateKey", privateKey, "ignored"])
+    await yargs([
+      "receipt",
+      "--privateKey",
+      privateKey,
+      "ignored",
+      ...defaultArgs,
+    ])
       .command(mod)
       .parse();
 
@@ -39,6 +53,7 @@ describe("commands/receipt", function () {
     const consoleError = spy(logger, "error");
     await yargs([
       "receipt",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
       "--chain",
@@ -58,6 +73,7 @@ describe("commands/receipt", function () {
     const consoleError = spy(logger, "error");
     await yargs([
       "receipt",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
       "--chain",
@@ -86,6 +102,7 @@ describe("commands/receipt", function () {
 
     await yargs([
       "receipt",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
       "--chain",
