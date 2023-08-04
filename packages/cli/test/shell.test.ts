@@ -4,7 +4,7 @@ import { spy, restore, stub, assert } from "sinon";
 import yargs from "yargs/yargs";
 import mockStd from "mock-stdin";
 import { Database } from "@tableland/sdk";
-import { getAccounts, getDatabase } from "@tableland/local";
+import { getAccounts } from "@tableland/local";
 import { ethers, getDefaultProvider } from "ethers";
 import * as mod from "../src/commands/shell.js";
 import { wait, logger } from "../src/utils.js";
@@ -25,7 +25,7 @@ const signer = wallet.connect(provider);
 const db = new Database({ signer, autoWait: true });
 
 describe("commands/shell", function () {
-  this.timeout("30s");
+  this.timeout(30000 * TEST_TIMEOUT_FACTOR);
 
   before(async function () {
     await wait(10000);

@@ -50,6 +50,8 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       logger.error("missing required flag (`-k` or `--privateKey`)");
       return;
     }
+    // note: can't test this since the cli tests are using non-standard port for chain
+    /* c8 ignore next 4 */
     if (chain == null) {
       logger.error("missing required flag (`-c` or `--chain`)");
       return;
