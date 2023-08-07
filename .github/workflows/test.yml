@@ -27,6 +27,9 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Setup upterm session
+        uses: lhotari/action-upterm@v1
+
       - name: Cache 📦
         uses: actions/cache@v1
         with:
@@ -49,4 +52,4 @@ jobs:
         run: npx lerna run build
 
       - name: Test/Coverage 🧪
-        run: TEST_TIMEOUT_FACTOR=3 npx lerna run --concurrency 1 test:ci
+        run: TEST_TIMEOUT_FACTOR=3 npm test

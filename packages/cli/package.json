@@ -34,7 +34,7 @@
   },
   "scripts": {
     "prepublishOnly": "npm run build",
-    "test": "mocha",
+    "test": "mocha --exit",
     "test:ci": "npm run coverage",
     "coverage": "TEST_TIMEOUT_FACTOR=3 c8 --100 --exclude test mocha --exit",
     "coverage:report": "c8 report --reporter=html",
