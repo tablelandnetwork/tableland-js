@@ -53,8 +53,8 @@
     "prettier:fix": "npm run prettier -- --write",
     "format": "npm run prettier:fix && npm run lint:fix",
     "clean": "rm -rf dist/*",
-    "build:esm": "mv src/get-dirname.ts og-get-dirname.ts && cp src/get-dirname-esm.ts src/get-dirname.ts && tsc -p tsconfig.json && mv og-get-dirname.ts src/get-dirname.ts",
-    "build:cjs": "mv src/get-dirname.ts og-get-dirname.ts && cp src/get-dirname-cjs.ts src/get-dirname.ts && tsc -p tsconfig.cjs.json && mv og-get-dirname.ts src/get-dirname.ts",
+    "build:esm": "cp src/get-dirname.ts og-get-dirname.ts && cp src/get-dirname-esm.ts src/get-dirname.ts && tsc -p tsconfig.json && mv og-get-dirname.ts src/get-dirname.ts",
+    "build:cjs": "cp src/get-dirname.ts og-get-dirname.ts && cp src/get-dirname-cjs.ts src/get-dirname.ts && tsc -p tsconfig.cjs.json && mv og-get-dirname.ts src/get-dirname.ts",
     "build": "npm run clean && npm run build:esm && npm run build:cjs && ./fixup.sh",
     "up": "node dist/esm/up.js",
     "up:dev": "node dist/esm/up.js --validator ../go-tableland --registry ../evm-tableland"
