@@ -215,7 +215,7 @@ describe("Validator and Chain startup and shutdown", function () {
 
 describe("Validator, Chain, and SDK work end to end", function () {
   const lt = new LocalTableland({
-    silent: false,
+    silent: true,
   });
   const accounts = getAccounts();
 

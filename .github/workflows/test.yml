@@ -27,8 +27,8 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup upterm session
-        uses: lhotari/action-upterm@v1
+      # - name: Setup upterm session
+      #   uses: lhotari/action-upterm@v1
 
       - name: Cache 📦
         uses: actions/cache@v1
