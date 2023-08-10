@@ -99,7 +99,7 @@ export async function create(
 }
 
 async function _createOne(
-  { signer }: SignerConfig,
+  { signer, signAndSendOverride }: SignerConfig,
   { statement, chainId }: CreateOneParams
 ): Promise<ContractTransaction> {
   const owner = await signer.getAddress();
@@ -107,11 +107,22 @@ async function _createOne(
     signer,
     chainId
   );
+
+  if (signAndSendOverride !== undefined) {
+    return await signAndSendOverride({
+      signer,
+      contractAddress: contract.address,
+      functionSignature: "create(address,string)",
+      functionArgs: [owner, statement],
+      overrides,
+    });
+  }
+
   return await contract["create(address,string)"](owner, statement, overrides);
 }
 
 async function _createMany(
-  { signer }: SignerConfig,
+  { signer, signAndSendOverride }: SignerConfig,
   { statements, chainId }: CreateManyParams
 ): Promise<ContractTransaction> {
   const owner = await signer.getAddress();
@@ -119,6 +130,17 @@ async function _createMany(
     signer,
     chainId
   );
+  
+  if (signAndSendOverride !== undefined) {
+    return await signAndSendOverride({
+      signer,
+      contractAddress: contract.address,
+      functionSignature: "create(address,string[])",
+      functionArgs: [owner, statements],
+      overrides,
+    });
+  }
+
   return await contract["create(address,string[])"](
     owner,
     statements,

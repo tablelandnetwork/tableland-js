@@ -87,7 +87,7 @@ export async function mutate(
 }
 
 async function _mutateOne(
-  { signer }: SignerConfig,
+  { signer, signAndSendOverride }: SignerConfig,
   { statement, tableId, chainId }: MutateOneParams
 ): Promise<ContractTransaction> {
   const caller = await signer.getAddress();
@@ -95,6 +95,17 @@ async function _mutateOne(
     signer,
     chainId
   );
+
+  if (signAndSendOverride !== undefined) {
+    return await signAndSendOverride({
+      signer,
+      contractAddress: contract.address,
+      functionSignature: "mutate(address,uint256,string)",
+      functionArgs: [caller, tableId, statement],
+      overrides,
+    });
+  }
+
   return await contract["mutate(address,uint256,string)"](
     caller,
     tableId,
@@ -104,7 +115,7 @@ async function _mutateOne(
 }
 
 async function _mutateMany(
-  { signer }: SignerConfig,
+  { signer, signAndSendOverride }: SignerConfig,
   { runnables, chainId }: MutateManyParams
 ): Promise<ContractTransaction> {
   const caller = await signer.getAddress();
@@ -112,6 +123,18 @@ async function _mutateMany(
     signer,
     chainId
   );
+
+
+  if (signAndSendOverride !== undefined) {
+    return await signAndSendOverride({
+      signer,
+      contractAddress: contract.address,
+      functionSignature: "mutate(address,(uint256,string)[])",
+      functionArgs: [caller, runnables],
+      overrides,
+    });
+  }
+
   return await contract["mutate(address,(uint256,string)[])"](
     caller,
     runnables,
