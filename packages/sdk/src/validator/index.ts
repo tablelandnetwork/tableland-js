@@ -138,8 +138,8 @@ function prepReadConfig(config: Partial<ReadConfig>): FetchConfig {
   if (config.apiKey) {
     conf.init = {
       headers: {
-        "Api-Key": config.apiKey
-      }
+        "Api-Key": config.apiKey,
+      },
     };
   }
 

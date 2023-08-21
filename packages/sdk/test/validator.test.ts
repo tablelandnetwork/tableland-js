@@ -458,10 +458,15 @@ describe("validator", function () {
         baseUrl,
         apiKey,
       });
-      const responses = await Promise.all(getRange(15).map(async () => await api.health()));
+      const responses = await Promise.all(
+        getRange(15).map(async () => await api.health())
+      );
 
       equal(responses.length, 15);
-      equal(responses.every((r: unknown) => r === true), true);
+      equal(
+        responses.every((r: unknown) => r === true),
+        true
+      );
     });
   });
 });
