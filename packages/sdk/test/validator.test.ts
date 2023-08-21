@@ -452,12 +452,16 @@ describe("validator", function () {
       await getDelay(5000);
     });
 
-    test("when valid api key is used there is no exeption", async function () {
-      const api = new Validator({ baseUrl });
+    test("when valid api key is used there is no limit on calls to `health()`", async function () {
+      const apiKey = "foo";
+      const api = new Validator({
+        baseUrl,
+        apiKey,
+      });
       const responses = await Promise.all(getRange(15).map(async () => await api.health()));
 
       equal(responses.length, 15);
-      console.log(JSON.stringify(responses));
+      equal(responses.every((r: unknown) => r === true), true);
     });
   });
 });

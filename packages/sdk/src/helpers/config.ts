@@ -6,6 +6,7 @@ import { type Signer, type ExternalProvider, getSigner } from "./ethers.js";
 export interface ReadConfig {
   baseUrl: string;
   aliases?: AliasesNameMap;
+  apiKey?: string;
 }
 
 export interface SignerConfig {

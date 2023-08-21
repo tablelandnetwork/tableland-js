@@ -59,8 +59,8 @@
   },
   "scripts": {
     "prepublishOnly": "npm run build",
-    "test": "npm run test:browser && npm run test:dev",
-    "test:dev": "mocha --exit",
+    "test": "npm run test:browser && npm run test:mocha",
+    "test:mocha": "mocha --exit",
     "test:browser": "npx playwright install --with-deps && PW_TS_ESM_ON=true playwright test",
     "test:browser-show-report": "npx playwright show-report",
     "test:ci": "npm run coverage",

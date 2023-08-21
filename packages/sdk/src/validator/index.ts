@@ -21,6 +21,7 @@ import {
   type TransactionReceipt,
   type Params as ReceiptParams,
 } from "./receipt.js";
+import { type FetchConfig } from "./client/index.js";
 
 export { ApiError } from "./client/index.js";
 export {
@@ -65,7 +66,7 @@ export class Validator {
    * @description Returns OK if the validator considers itself healthy
    */
   async health(opts: Signal = {}): Promise<boolean> {
-    return await getHealth(this.config, opts);
+    return await getHealth(prepReadConfig(this.config), opts);
   }
 
   /**
@@ -130,4 +131,17 @@ export class Validator {
   ): Promise<TransactionReceipt> {
     return await pollTransactionReceipt(this.config, params, opts);
   }
+}
+
+function prepReadConfig(config: Partial<ReadConfig>): FetchConfig {
+  const conf: FetchConfig = {};
+  if (config.apiKey) {
+    conf.init = {
+      headers: {
+        "Api-Key": config.apiKey
+      }
+    };
+  }
+
+  return { ...config, ...conf };
 }

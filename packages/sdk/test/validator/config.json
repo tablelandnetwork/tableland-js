@@ -3,7 +3,8 @@
   "HTTP": {
     "Port": "8081",
     "RateLimInterval": "1s",
-    "MaxRequestPerInterval": 10
+    "MaxRequestPerInterval": 10,
+    "APIKey": "foo"
   },
   "Gateway": {
     "ExternalURIPrefix": "http://localhost:8081",
