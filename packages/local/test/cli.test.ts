@@ -1,4 +1,5 @@
-import { join } from "path";
+import { join } from "node:path";
+import { describe, afterEach, after, beforeEach, before, test } from "mocha";
 import chai from "chai";
 import shell from "shelljs";
 
@@ -29,7 +30,7 @@ describe("Project builder", function () {
     shell.cd("..");
   });
 
-  it("should create a config file", async function () {
+  test("should create a config file", async function () {
     // Pass input from `choose-yes.txt` to `up.js` to answer `y` to prompt
     shell
       .cat(join("..", "test", "choose-yes.txt"))
@@ -45,7 +46,7 @@ describe("Project builder", function () {
     expect(createdFile).to.eql(exampleFile);
   });
 
-  it("should do nothing if config file already exists", async function () {
+  test("should do nothing if config file already exists", async function () {
     // Pass input from `choose-yes.txt` to `up.js` to answer `y` to prompt
     shell
       .cat(join("..", "test", "choose-yes.txt"))
@@ -65,7 +66,7 @@ describe("Project builder", function () {
     );
   });
 
-  it("should do nothing if user says not to", async function () {
+  test("should do nothing if user says not to", async function () {
     // Pass input from `choose-no.txt` to `up.js` to answer `n` to prompt
     const cliOut = shell
       .cat(join("..", "test", "choose-no.txt"))
