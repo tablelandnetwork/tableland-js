@@ -1,0 +1,47 @@
+{
+  "env": {
+    "browser": false,
+    "es2022": true,
+    "mocha": true,
+    "node": true
+  },
+  "plugins": ["@typescript-eslint", "import"],
+  "extends": ["standard-with-typescript", "prettier"],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 12,
+    "project": "./lint.tsconfig.json"
+  },
+  "ignorePatterns": [
+    "**/dist/",
+    "**/coverage/",
+    "**/docs/",
+    "packages/sdk/src/validator/client/*",
+    "packages/local/registry/*",
+    "*.d.ts"
+  ],
+  "globals": {
+    // mocha
+    "before": true,
+    "after": true,
+    "beforeEach": true,
+    "afterEach": true,
+    "describe": true,
+    "it": true
+  },
+  "rules": {
+    "import/order": "warn",
+    "@typescript-eslint/no-confusing-void-expression": "off",
+    "node/no-unpublished-import": "off",
+    "node/no-missing-import": "off", // TODO: If available, find solution to turn this lint rule back on
+    "node/shebang": "off",
+    "no-unused-vars": "off",
+    "@typescript-eslint/no-unused-vars": "error",
+    // We use currently all `== null` as a way to check for undefined or null, might as well turn this check off
+    "@typescript-eslint/no-non-null-assertion": "off",
+
+    // TODO: these two "off" rules should be removed once we fully transition to the monorepo
+    "@typescript-eslint/strict-boolean-expressions": "off",
+    "@typescript-eslint/restrict-template-expressions": "off"
+  }
+}

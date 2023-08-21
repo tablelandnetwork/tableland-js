@@ -15,8 +15,12 @@
   "engines": {
     "node": ">=14.0.0"
   },
+  "type": "module",
   "main": "./dist/cjs/main.js",
   "module": "./dist/esm/main.js",
+  "bin": {
+    "local-tableland": "dist/esm/up.js"
+  },
   "types": "./dist/esm/main.d.ts",
   "exports": {
     ".": {
@@ -40,49 +44,28 @@
   ],
   "scripts": {
     "postinstall": "cd registry && npm install",
-    "test": "npm run build && node --experimental-fetch --experimental-vm-modules ./node_modules/mocha/bin/mocha --bail",
-    "lint": "eslint src/ test/ --ext .js,.ts,.mjs",
+    "test": "mocha",
+    "test:ci": "npm run build && mocha --exit",
+    "lint": "eslint '**/*.{js,ts}'",
+    "lint:fix": "npm run lint -- --fix",
     "prepublishOnly": "npm run build",
     "prettier": "prettier '**/*.{ts,json,md}' --check",
     "prettier:fix": "npm run prettier -- --write",
+    "format": "npm run prettier:fix && npm run lint:fix",
     "clean": "rm -rf dist/*",
-    "build:esm": "cp src/get-dirname-esm.ts src/get-dirname.ts && tsc -p tsconfig.json",
-    "build:cjs": "cp src/get-dirname-cjs.ts src/get-dirname.ts && tsc -p tsconfig.cjs.json",
+    "build:esm": "cp src/get-dirname.ts og-get-dirname.ts && cp src/get-dirname-esm.ts src/get-dirname.ts && tsc -p tsconfig.json && mv og-get-dirname.ts src/get-dirname.ts",
+    "build:cjs": "cp src/get-dirname.ts og-get-dirname.ts && cp src/get-dirname-cjs.ts src/get-dirname.ts && tsc -p tsconfig.cjs.json && mv og-get-dirname.ts src/get-dirname.ts",
     "build": "npm run clean && npm run build:esm && npm run build:cjs && ./fixup.sh",
     "up": "node dist/esm/up.js",
     "up:dev": "node dist/esm/up.js --validator ../go-tableland --registry ../evm-tableland"
   },
-  "bin": {
-    "local-tableland": "dist/esm/up.js"
-  },
   "dependencies": {
-    "@tableland/sdk": "^4.3.2",
-    "@tableland/validator": "^1.6.3",
+    "@tableland/sdk": "^4.4.1",
+    "@tableland/validator": "^1.7.2",
     "cross-spawn": "^7.0.3",
     "enquirer": "^2.3.6",
     "ethers": "^5.7.2",
     "shelljs": "^0.8.5",
     "yargs": "^17.5.1"
-  },
-  "devDependencies": {
-    "@types/cross-spawn": "^6.0.2",
-    "@types/node": "^20.1.1",
-    "@types/shelljs": "^0.8.11",
-    "@types/yargs": "^17.0.12",
-    "@typescript-eslint/eslint-plugin": "^5.36.2",
-    "@typescript-eslint/parser": "^5.36.2",
-    "chai": "^4.3.6",
-    "chai-as-promised": "^7.1.1",
-    "eslint": "^8.23.0",
-    "eslint-config-prettier": "^8.5.0",
-    "eslint-config-standard": "^17.0.0",
-    "eslint-plugin-import": "^2.26.0",
-    "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-prettier": "^4.2.1",
-    "eslint-plugin-promise": "^6.0.1",
-    "hardhat": "^2.12.0",
-    "js-yaml": "^4.1.0",
-    "mocha": "^10.1.0",
-    "prettier": "^2.7.1"
   }
 }

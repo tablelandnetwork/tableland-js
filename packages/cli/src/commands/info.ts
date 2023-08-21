@@ -1,6 +1,6 @@
 import type yargs from "yargs";
 import type { Arguments, CommandBuilder } from "yargs";
-import { GlobalOptions } from "../cli.js";
+import { type GlobalOptions } from "../cli.js";
 import { setupCommand } from "../lib/commandSetup.js";
 import { logger } from "../utils.js";
 
@@ -11,7 +11,9 @@ export interface Options extends GlobalOptions {
 export const command = "info <name>";
 export const desc = "Get info about a given table by name";
 
-export const builder: CommandBuilder<{}, Options> = (yargs) =>
+export const builder: CommandBuilder<Record<string, unknown>, Options> = (
+  yargs
+) =>
   yargs.positional("name", {
     type: "string",
     description: "The target table name",
@@ -24,7 +26,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
 
     const parts = name.split("_");
 
-    if (parts.length < 3 && !argv.enableEnsExperiment) {
+    if (parts.length < 3 && argv.enableEnsExperiment == null) {
       logger.error(
         "invalid table name (name format is `{prefix}_{chainId}_{tableId}`)"
       );
@@ -37,7 +39,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     });
 
     /* c8 ignore next 3 */
-    if (argv.enableEnsExperiment && ens) {
+    if (argv.enableEnsExperiment != null && ens != null) {
       name = await ens.resolveTable(name);
     }
 
@@ -46,8 +48,12 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       chainId: parseInt(chainId),
     });
     logger.log(JSON.stringify(res));
-    /* c8 ignore next 3 */
+    /* c8 ignore next 7 */
   } catch (err: any) {
-    logger.error(err?.cause?.message || err.message);
+    logger.error(
+      typeof err?.cause?.message === "string"
+        ? err?.cause?.message
+        : err.message
+    );
   }
 };

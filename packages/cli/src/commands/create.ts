@@ -1,9 +1,9 @@
-import type yargs from "yargs";
-import type { Arguments, CommandBuilder } from "yargs";
-import { getLink, logger } from "../utils.js";
 import { createInterface } from "readline";
 import { promises } from "fs";
-import { GlobalOptions } from "../cli.js";
+import type yargs from "yargs";
+import type { Arguments, CommandBuilder } from "yargs";
+import { getLink, logger, getChainName } from "../utils.js";
+import { type GlobalOptions } from "../cli.js";
 import { setupCommand } from "../lib/commandSetup.js";
 
 export interface Options extends GlobalOptions {
@@ -16,7 +16,9 @@ export interface Options extends GlobalOptions {
 export const command = "create [schema] [prefix]";
 export const desc = "Create a new table";
 
-export const builder: CommandBuilder<{}, Options> = (yargs) =>
+export const builder: CommandBuilder<Record<string, unknown>, Options> = (
+  yargs
+) =>
   yargs
     .positional("schema", {
       type: "string",
@@ -40,14 +42,17 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
   try {
     let { schema } = argv;
-    const { chain, file, privateKey } = argv;
+    const { file, privateKey } = argv;
+    const chain = getChainName(argv.chain);
     let { prefix } = argv;
     // enforce that all args required for this command are available
-    if (!privateKey) {
+    if (privateKey == null) {
       logger.error("missing required flag (`-k` or `--privateKey`)");
       return;
     }
-    if (!chain) {
+    // note: can't test this since the cli tests are using non-standard port for chain
+    /* c8 ignore next 4 */
+    if (chain == null) {
       logger.error("missing required flag (`-c` or `--chain`)");
       return;
     }
@@ -59,7 +64,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       const { value } = await it.next();
       schema = value;
     }
-    if (!schema) {
+    if (schema == null || schema === "") {
       logger.error(
         "missing input value (`schema`, `file`, or piped input from stdin required)"
       );
@@ -68,7 +73,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
 
     let statement = "";
     const check = /CREATE TABLE/gim.exec(schema.toString());
-    if (check) {
+    if (check != null) {
       statement = schema;
     } else {
       if (prefix == null || prefix.trim() === "") {
@@ -80,7 +85,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     // now that we have parsed the command args, run the create operation
     const { database: db, ens, normalize } = await setupCommand(argv);
 
-    if (argv.enableEnsExperiment && ens) {
+    if (argv.enableEnsExperiment != null && ens != null) {
       statement = await ens.resolve(statement);
     }
     statement = statement
@@ -99,7 +104,9 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       statements.map(async (stmt) => await normalize(stmt))
     );
 
-    if (!normalized.every((norm) => norm.type === "create")) {
+    if (
+      !normalized.every((norm) => (norm as { type: string }).type === "create")
+    ) {
       logger.error("the `create` command can only accept create queries");
       return;
     }
@@ -110,7 +117,12 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       const link = getLink(chain, res.meta.txn?.transactionHash as string);
       const out = { ...res, link, ensNameRegistered: false };
 
-      if (!check && argv.ns && argv.enableEnsExperiment && prefix) {
+      if (
+        check == null &&
+        argv.ns != null &&
+        argv.enableEnsExperiment != null &&
+        prefix != null
+      ) {
         const register = (await ens?.addTableRecords(argv.ns, [
           { key: prefix, value: out.meta.txn?.name as string },
         ])) as boolean;
@@ -129,8 +141,13 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     const link = getLink(chain, res.meta.txn?.transactionHash as string);
     const out = { ...res, link, ensNameRegistered: false };
 
-    /* c8 ignore next 6 */
-    if (!check && argv.ns && argv.enableEnsExperiment && prefix) {
+    /* c8 ignore next 11 */
+    if (
+      check == null &&
+      argv.ns != null &&
+      argv.enableEnsExperiment != null &&
+      prefix != null
+    ) {
       const register = (await ens?.addTableRecords(argv.ns, [
         { key: prefix, value: out.meta.txn?.name as string },
       ])) as boolean;
@@ -138,8 +155,12 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     }
 
     logger.log(JSON.stringify(out));
-    /* c8 ignore next 3 */
+    /* c8 ignore next 7 */
   } catch (err: any) {
-    logger.error(err?.cause?.message || err.message);
+    logger.error(
+      typeof err?.cause?.message === "string"
+        ? err?.cause?.message
+        : err.message
+    );
   }
 };

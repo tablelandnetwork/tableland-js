@@ -1,9 +1,14 @@
-import type yargs from "yargs";
-import type { Arguments, CommandBuilder } from "yargs";
-import { getLink, logger } from "../utils.js";
 import { promises } from "fs";
 import { createInterface } from "readline";
-import { GlobalOptions } from "../cli.js";
+import type yargs from "yargs";
+import type { Arguments, CommandBuilder } from "yargs";
+import {
+  getLink,
+  logger,
+  getChainName,
+  type NormalizedStatement,
+} from "../utils.js";
+import { type GlobalOptions } from "../cli.js";
 import { setupCommand } from "../lib/commandSetup.js";
 
 export interface Options extends GlobalOptions {
@@ -15,7 +20,9 @@ export const command = "write [statement]";
 export const desc = "Run a mutating SQL statement against a remote table";
 export const aliases = ["w", "run", "r"];
 
-export const builder: CommandBuilder<{}, Options> = (yargs) =>
+export const builder: CommandBuilder<Record<string, unknown>, Options> = (
+  yargs
+) =>
   yargs
     .positional("statement", {
       type: "string",
@@ -28,27 +35,28 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
 
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
   let { statement } = argv;
-  const { chain, file, privateKey } = argv;
+  const { file, privateKey } = argv;
+  const chain = getChainName(argv.chain);
 
   try {
     // enforce that all args required for this command are available
-    if (!privateKey) {
+    if (privateKey == null) {
       logger.error("missing required flag (`-k` or `--privateKey`)");
       return;
     }
-    if (!chain) {
+    if (chain == null) {
       logger.error("missing required flag (`-c` or `--chain`)");
       return;
     }
     if (file != null) {
       statement = await promises.readFile(file, { encoding: "utf-8" });
-    } else if (statement == null) {
+    } else if (statement == null || statement === "") {
       const rl = createInterface({ input: process.stdin });
       const it = rl[Symbol.asyncIterator]();
       const { value } = await it.next();
       statement = value;
     }
-    if (!statement) {
+    if (statement == null || statement === "") {
       logger.error(
         "missing input value (`statement`, `file`, or piped input from stdin required)"
       );
@@ -57,7 +65,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
 
     const { database: db, ens, normalize } = await setupCommand(argv);
 
-    if (argv.enableEnsExperiment && ens) {
+    if (argv.enableEnsExperiment != null && ens != null) {
       statement = await ens.resolve(statement);
     }
 
@@ -65,9 +73,9 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     // If yes, then combine into separate statements and batch.
     // If no, then process via single statement.
     statement = statement.replace(/\n/i, "").replace(/\r/, "");
-    const normalized = await normalize(statement);
+    const normalized = (await normalize(statement)) as NormalizedStatement;
 
-    if (normalized.type !== "write") {
+    if (normalized.type !== "write" && normalized.type !== "acl") {
       logger.error("the `write` command can only accept write queries");
       return;
     }
@@ -96,13 +104,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       await Promise.all(
         normalized.statements.map(async function (stmt) {
           // re-normalize so we can be sure we've isolated each statement and it's tableId
-          const norm = await normalize(stmt);
-          /* c8 ignore next 5 */
-          if (norm.tables.length > 1) {
-            throw new Error(
-              "cannot normalize if single query affects more then one table"
-            );
-          }
+          const norm = (await normalize(stmt)) as NormalizedStatement;
           const { tableId } = await globalThis.sqlparser.validateTableName(
             norm.tables[0]
           );
@@ -112,18 +114,25 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
           };
         })
       )
-    ).reduce(function (acc, cur) {
+    ).reduce<Record<string, string>>(function (
+      acc: Record<string, string>,
+      cur: { statement: string; tableId: string }
+    ) {
       // take the re-normalized statements and concatenate the ones that share a tableId
-      if (acc[cur.tableId] == null) {
-        acc[cur.tableId] = "";
-      }
+      // NOTE: need to ignore the coverage here since the type checks are only to keep typescript happy.
+      //       There's no good way to test cases where these types aren't strings.
+      /* c8 ignore next 4 */
+      const accStatement: string =
+        typeof acc[cur.tableId] === "string" ? acc[cur.tableId] : "";
+      const curStatement: string =
+        typeof cur.statement === "string" ? cur.statement : "";
 
-      acc[cur.tableId] += cur.statement;
+      acc[cur.tableId] = accStatement + curStatement;
       return acc;
-    }, {} as any);
+    }, {});
 
     const preparedStatements = Object.entries(statementsById).map(function ([
-      id,
+      _,
       stmt,
     ]) {
       /* c8 ignore next 1 */
@@ -137,7 +146,11 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     logger.log(JSON.stringify(out));
     /* c8 ignore next 3 */
   } catch (err: any) {
-    logger.error(err?.cause?.message || err?.message);
+    logger.error(
+      typeof err?.cause?.message === "string"
+        ? err?.cause?.message
+        : err?.message
+    );
     logger.error(err);
   }
 };

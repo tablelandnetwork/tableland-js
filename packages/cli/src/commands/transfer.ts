@@ -1,8 +1,8 @@
 import type yargs from "yargs";
 import type { Arguments, CommandBuilder } from "yargs";
-import { GlobalOptions } from "../cli.js";
-import { setupCommand } from "../lib/commandSetup.js";
 import { init } from "@tableland/sqlparser";
+import { type GlobalOptions } from "../cli.js";
+import { setupCommand } from "../lib/commandSetup.js";
 import { logger } from "../utils.js";
 
 export interface Options extends GlobalOptions {
@@ -13,7 +13,9 @@ export interface Options extends GlobalOptions {
 export const command = "transfer <name> <receiver>";
 export const desc = "Transfer a table to another address";
 
-export const builder: CommandBuilder<{}, Options> = (yargs) =>
+export const builder: CommandBuilder<Record<string, unknown>, Options> = (
+  yargs
+) =>
   yargs
     .positional("name", {
       type: "string",
@@ -33,7 +35,8 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
 
     const { registry } = await setupCommand({
       ...argv,
-      chain: chain || chainId,
+      /* c8 ignore next 1 */ // can't test because of non-standard chain
+      chain: chain != null ? chain : chainId,
     });
 
     const res = await registry.safeTransferFrom({

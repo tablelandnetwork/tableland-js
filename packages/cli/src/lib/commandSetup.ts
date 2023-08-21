@@ -1,8 +1,8 @@
 import { helpers, Database, Registry, Validator } from "@tableland/sdk";
 import { init } from "@tableland/sqlparser";
-import { Signer } from "ethers";
-import { GlobalOptions } from "../cli.js";
-import { getWalletWithProvider } from "../utils.js";
+import { type Signer } from "ethers";
+import { type GlobalOptions } from "../cli.js";
+import { getWalletWithProvider, logger } from "../utils.js";
 import EnsResolver from "./EnsResolver.js";
 
 export class Connections {
@@ -15,11 +15,11 @@ export class Connections {
   _ready: Promise<void>;
   _readyResolved = false;
 
-  ready() {
-    return this._ready;
+  async ready(): Promise<void> {
+    return await this._ready;
   }
 
-  readyCheck() {
+  readyCheck(): void {
     if (!this._readyResolved)
       /* c8 ignore next 3 */
       throw new Error(
@@ -34,7 +34,7 @@ export class Connections {
 
   get registry(): Registry {
     this.readyCheck();
-    if (!this._registry)
+    if (this._registry == null)
       throw new Error(
         "No registry. This may be because you did not specify a private key with which to interact with the registry."
       );
@@ -44,7 +44,7 @@ export class Connections {
   get validator(): Validator {
     this.readyCheck();
     /* c8 ignore next 3 */
-    if (!this._validator) {
+    if (this._validator == null) {
       throw new Error("No validator. Set a chain or a baseURL.");
     }
     return this._validator;
@@ -52,7 +52,7 @@ export class Connections {
 
   get signer(): Signer {
     this.readyCheck();
-    if (!this._signer) {
+    if (this._signer == null) {
       throw new Error(
         "To send transactions, you need to specify a privateKey, providerUrl, and chain"
       );
@@ -63,7 +63,7 @@ export class Connections {
   get database(): Database {
     this.readyCheck();
     /* c8 ignore next 5 */
-    if (!this._database) {
+    if (this._database == null) {
       throw new Error(
         "No database defined. You must specify a providerUrl or chain."
       );
@@ -74,7 +74,7 @@ export class Connections {
   get network(): helpers.ChainInfo {
     this.readyCheck();
     /* c8 ignore next 1 */
-    if (!this._network) throw new Error("No network");
+    if (this._network == null) throw new Error("No network");
     return this._network;
   }
 
@@ -84,7 +84,7 @@ export class Connections {
     });
   }
 
-  async normalize(statement: string) {
+  async normalize(statement: string): Promise<unknown> {
     return await globalThis.sqlparser.normalize(statement);
   }
 
@@ -93,7 +93,7 @@ export class Connections {
   // The strategy we are employing here boils down to, "setup everything we can with what we are given"
   // Then the command handler will have everything it needs as long as it is requiring the correct
   // args.
-  async prepare(argv: GlobalOptions) {
+  async prepare(argv: GlobalOptions): Promise<void> {
     const {
       privateKey,
       providerUrl,
@@ -103,7 +103,7 @@ export class Connections {
       ensProviderUrl,
     } = argv;
 
-    if (privateKey && chain) {
+    if (privateKey != null && chain != null) {
       this._signer = await getWalletWithProvider({
         privateKey,
         // providerUrl is optional, and this might be undefined
@@ -112,22 +112,23 @@ export class Connections {
       });
     }
 
-    if (enableEnsExperiment && ensProviderUrl) {
+    if (enableEnsExperiment != null && ensProviderUrl != null) {
       this._ens = new EnsResolver({
         ensProviderUrl,
         signer: this._signer,
       });
     }
 
-    if (chain) {
+    if (chain != null) {
       try {
         this._network = helpers.getChainInfo(chain);
       } catch (e) {
-        console.error("unsupported chain (see `chains` command for details)");
+        logger.error("unsupported chain (see `chains` command for details)");
       }
     }
 
-    if (this._signer) this._registry = new Registry({ signer: this._signer });
+    if (this._signer != null)
+      this._registry = new Registry({ signer: this._signer });
 
     this._database = new Database({
       // both of these props might be undefined
@@ -136,15 +137,15 @@ export class Connections {
       autoWait: true,
     });
 
-    if (baseUrl) {
+    if (typeof baseUrl === "string" && baseUrl.trim() !== "") {
       this._validator = new Validator({ baseUrl });
-    } else if (chain) {
+    } else if (chain != null) {
       this._validator = Validator.forChain(chain);
     }
   }
 }
 
-export async function setupCommand(argv: GlobalOptions) {
+export async function setupCommand(argv: GlobalOptions): Promise<Connections> {
   await init();
   const connections = new Connections(argv);
   await connections.ready();

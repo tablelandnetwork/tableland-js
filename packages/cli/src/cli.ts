@@ -1,12 +1,12 @@
-#!/usr/bin/env node --experimental-specifier-resolution=node
+#!/usr/bin/env node
 
 import * as dotenv from "dotenv";
 import fetch, { Headers, Request, Response } from "node-fetch";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { commands } from "./commands/index.js";
 import { cosmiconfigSync } from "cosmiconfig";
-import { helpers } from "@tableland/sdk";
+import { type helpers } from "@tableland/sdk";
+import { commands } from "./commands/index.js";
 
 process.on("warning", (warning) => {
   if (warning.name !== "ExperimentalWarning") {
@@ -14,6 +14,7 @@ process.on("warning", (warning) => {
   }
 });
 
+// eslint-disable-next-line
 if (!globalThis.fetch) {
   (globalThis as any).fetch = fetch;
   (globalThis as any).Headers = Headers;
@@ -39,7 +40,7 @@ dotenv.config();
 
 export interface GlobalOptions {
   privateKey: string;
-  chain: helpers.ChainName;
+  chain: helpers.ChainName | number;
   providerUrl: string;
   baseUrl: string;
   verbose: boolean;
@@ -47,7 +48,7 @@ export interface GlobalOptions {
   enableEnsExperiment?: boolean;
 }
 
-// eslint-disable-next-line no-unused-vars
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const _argv = yargs(hideBin(process.argv))
   .parserConfiguration({
     "strip-aliased": true,

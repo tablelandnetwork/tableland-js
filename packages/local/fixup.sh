@@ -11,5 +11,3 @@ cat >dist/esm/package.json <<!EOF
 !EOF
 
 chmod +x dist/esm/up.js
-
-rm src/get-dirname.ts

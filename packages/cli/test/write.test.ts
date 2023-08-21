@@ -1,20 +1,32 @@
 import { equal, match } from "node:assert";
 import { describe, test, afterEach, before } from "mocha";
 import { spy, stub, restore } from "sinon";
-import { ethers } from "ethers";
-import { getResolverUndefinedMock } from "./mock.js";
+import { ethers, getDefaultProvider } from "ethers";
 import yargs from "yargs/yargs";
 import { temporaryWrite } from "tempy";
 import mockStd from "mock-stdin";
-import { getAccounts, getDatabase } from "@tableland/local";
+import { Database } from "@tableland/sdk";
+import { getAccounts } from "@tableland/local";
 import * as mod from "../src/commands/write.js";
 import { wait, logger } from "../src/utils.js";
+import { getResolverUndefinedMock } from "./mock.js";
+import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
+
+const defaultArgs = [
+  "--providerUrl",
+  TEST_PROVIDER_URL,
+  "--chain",
+  "local-tableland",
+];
 
 const accounts = getAccounts();
-const db = getDatabase(accounts[1]);
+const wallet = accounts[1];
+const provider = getDefaultProvider(TEST_PROVIDER_URL);
+const signer = wallet.connect(provider);
+const db = new Database({ signer, autoWait: true });
 
 describe("commands/write", function () {
-  this.timeout("30s");
+  this.timeout(30000 * TEST_TIMEOUT_FACTOR);
 
   before(async function () {
     await wait(500);
@@ -26,7 +38,9 @@ describe("commands/write", function () {
 
   test("throws without privateKey", async function () {
     const consoleError = spy(logger, "error");
-    await yargs(["write", "blah"]).command(mod).parse();
+    await yargs(["write", "blah", ...defaultArgs])
+      .command(mod)
+      .parse();
 
     const value = consoleError.getCall(0).firstArg;
     equal(value, "missing required flag (`-k` or `--privateKey`)");
@@ -41,6 +55,8 @@ describe("commands/write", function () {
       "insert into fake_31337_1 values (1, 2, 3);",
       "--privateKey",
       privateKey,
+      "--providerUrl",
+      TEST_PROVIDER_URL,
     ])
       .command(mod)
       .parse();
@@ -60,6 +76,8 @@ describe("commands/write", function () {
       privateKey,
       "--chain",
       "foozbazz",
+      "--providerUrl",
+      TEST_PROVIDER_URL,
     ])
       .command(mod)
       .parse();
@@ -76,8 +94,7 @@ describe("commands/write", function () {
       "write",
       // Note: cannot have a table named "table"
       "update table set counter=1 where rowid=0;",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
     ])
@@ -98,8 +115,7 @@ describe("commands/write", function () {
     await yargs([
       "write",
       "insert into fooz (a) values (1);create table fooz (a int);",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--prefix",
       "cooltable",
       "--privateKey",
@@ -122,8 +138,7 @@ describe("commands/write", function () {
     await yargs([
       "write",
       "create table fooz (a int);",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--prefix",
       "cooltable",
       "--privateKey",
@@ -144,8 +159,7 @@ describe("commands/write", function () {
       "write",
       "--file",
       "missing.sql",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
     ])
@@ -164,13 +178,7 @@ describe("commands/write", function () {
     setTimeout(() => {
       stdin.send("\n").end();
     }, 100);
-    await yargs([
-      "write",
-      "--chain",
-      "local-tableland",
-      "--privateKey",
-      privateKey,
-    ])
+    await yargs(["write", "--privateKey", privateKey, ...defaultArgs])
       .command(mod)
       .parse();
 
@@ -181,15 +189,14 @@ describe("commands/write", function () {
     );
   });
 
-  test("Write passes with local-tableland", async function () {
+  test("passes when writing with local-tableland", async function () {
     const [account] = accounts;
     const privateKey = account.privateKey.slice(2);
     const consoleLog = spy(logger, "log");
     await yargs([
       "write",
       "update healthbot_31337_1 set counter=1 where rowid=0;", // This just updates in place
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
     ])
@@ -202,10 +209,10 @@ describe("commands/write", function () {
 
     equal(typeof transactionHash, "string");
     equal(transactionHash.startsWith("0x"), true);
-    equal(!link, true);
+    equal(link, undefined);
   });
 
-  test("Write to two tables passes", async function () {
+  test("passes when writing to two different tables", async function () {
     const account = accounts[1];
     const { meta: meta1 } = await db
       .prepare("create table multi_tbl_1 (a int, b text);")
@@ -223,8 +230,7 @@ describe("commands/write", function () {
       "write",
       `insert into ${tableName1} (a, b) values (1, 'one');
       insert into ${tableName2} (a, b) values (2, 'two');`,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
     ])
@@ -237,7 +243,7 @@ describe("commands/write", function () {
 
     equal(typeof transactionHash, "string");
     equal(transactionHash.startsWith("0x"), true);
-    equal(!link, true);
+    equal(link, undefined);
 
     const results = await db.batch([
       db.prepare(`select * from ${tableName1};`),
@@ -262,8 +268,7 @@ describe("commands/write", function () {
     );
     await yargs([
       "write",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--file",
       path,
       "--privateKey",
@@ -278,7 +283,7 @@ describe("commands/write", function () {
 
     equal(typeof transactionHash, "string");
     equal(transactionHash.startsWith("0x"), true);
-    equal(!link, true);
+    equal(link, undefined);
   });
 
   test("passes when provided input from stdin", async function () {
@@ -289,13 +294,7 @@ describe("commands/write", function () {
     setTimeout(() => {
       stdin.send("update healthbot_31337_1 set counter=1;\n").end();
     }, 100);
-    await yargs([
-      "write",
-      "--chain",
-      "local-tableland",
-      "--privateKey",
-      privateKey,
-    ])
+    await yargs(["write", ...defaultArgs, "--privateKey", privateKey])
       .command(mod)
       .parse();
 
@@ -305,14 +304,14 @@ describe("commands/write", function () {
 
     equal(typeof transactionHash, "string");
     equal(transactionHash.startsWith("0x"), true);
-    equal(!link, true);
+    equal(link, undefined);
   });
 
   test("resolves table name to literal name if ens is not set", async function () {
     const resolverMock = stub(
       ethers.providers.JsonRpcProvider.prototype,
       "getResolver"
-      // @ts-ignore
+      // @ts-expect-error type does not match since we are testing undefined response
     ).callsFake(getResolverUndefinedMock);
 
     const { meta } = await db.prepare("CREATE TABLE ens_write (a int);").all();
@@ -325,8 +324,7 @@ describe("commands/write", function () {
     await yargs([
       "write",
       `insert into ${tableName} (a) values (1);`,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
       "--enableEnsExperiment",
@@ -342,8 +340,187 @@ describe("commands/write", function () {
 
     equal(typeof transactionHash, "string");
     equal(transactionHash.startsWith("0x"), true);
-    equal(!link, true);
+    equal(link, undefined);
 
     equal(resolverMock.calledOnce, true);
+  });
+
+  test("passes with GRANT statement", async function () {
+    const account1 = accounts[1];
+    const account2 = accounts[2];
+    const privateKey1 = account1.privateKey.slice(2);
+    const privateKey2 = account2.privateKey.slice(2);
+
+    // db is configged with account 1
+    const { meta } = await db.prepare("CREATE TABLE test_grant (a int);").all();
+    const tableName = meta.txn?.name ?? "";
+
+    const consoleError = spy(logger, "error");
+
+    // first ensure account 2 cannot insert
+    await yargs([
+      "write",
+      `INSERT INTO ${tableName} (a) VALUES (333);`,
+      ...defaultArgs,
+      "--privateKey",
+      privateKey2,
+    ])
+      .command(mod)
+      .parse();
+
+    match(consoleError.getCall(0).firstArg, /not enough privileges/);
+    consoleError.restore();
+
+    await yargs([
+      "write",
+      `GRANT INSERT ON ${tableName} TO '${account2.address}';`,
+      ...defaultArgs,
+      "--privateKey",
+      privateKey1,
+    ])
+      .command(mod)
+      .parse();
+
+    await yargs([
+      "write",
+      `INSERT INTO ${tableName} (a) VALUES (1);`,
+      ...defaultArgs,
+      "--privateKey",
+      privateKey2,
+    ])
+      .command(mod)
+      .parse();
+
+    const { results } = await db
+      .prepare(`SELECT * FROM ${tableName}`)
+      .all<{ a: number }>();
+
+    equal(results instanceof Array, true);
+    equal(results.length, 1);
+    equal(results[0].a, 1);
+  });
+
+  test("passes with REVOKE statement", async function () {
+    const account1 = accounts[1];
+    const account2 = accounts[2];
+    const privateKey1 = account1.privateKey.slice(2);
+    const privateKey2 = account2.privateKey.slice(2);
+
+    // db is configured with account 1
+    const { meta } = await db
+      .prepare("CREATE TABLE test_revoke (a int);")
+      .all();
+    const tableName = meta.txn?.name ?? "";
+
+    await yargs([
+      "write",
+      `GRANT INSERT ON ${tableName} TO '${account2.address}';`,
+      ...defaultArgs,
+      "--privateKey",
+      privateKey1,
+    ])
+      .command(mod)
+      .parse();
+
+    // ensure account 2 can insert
+    await yargs([
+      "write",
+      `INSERT INTO ${tableName} (a) VALUES (1);`,
+      ...defaultArgs,
+      "--privateKey",
+      privateKey2,
+    ])
+      .command(mod)
+      .parse();
+
+    const { results } = await db
+      .prepare(`SELECT * FROM ${tableName}`)
+      .all<{ a: number }>();
+
+    equal(results instanceof Array, true);
+    equal(results.length, 1);
+    equal(results[0].a, 1);
+
+    await yargs([
+      "write",
+      `REVOKE INSERT ON ${tableName} FROM '${account2.address}';`,
+      ...defaultArgs,
+      "--privateKey",
+      privateKey1,
+    ])
+      .command(mod)
+      .parse();
+
+    const consoleError = spy(logger, "error");
+
+    // ensure account 2 can no longer insert
+    await yargs([
+      "write",
+      `INSERT INTO ${tableName} (a) VALUES (333);`,
+      ...defaultArgs,
+      "--privateKey",
+      privateKey2,
+    ])
+      .command(mod)
+      .parse();
+
+    match(consoleError.getCall(0).firstArg, /not enough privileges/);
+  });
+
+  test("passes with insert and subselect", async function () {
+    const account = accounts[1];
+    // create a "main" (mutable target) table and an "admin" (subselect target) table
+    const [batchCreate] = await db.batch([
+      db.prepare(`CREATE TABLE main (id INTEGER PRIMARY KEY, data TEXT);`),
+      db.prepare(`CREATE TABLE admin (id INTEGER PRIMARy KEY, address TEXT);`),
+    ]);
+    const response = await batchCreate.meta.txn?.wait();
+    const names = response?.names ?? [];
+    const tableToMutate = names[0];
+    const tableToSubselect = names[1];
+
+    // seed the target subselect table with data
+    const privateKey = account.privateKey.slice(2);
+    const consoleLog = spy(logger, "log");
+    await yargs([
+      "write",
+      `INSERT INTO ${tableToSubselect} (address) VALUES ('${account.address}');`,
+      ...defaultArgs,
+      "--privateKey",
+      privateKey,
+    ])
+      .command(mod)
+      .parse();
+    let res = consoleLog.getCall(0).firstArg;
+    let value = JSON.parse(res);
+    let { transactionHash, link } = value.meta?.txn;
+    equal(typeof transactionHash, "string");
+    equal(transactionHash.startsWith("0x"), true);
+    equal(link, undefined);
+
+    // insert into the "main" table using a subselect from the "admin" table
+    const data = "test";
+    await yargs([
+      "write",
+      `INSERT INTO ${tableToMutate} (data) select '${data}' from ${tableToSubselect} where address = '${account.address}';`,
+      ...defaultArgs,
+      "--privateKey",
+      privateKey,
+    ])
+      .command(mod)
+      .parse();
+    res = consoleLog.getCall(0).firstArg;
+    value = JSON.parse(res);
+    ({ transactionHash, link } = value.meta?.txn);
+    equal(typeof transactionHash, "string");
+    equal(transactionHash.startsWith("0x"), true);
+    equal(link, undefined);
+
+    // verify the data was inserted, including the auto-incremented `id`
+    const { results } = (await db
+      .prepare(`select * from ${tableToMutate};`)
+      .run()) as any;
+    equal(results[0].id, 1);
+    equal(results[0].data, data);
   });
 });

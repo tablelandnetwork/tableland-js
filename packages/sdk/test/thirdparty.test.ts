@@ -15,14 +15,14 @@ import { escapeSQLiteIdentifier } from "@databases/escape-identifier";
 import { NonceManager } from "@ethersproject/experimental";
 import { getDefaultProvider } from "../src/helpers/index.js";
 import { Database } from "../src/index.js";
-import { TEST_TIMEOUT_FACTOR } from "./setup";
+import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
 
 describe("thirdparty", function () {
   this.timeout(TEST_TIMEOUT_FACTOR * 10000);
 
   // Note that we're using the second account here
   const [, wallet] = getAccounts();
-  const provider = getDefaultProvider("http://127.0.0.1:8545");
+  const provider = getDefaultProvider(TEST_PROVIDER_URL);
   // const signer = wallet.connect(provider);
   const baseSigner = wallet.connect(provider);
   // Also demonstrates the nonce manager usage

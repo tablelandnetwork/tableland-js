@@ -2,17 +2,29 @@ import { equal } from "node:assert";
 import { describe, test, afterEach, before } from "mocha";
 import { spy, restore } from "sinon";
 import yargs from "yargs/yargs";
-import { getAccounts, getDatabase } from "@tableland/local";
+import { getDefaultProvider } from "ethers";
+import { getAccounts } from "@tableland/local";
+import { helpers, Database } from "@tableland/sdk";
 import * as mod from "../src/commands/transfer.js";
 import { wait, logger } from "../src/utils.js";
-import { helpers } from "@tableland/sdk";
+import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
+
+const defaultArgs = [
+  "--providerUrl",
+  TEST_PROVIDER_URL,
+  "--chain",
+  "local-tableland",
+];
+
+// account[0] is the Validator's wallet, try to avoid using that
+const accounts = getAccounts();
+const wallet = accounts[1];
+const provider = getDefaultProvider(TEST_PROVIDER_URL);
+const signer = wallet.connect(provider);
+const db = new Database({ signer, autoWait: true });
 
 describe("commands/transfer", function () {
-  this.timeout("30s");
-
-  // account[0] is the Validator's wallet, try to avoid using that
-  const accounts = getAccounts();
-  const db = getDatabase(accounts[1]);
+  this.timeout(30000 * TEST_TIMEOUT_FACTOR);
 
   let tableName: string;
   before(async function () {
@@ -29,7 +41,12 @@ describe("commands/transfer", function () {
 
   test("throws without privateKey", async function () {
     const consoleError = spy(logger, "error");
-    await yargs(["transfer", tableName, "0x0000000000000000000000"])
+    await yargs([
+      "transfer",
+      ...defaultArgs,
+      tableName,
+      "0x0000000000000000000000",
+    ])
       .command(mod)
       .parse();
 
@@ -50,6 +67,9 @@ describe("commands/transfer", function () {
       "0x0000000000000000000000000000000000000000",
       "--chain",
       "does-not-exist",
+      // don't use defaults since we are testing chain
+      "--providerUrl",
+      TEST_PROVIDER_URL,
       "--privateKey",
       privateKey,
     ])
@@ -64,7 +84,7 @@ describe("commands/transfer", function () {
     const account = accounts[1];
     const privateKey = account.privateKey.slice(2);
     const consoleError = spy(logger, "error");
-    await yargs(["transfer", "fooz", "blah", "-k", privateKey])
+    await yargs(["transfer", "fooz", "blah", ...defaultArgs, "-k", privateKey])
       .command(mod)
       .parse();
 
@@ -80,10 +100,9 @@ describe("commands/transfer", function () {
       "transfer",
       tableName,
       "0x00",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
-      "--chain",
-      "local-tableland",
     ])
       .command(mod)
       .parse();
@@ -105,10 +124,9 @@ describe("commands/transfer", function () {
       "transfer",
       tableName,
       account2Address,
+      ...defaultArgs,
       "--privateKey",
       privateKey,
-      "--chain",
-      "local-tableland",
     ])
       .command(mod)
       .parse();

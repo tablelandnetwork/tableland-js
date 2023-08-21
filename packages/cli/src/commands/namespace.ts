@@ -1,6 +1,6 @@
 import type yargs from "yargs";
-import { Arguments, CommandBuilder } from "yargs";
-import { GlobalOptions } from "../cli.js";
+import { type Arguments, type CommandBuilder } from "yargs";
+import { type GlobalOptions } from "../cli.js";
 import { setupCommand } from "../lib/commandSetup.js";
 import { logger } from "../utils.js";
 
@@ -13,10 +13,12 @@ export interface Options extends GlobalOptions {
 export const command = "namespace <domain> [mappings..]";
 export const desc = "Manage ENS names for tables";
 
-async function getHandler(argv: yargs.ArgumentsCamelCase<Options>) {
+async function getHandler(
+  argv: yargs.ArgumentsCamelCase<Options>
+): Promise<void> {
   const { record } = argv;
   const { ens } = await setupCommand(argv);
-  if (!ens) {
+  if (ens == null) {
     logger.log(
       "To use ENS, ensure you have set the enableEnsExperiment flag to true"
     );
@@ -26,11 +28,13 @@ async function getHandler(argv: yargs.ArgumentsCamelCase<Options>) {
   logger.log(JSON.stringify({ value: await ens.resolveTable(record) }));
 }
 
-async function setHandler(argv: yargs.ArgumentsCamelCase<Options>) {
+async function setHandler(
+  argv: yargs.ArgumentsCamelCase<Options>
+): Promise<void> {
   try {
     const { domain, mappings } = argv;
     const { ens } = await setupCommand(argv);
-    if (!ens) {
+    if (ens == null) {
       logger.log(
         "To use ENS, ensure you have set the enableEnsExperiment flag to true"
       );
@@ -64,13 +68,19 @@ async function setHandler(argv: yargs.ArgumentsCamelCase<Options>) {
 
       logger.log(JSON.stringify(response));
     }
-    /* c8 ignore next 3 */
+    /* c8 ignore next 7 */
   } catch (err: any) {
-    logger.error(err?.cause?.message || err?.message);
+    logger.error(
+      typeof err?.cause?.message === "string"
+        ? err?.cause?.message
+        : err?.message
+    );
   }
 }
 
-export const builder: CommandBuilder<{}, Options> = (yargs) =>
+export const builder: CommandBuilder<Record<string, unknown>, Options> = (
+  yargs
+) =>
   yargs
     .command(
       "get <record>",
@@ -94,7 +104,7 @@ export const builder: CommandBuilder<{}, Options> = (yargs) =>
           .positional("mappings", {}) as yargs.Argv<Options>,
       setHandler
     )
-    .usage(``) as yargs.Argv<Options>;
+    .usage(``);
 
 /* c8 ignore next */
 export const handler = async (argv: Arguments<Options>): Promise<void> => {};

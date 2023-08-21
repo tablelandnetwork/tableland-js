@@ -1,0 +1,8 @@
+# These owners will be the default owners for everything in
+# the repo. Unless a later match takes precedence.
+# By convention in @tablelandnetwork repos, the first listed
+# CODEOWNER is the repo DRI (directly responsible individual)
+* @carsonfarmer @joewagner
+/packages/sdk/ @carsonfarmer @joewagner
+/packages/cli/ @carsonfarmer @joewagner @sanderpick @dtbuchholz
+/packages/local/ @joewagner @carsonfarmer

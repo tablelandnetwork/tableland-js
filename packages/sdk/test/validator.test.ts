@@ -17,7 +17,11 @@ import {
 import { Database } from "../src/index.js";
 import { Validator } from "../src/validator/index.js";
 import type { WaitableTransactionReceipt } from "../src/registry/index.js";
-import { TEST_TIMEOUT_FACTOR } from "./setup";
+import {
+  TEST_TIMEOUT_FACTOR,
+  TEST_PROVIDER_URL,
+  TEST_VALIDATOR_URL,
+} from "./setup";
 
 const chainId = getChainId("local-tableland");
 
@@ -25,7 +29,7 @@ describe("validator", function () {
   this.timeout(TEST_TIMEOUT_FACTOR * 10000);
   // Note that we're using the second account here
   const [, wallet] = getAccounts();
-  const provider = getDefaultProvider("http://127.0.0.1:8545");
+  const provider = getDefaultProvider(TEST_PROVIDER_URL);
   const baseUrl = getBaseUrl(chainId);
   const signer = wallet.connect(provider);
   const db = new Database({ signer, autoWait: true, baseUrl });
@@ -114,45 +118,44 @@ describe("validator", function () {
     });
 
     describe("without autoWait", function () {
-      let transactionHash: string = "";
-      this.beforeEach(async () => {
+      this.beforeAll(async () => {
         db.config.autoWait = false;
-        try {
-          const { meta } = await db
-            .prepare(`INSERT INTO ${txn.name}(name) VALUES(NULL);`)
-            .run();
-          transactionHash = meta.txn!.transactionHash!;
-          // This will throw
-          await meta.txn?.wait();
-        } catch (err) {
-          // no op
-        }
       });
+
+      this.afterEach(() => {
+        db.config.autoWait = true;
+      });
+
       test("when we call the receipt api and it returns an error", async function () {
+        const { meta } = await db
+          .prepare(`INSERT INTO ${txn.name} (name) VALUES(NULL);`)
+          .run();
+
+        const transactionHash = meta.txn!.transactionHash!;
+        // This will throw since not null has been violated, but we
+        // want to wait until the Validator has processed the txn
+        try {
+          await meta.txn?.wait();
+        } catch (e) {}
+
         const receipt = await api.receiptByTransactionHash({
           chainId,
           transactionHash,
         });
         match(receipt.error!, /.*msg: NOT NULL constraint failed:.*/);
       });
-      this.afterEach(() => {
-        db.config.autoWait = true;
-      });
-    });
 
-    describe("without autoWait", function () {
-      let localTransaction: WaitableTransactionReceipt;
-      this.beforeEach(async () => {
+      test("when we poll for a transaction receipt and it succeeds", async function () {
         db.config.autoWait = false;
         const {
           meta: { txn: localTxn },
         } = await db
           .prepare(`INSERT INTO ${txn.name}(name) VALUES('Lucas');`)
           .run();
-        localTransaction = localTxn!;
-      });
-      test("when we poll for a transaction receipt and it succeeds", async function () {
-        const { chainId, transactionHash } = localTransaction;
+
+        const localTransaction = localTxn;
+
+        const { chainId, transactionHash } = localTransaction!;
 
         const response = await api.pollForReceiptByTransactionHash({
           chainId,
@@ -161,47 +164,8 @@ describe("validator", function () {
         strictEqual(response.transactionHash, transactionHash);
         strictEqual(response.chainId, chainId);
         strictEqual(response.error, undefined);
-        strictEqual(response.tableId, localTransaction.tableId);
-        strictEqual(response.blockNumber, localTransaction.blockNumber);
-      });
-      this.afterEach(() => {
-        db.config.autoWait = true;
-      });
-    });
-
-    describe("without autoWait", function () {
-      let transactionHash: string = "";
-      this.beforeEach(async () => {
-        db.config.autoWait = false;
-        try {
-          const { meta } = await db
-            .prepare(`INSERT INTO ${txn.name}(name) VALUES(NULL);`)
-            .run();
-          transactionHash = meta.txn!.transactionHash;
-          // This will throw
-          await meta.txn?.wait();
-        } catch (err) {
-          // no op
-        }
-      });
-      test("when we poll for a transaction receipt and it fails", async function () {
-        try {
-          const { meta } = await db
-            .prepare(`INSERT INTO ${txn.name}(name) VALUES(NULL);`)
-            .run();
-          transactionHash = meta.txn!.transactionHash;
-        } catch (err) {
-          /* c8 ignore next 2 */
-        }
-
-        const receipt = await api.pollForReceiptByTransactionHash({
-          chainId,
-          transactionHash,
-        });
-        match(receipt.error!, /.*msg: NOT NULL constraint failed:.*/);
-      });
-      this.afterEach(() => {
-        db.config.autoWait = true;
+        strictEqual(response.tableId, localTransaction!.tableId);
+        strictEqual(response.blockNumber, localTransaction!.blockNumber);
       });
     });
   });
@@ -219,10 +183,7 @@ describe("validator", function () {
         "https://render.tableland.xyz/31337/1.html"
       );
       // TODO: This is correct, but shouldn't it be updated to the new API endpoints?
-      strictEqual(
-        response.externalUrl,
-        "http://localhost:8080/api/v1/tables/31337/1"
-      );
+      strictEqual(response.externalUrl, `${TEST_VALIDATOR_URL}/tables/31337/1`);
       strictEqual(
         response.image,
         "https://bafkreifhuhrjhzbj4onqgbrmhpysk2mop2jimvdvfut6taiyzt2yqzt43a.ipfs.dweb.link"
@@ -330,17 +291,12 @@ describe("validator", function () {
   });
   describe("query", function () {
     test("where we get no rows back from a query", async function () {
-      // The remote API returns 404 here, but downstream (in the sdk) we catch it
-      await rejects(
-        api.queryByStatement<{ counter: number }>({
-          statement: `select * from ${txn.name} where id=-1;`,
-          format: "objects",
-        }),
-        (err: any) => {
-          strictEqual(err.message, "Row not found");
-          return true;
-        }
-      );
+      const res = await api.queryByStatement<{ counter: number }>({
+        statement: `select * from ${txn.name} where id=-1;`,
+        format: "objects",
+      });
+
+      deepStrictEqual(res, []);
     });
 
     test("where query is called with an invalid statement", async function () {

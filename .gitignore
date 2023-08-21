@@ -1,1 +1,44 @@
+# general
+.DS_Store
 node_modules/
+
+# config
+.vscode
+.idea
+.env
+.envrc
+.tableland*
+
+# build
+dist/
+docs/
+tmp/
+typechain/
+typechain-types/
+cache/
+artifacts/
+.openzeppelin/*
+
+# test
+coverage/
+test-results/
+playwright-report/
+playwright/.cache/
+coverage.json
+
+### sdk ###
+packages/sdk/test/aliases/json-file-aliases.json
+packages/sdk/test/validator/database.db
+packages/sdk/test/validator/*.db
+packages/sdk/test/validator/*.db*
+packages/sdk/test/validator/backups
+
+### local ###
+
+# Validator artifacts
+packages/local/validator/*.db
+packages/local/validator/*.db*
+packages/local/validator/backups
+
+# registry artifacts
+packages/local/registry/.openzeppelin/

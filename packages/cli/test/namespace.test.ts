@@ -2,11 +2,11 @@ import { equal } from "node:assert";
 import { describe, test, afterEach, beforeEach } from "mocha";
 import { spy, restore, stub } from "sinon";
 import yargs from "yargs/yargs";
+import { ethers } from "ethers";
 import * as mod from "../src/commands/namespace.js";
 import ensLib from "../src/lib/EnsCommand";
-import { ethers } from "ethers";
-import { getResolverMock } from "./mock.js";
 import { logger } from "../src/utils.js";
+import { getResolverMock } from "./mock.js";
 
 describe("commands/namespace", function () {
   beforeEach(async function () {
@@ -104,11 +104,9 @@ describe("commands/namespace", function () {
   });
 
   test("Get ENS name", async function () {
-    stub(
-      ethers.providers.JsonRpcProvider.prototype,
-      "getResolver"
-      // @ts-ignore
-    ).callsFake(getResolverMock);
+    stub(ethers.providers.JsonRpcProvider.prototype, "getResolver").callsFake(
+      getResolverMock
+    );
 
     const consoleLog = spy(logger, "log");
     await yargs([

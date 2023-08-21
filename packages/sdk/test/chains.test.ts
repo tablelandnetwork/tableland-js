@@ -10,13 +10,14 @@ import {
   supportedChains,
   overrideDefaults,
 } from "../src/helpers/chains.js";
+import { TEST_VALIDATOR_URL } from "./setup";
 
 describe("chains", function () {
   describe("getBaseUrl()", function () {
     test("where we check some of the known defaults", function () {
       // We don't require a specific set because we don't want to have to update
       // these tests every time
-      const localhost = "http://localhost:8080/api/v1";
+      const localhost = "http://localhost:8081/api/v1";
       const testnets = "https://testnets.tableland.network/api/v1";
       const mainnet = "https://tableland.network/api/v1";
       strictEqual(getBaseUrl("localhost"), localhost);
@@ -79,7 +80,7 @@ describe("chains", function () {
     });
 
     test("where spot check a few chain info objects", function () {
-      const localhostUrl = "http://localhost:8080/api/v1";
+      const localhostUrl = TEST_VALIDATOR_URL;
       const testnetsUrl = "https://testnets.tableland.network/api/v1";
       const mainnetUrl = "https://tableland.network/api/v1";
 

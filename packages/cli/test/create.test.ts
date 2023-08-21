@@ -5,15 +5,23 @@ import yargs from "yargs/yargs";
 import { temporaryWrite } from "tempy";
 import mockStd from "mock-stdin";
 import { getAccounts } from "@tableland/local";
+import { ethers } from "ethers";
 import * as mod from "../src/commands/create.js";
 import { wait, logger } from "../src/utils.js";
-import { ethers } from "ethers";
 import { getResolverMock } from "./mock.js";
+import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
+
+const defaultArgs = [
+  "--chain",
+  "local-tableland",
+  "--providerUrl",
+  TEST_PROVIDER_URL,
+];
 
 const accounts = getAccounts();
 
 describe("commands/create", function () {
-  this.timeout("30s");
+  this.timeout(30000 * TEST_TIMEOUT_FACTOR);
 
   before(async function () {
     await wait(1000);
@@ -40,6 +48,8 @@ describe("commands/create", function () {
       "(id int primary key, desc text)",
       "--privateKey",
       privateKey,
+      "--providerUrl",
+      TEST_PROVIDER_URL,
     ])
       .command(mod)
       .parse();
@@ -61,6 +71,8 @@ describe("commands/create", function () {
       "invalid_chain_table",
       "--chain",
       "foozbaaz",
+      "--providerUrl",
+      TEST_PROVIDER_URL,
     ])
       .command(mod)
       .parse();
@@ -76,12 +88,11 @@ describe("commands/create", function () {
     await yargs([
       "create",
       "invalid",
-      "--chain",
-      "local-tableland",
       "--prefix",
       "cooltable",
       "--privateKey",
       privateKey,
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -100,12 +111,11 @@ describe("commands/create", function () {
     await yargs([
       "create",
       "create table fooz (a int);insert into fooz (a) values (1);",
-      "--chain",
-      "local-tableland",
       "--prefix",
       "cooltable",
       "--privateKey",
       privateKey,
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -122,10 +132,9 @@ describe("commands/create", function () {
       "create",
       "--file",
       "missing.sql",
-      "--chain",
-      "local-tableland",
       "--privateKey",
       privateKey,
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -141,14 +150,8 @@ describe("commands/create", function () {
     const consoleError = spy(logger, "error");
     setTimeout(() => {
       stdin.send("\n").end();
-    }, 100);
-    await yargs([
-      "create",
-      "--chain",
-      "local-tableland",
-      "--privateKey",
-      privateKey,
-    ])
+    }, 300);
+    await yargs(["create", "--privateKey", privateKey, ...defaultArgs])
       .command(mod)
       .parse();
 
@@ -168,8 +171,7 @@ describe("commands/create", function () {
       "id int primary key, name text",
       "--privateKey",
       privateKey,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -188,12 +190,11 @@ describe("commands/create", function () {
     await yargs([
       "create",
       "id int primary key, name text",
-      "--chain",
-      "local-tableland",
       "--privateKey",
       privateKey,
       "--prefix",
       "first_table",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -210,6 +211,37 @@ describe("commands/create", function () {
     equal(transactionHash.startsWith("0x"), true);
   });
 
+  test("Create works with chain as number", async function () {
+    const [account] = accounts;
+    const privateKey = account.privateKey.slice(2);
+    const consoleLog = spy(logger, "log");
+    await yargs([
+      "create",
+      "id int primary key, name text",
+      "--chain",
+      "31337",
+      "--privateKey",
+      privateKey,
+      "--prefix",
+      "chainid_table",
+      "--providerUrl",
+      TEST_PROVIDER_URL,
+    ])
+      .command(mod)
+      .parse();
+
+    const res = consoleLog.getCall(0).firstArg;
+    const value = JSON.parse(res);
+    const { prefix, name, chainId, tableId, transactionHash } = value.meta.txn;
+
+    equal(prefix, "chainid_table");
+    equal(chainId, 31337);
+    equal(name.startsWith(prefix), true);
+    equal(name.endsWith(tableId), true);
+    equal(typeof transactionHash, "string");
+    equal(transactionHash.startsWith("0x"), true);
+  });
+
   test("passes with full create statement (override prefix)", async function () {
     const [account] = accounts;
     const privateKey = account.privateKey.slice(2);
@@ -217,12 +249,11 @@ describe("commands/create", function () {
     await yargs([
       "create",
       "create table second_table (id int primary key, name text);",
-      "--chain",
-      "local-tableland",
       "--privateKey",
       privateKey,
       "--prefix",
       "ignore_me",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -247,12 +278,11 @@ describe("commands/create", function () {
       "create",
       `create table first_table (id int primary key, name text);
       create table second_table (id int primary key, name text);`,
-      "--chain",
-      "local-tableland",
       "--privateKey",
       privateKey,
       "--prefix",
       "ignore_me",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -282,14 +312,13 @@ describe("commands/create", function () {
     const path = await temporaryWrite(`\nid int primary key,\nname text\n`);
     await yargs([
       "create",
-      "--chain",
-      "local-tableland",
       "--file",
       path,
       "--privateKey",
       privateKey,
       "--prefix",
       "file_test",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -316,13 +345,7 @@ describe("commands/create", function () {
         .send("create table stdin_test (id int primary key, name text);\n")
         .end();
     }, 100);
-    await yargs([
-      "create",
-      "--chain",
-      "local-tableland",
-      "--privateKey",
-      privateKey,
-    ])
+    await yargs(["create", "--privateKey", privateKey, ...defaultArgs])
       .command(mod)
       .parse();
 
@@ -351,15 +374,14 @@ describe("commands/create", function () {
       "create",
       "id integer, message text",
       "hello",
-      "--chain",
-      "local-tableland",
       "--privateKey",
       privateKey,
       "--ns",
       "foo.bar.eth",
       "--enableEnsExperiment",
       "--ensProviderUrl",
-      "https://localhost:8080",
+      "https://localhost:8082",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();

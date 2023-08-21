@@ -1,11 +1,11 @@
+import { resolve, dirname } from "path";
+import { mkdirSync, createWriteStream, type WriteStream } from "fs";
 import type yargs from "yargs";
 import type { Arguments, CommandBuilder } from "yargs";
 import yaml from "js-yaml";
-import { resolve, dirname } from "path";
-import { mkdirSync, createWriteStream, WriteStream } from "fs";
 import inquirer from "inquirer";
 import { getChains, logger } from "../utils.js";
-import { GlobalOptions } from "../cli.js";
+import { type GlobalOptions } from "../cli.js";
 
 export interface Options extends GlobalOptions {
   yes: boolean;
@@ -79,7 +79,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
         name: "path",
         message: 'Enter path to store config file (use "." to print to stdout)',
         default(answers: any) {
-          return resolve(`.${moduleName}rc.${answers.format}`);
+          return resolve(`.${moduleName}rc.${answers.format as string}`);
         },
       },
     ];
@@ -87,17 +87,19 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     // Extract path and format as we don't include them in the config file
     const response = await inquirer.prompt(questions, answers);
     output = Object.fromEntries(
-      Object.entries(response).filter(([_, v]) => !!v)
+      Object.entries(response).filter(([_, v]) => !!(v as boolean))
     ) as any;
   } else {
     output = { ...defaults, ...answers };
   }
   const { path, format, ...rest } = output;
-  const filePath = resolve(path || `.${moduleName}rc`);
+  const filePath = resolve(
+    typeof path === "string" ? path : `.${moduleName}rc`
+  );
   let stream = process.stdout as unknown as WriteStream;
   if (path !== ".") {
     mkdirSync(dirname(filePath), { recursive: true });
-    stream = createWriteStream(filePath, "utf-8") as WriteStream;
+    stream = createWriteStream(filePath, "utf-8");
   }
   try {
     switch (format) {
