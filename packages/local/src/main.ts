@@ -268,7 +268,7 @@ class LocalTableland {
       // process was already killed—it *is* possible with the validator process
       // but doesn't seem to happen with the Registry
       try {
-        // @ts-expect-error pic is possibly undefined, which is fine
+        // @ts-expect-error pid is possibly undefined, which is fine
         process.kill(-this.registry.pid);
       } catch (err: any) {
         if (err.code === "ESRCH") {

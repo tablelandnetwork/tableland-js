@@ -3,6 +3,6 @@
 # By convention in @tablelandnetwork repos, the first listed
 # CODEOWNER is the repo DRI (directly responsible individual)
 * @carsonfarmer @joewagner
-* /packages/sdk/ @carsonfarmer @joewagner
-* /packages/cli/ @carsonfarmer @joewagner @awmuncy @sanderpick @dtbuchholz
-* /packages/local/ @joewagner @carsonfarmer @awmuncy
+/packages/sdk/ @carsonfarmer @joewagner
+/packages/cli/ @carsonfarmer @joewagner @sanderpick @dtbuchholz
+/packages/local/ @joewagner @carsonfarmer
