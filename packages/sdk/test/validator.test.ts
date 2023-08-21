@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import assert, {
   strictEqual,
+  equal,
   rejects,
   match,
   notStrictEqual,
@@ -449,6 +450,14 @@ describe("validator", function () {
         }
       );
       await getDelay(5000);
+    });
+
+    test("when valid api key is used there is no exeption", async function () {
+      const api = new Validator({ baseUrl });
+      const responses = await Promise.all(getRange(15).map(async () => await api.health()));
+
+      equal(responses.length, 15);
+      console.log(JSON.stringify(responses));
     });
   });
 });
