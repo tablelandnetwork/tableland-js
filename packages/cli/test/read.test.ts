@@ -4,26 +4,18 @@ import { spy, restore, stub } from "sinon";
 import yargs from "yargs/yargs";
 import { temporaryWrite } from "tempy";
 import mockStd from "mock-stdin";
-import { ethers, getDefaultProvider } from "ethers";
-import { Database } from "@tableland/sdk";
-import { getAccounts } from "@tableland/local";
+import { getAccounts, getDatabase } from "@tableland/local";
+import { ethers } from "ethers";
+import { helpers, Database } from "@tableland/sdk";
 import * as mod from "../src/commands/read.js";
-import { wait, logger } from "../src/utils.js";
+import { wait, logger, jsonFileAliases } from "../src/utils.js";
 import { getResolverMock } from "./mock.js";
-import {
-  TEST_TIMEOUT_FACTOR,
-  TEST_PROVIDER_URL,
-  TEST_VALIDATOR_URL,
-} from "./setup";
-
-const accounts = getAccounts();
-const wallet = accounts[1];
-const provider = getDefaultProvider(TEST_PROVIDER_URL);
-const signer = wallet.connect(provider);
-const db = new Database({ signer, autoWait: true });
 
 describe("commands/read", function () {
-  this.timeout(10000 * TEST_TIMEOUT_FACTOR);
+  this.timeout(10000);
+
+  const accounts = getAccounts();
+  const db = getDatabase(accounts[1]);
 
   before(async function () {
     await wait(5000);
@@ -31,7 +23,7 @@ describe("commands/read", function () {
 
   afterEach(async function () {
     restore();
-    // ensure these tests don't hit rate limitting errors
+    // ensure these tests don't hit rate limiting errors
     await wait(500);
   });
 
@@ -39,7 +31,7 @@ describe("commands/read", function () {
     const consoleError = spy(logger, "error");
     const tableName = "something";
     const statement = `select * from ${tableName};`;
-    await yargs(["read", statement, "--baseUrl", TEST_VALIDATOR_URL])
+    await yargs(["read", statement, "--baseUrl", "http://127.0.0.1:8080"])
       .command(mod)
       .parse();
 
@@ -52,7 +44,7 @@ describe("commands/read", function () {
 
   test("fails with invalid statement", async function () {
     const consoleError = spy(logger, "error");
-    await yargs(["read", "invalid;", "--baseUrl", TEST_VALIDATOR_URL])
+    await yargs(["read", "invalid;", "--baseUrl", "http://127.0.0.1:8080"])
       .command(mod)
       .parse();
 
@@ -111,7 +103,7 @@ describe("commands/read", function () {
       "--file",
       "missing.sql",
       "--baseUrl",
-      TEST_VALIDATOR_URL,
+      "http://127.0.0.1:8080",
     ])
       .command(mod)
       .parse();
@@ -126,13 +118,39 @@ describe("commands/read", function () {
     setTimeout(() => {
       stdin.send("\n").end();
     }, 300);
-    await yargs(["read", "--baseUrl", TEST_VALIDATOR_URL]).command(mod).parse();
+    await yargs(["read", "--baseUrl", "http://127.0.0.1:8080"])
+      .command(mod)
+      .parse();
 
     const value = consoleError.getCall(0).firstArg;
     equal(
       value,
       "missing input value (`statement`, `file`, or piped input from stdin required)"
     );
+  });
+
+  test("fails with invalid table alias file", async function () {
+    const [account] = accounts;
+    const privateKey = account.privateKey.slice(2);
+    const consoleError = spy(logger, "error");
+    // Set up faux aliases file
+    const aliasesFilePath = "./invalid.json";
+
+    await yargs([
+      "read",
+      "SELECT * FROM table_aliases;",
+      "--chain",
+      "local-tableland",
+      "--privateKey",
+      privateKey,
+      "--aliases",
+      aliasesFilePath,
+    ])
+      .command(mod)
+      .parse();
+
+    const res = consoleError.getCall(0).firstArg;
+    equal(res, "invalid table aliases file");
   });
 
   test("passes with extract option", async function () {
@@ -314,7 +332,7 @@ describe("commands/read", function () {
     deepStrictEqual(value, '{"columns":[{"name":"counter"}],"rows":[[1]]}');
   });
 
-  test("passes withoutput format (table) when results are empty", async function () {
+  test("passes with output format (table) when results are empty", async function () {
     const { meta } = await db
       .prepare("CREATE TABLE empty_table (a int);")
       .all();
@@ -327,5 +345,46 @@ describe("commands/read", function () {
 
     const value = consoleLog.getCall(0).firstArg;
     deepStrictEqual(value, '{"columns":[],"rows":[]}');
+  });
+
+  test("passes with table aliases", async function () {
+    const account = accounts[1];
+    // Set up test aliases file
+    const aliasesFilePath = await temporaryWrite(`{}`, { extension: "json" });
+    // Create new db instance to enable aliases
+    const db = new Database({
+      signer: account,
+      baseUrl: helpers.getBaseUrl("local-tableland"),
+      autoWait: true,
+      aliases: jsonFileAliases(aliasesFilePath),
+    });
+    let { meta } = await db
+      .prepare("CREATE TABLE table_aliases (id int);")
+      .all();
+    const name = meta.txn?.name ?? "";
+    const prefix = meta.txn?.prefix ?? "";
+
+    // Check the aliases file was updated and matches with the prefix
+    const nameMap = await jsonFileAliases(aliasesFilePath).read();
+    const tableAlias =
+      Object.keys(nameMap).find((alias) => nameMap[alias] === name) ?? "";
+    equal(tableAlias, prefix);
+
+    // Write to the table
+    ({ meta } = await db.prepare(`INSERT INTO ${name} values (1);`).run());
+    await meta.txn?.wait();
+
+    const consoleLog = spy(logger, "log");
+    await yargs([
+      "read",
+      `select * from ${tableAlias};`,
+      "--aliases",
+      aliasesFilePath,
+    ])
+      .command(mod)
+      .parse();
+
+    const value = consoleLog.getCall(0).firstArg;
+    deepStrictEqual(value, '[{"id":1}]');
   });
 });

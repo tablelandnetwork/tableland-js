@@ -7,21 +7,13 @@ import mockStd from "mock-stdin";
 import { getAccounts } from "@tableland/local";
 import { ethers } from "ethers";
 import * as mod from "../src/commands/create.js";
-import { wait, logger } from "../src/utils.js";
+import { wait, logger, jsonFileAliases } from "../src/utils.js";
 import { getResolverMock } from "./mock.js";
-import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
-
-const defaultArgs = [
-  "--chain",
-  "local-tableland",
-  "--providerUrl",
-  TEST_PROVIDER_URL,
-];
 
 const accounts = getAccounts();
 
 describe("commands/create", function () {
-  this.timeout(30000 * TEST_TIMEOUT_FACTOR);
+  this.timeout("30s");
 
   before(async function () {
     await wait(1000);
@@ -48,8 +40,6 @@ describe("commands/create", function () {
       "(id int primary key, desc text)",
       "--privateKey",
       privateKey,
-      "--providerUrl",
-      TEST_PROVIDER_URL,
     ])
       .command(mod)
       .parse();
@@ -71,8 +61,6 @@ describe("commands/create", function () {
       "invalid_chain_table",
       "--chain",
       "foozbaaz",
-      "--providerUrl",
-      TEST_PROVIDER_URL,
     ])
       .command(mod)
       .parse();
@@ -88,11 +76,12 @@ describe("commands/create", function () {
     await yargs([
       "create",
       "invalid",
+      "--chain",
+      "local-tableland",
       "--prefix",
       "cooltable",
       "--privateKey",
       privateKey,
-      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -111,11 +100,12 @@ describe("commands/create", function () {
     await yargs([
       "create",
       "create table fooz (a int);insert into fooz (a) values (1);",
+      "--chain",
+      "local-tableland",
       "--prefix",
       "cooltable",
       "--privateKey",
       privateKey,
-      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -132,9 +122,10 @@ describe("commands/create", function () {
       "create",
       "--file",
       "missing.sql",
+      "--chain",
+      "local-tableland",
       "--privateKey",
       privateKey,
-      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -151,7 +142,13 @@ describe("commands/create", function () {
     setTimeout(() => {
       stdin.send("\n").end();
     }, 300);
-    await yargs(["create", "--privateKey", privateKey, ...defaultArgs])
+    await yargs([
+      "create",
+      "--chain",
+      "local-tableland",
+      "--privateKey",
+      privateKey,
+    ])
       .command(mod)
       .parse();
 
@@ -160,6 +157,32 @@ describe("commands/create", function () {
       value,
       "missing input value (`schema`, `file`, or piped input from stdin required)"
     );
+  });
+
+  test("throws with invalid table alias file", async function () {
+    const [account] = accounts;
+    const privateKey = account.privateKey.slice(2);
+    const consoleError = spy(logger, "error");
+    // Set up faux aliases file
+    const aliasesFilePath = "./invalid.json";
+
+    await yargs([
+      "create",
+      "id int",
+      "--prefix",
+      "table_aliases",
+      "--chain",
+      "local-tableland",
+      "--privateKey",
+      privateKey,
+      "--aliases",
+      aliasesFilePath,
+    ])
+      .command(mod)
+      .parse();
+
+    const res = consoleError.getCall(0).firstArg;
+    equal(res, "invalid table aliases file");
   });
 
   test("creates table if prefix not provided", async function () {
@@ -171,7 +194,8 @@ describe("commands/create", function () {
       "id int primary key, name text",
       "--privateKey",
       privateKey,
-      ...defaultArgs,
+      "--chain",
+      "local-tableland",
     ])
       .command(mod)
       .parse();
@@ -183,18 +207,19 @@ describe("commands/create", function () {
     match(name, /^_31337_[0-9]+$/);
   });
 
-  test("Create passes with local-tableland", async function () {
+  test("create passes with local-tableland", async function () {
     const [account] = accounts;
     const privateKey = account.privateKey.slice(2);
     const consoleLog = spy(logger, "log");
     await yargs([
       "create",
       "id int primary key, name text",
+      "--chain",
+      "local-tableland",
       "--privateKey",
       privateKey,
       "--prefix",
       "first_table",
-      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -224,8 +249,6 @@ describe("commands/create", function () {
       privateKey,
       "--prefix",
       "chainid_table",
-      "--providerUrl",
-      TEST_PROVIDER_URL,
     ])
       .command(mod)
       .parse();
@@ -249,11 +272,12 @@ describe("commands/create", function () {
     await yargs([
       "create",
       "create table second_table (id int primary key, name text);",
+      "--chain",
+      "local-tableland",
       "--privateKey",
       privateKey,
       "--prefix",
       "ignore_me",
-      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -278,11 +302,12 @@ describe("commands/create", function () {
       "create",
       `create table first_table (id int primary key, name text);
       create table second_table (id int primary key, name text);`,
+      "--chain",
+      "local-tableland",
       "--privateKey",
       privateKey,
       "--prefix",
       "ignore_me",
-      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -312,13 +337,14 @@ describe("commands/create", function () {
     const path = await temporaryWrite(`\nid int primary key,\nname text\n`);
     await yargs([
       "create",
+      "--chain",
+      "local-tableland",
       "--file",
       path,
       "--privateKey",
       privateKey,
       "--prefix",
       "file_test",
-      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -345,7 +371,13 @@ describe("commands/create", function () {
         .send("create table stdin_test (id int primary key, name text);\n")
         .end();
     }, 100);
-    await yargs(["create", "--privateKey", privateKey, ...defaultArgs])
+    await yargs([
+      "create",
+      "--chain",
+      "local-tableland",
+      "--privateKey",
+      privateKey,
+    ])
       .command(mod)
       .parse();
 
@@ -374,14 +406,15 @@ describe("commands/create", function () {
       "create",
       "id integer, message text",
       "hello",
+      "--chain",
+      "local-tableland",
       "--privateKey",
       privateKey,
       "--ns",
       "foo.bar.eth",
       "--enableEnsExperiment",
       "--ensProviderUrl",
-      "https://localhost:8082",
-      ...defaultArgs,
+      "https://localhost:8080",
     ])
       .command(mod)
       .parse();
@@ -415,5 +448,67 @@ describe("commands/create", function () {
 
     const value = consoleError.getCall(0).firstArg;
     equal(value, "cannot determine provider chain ID");
+  });
+
+  test("passes with table aliases", async function () {
+    const [account] = accounts;
+    const privateKey = account.privateKey.slice(2);
+    const consoleLog = spy(logger, "log");
+    // Set up test aliases file
+    const aliasesFilePath = await temporaryWrite(`{}`, { extension: "json" });
+
+    await yargs([
+      "create",
+      "id int",
+      "--prefix",
+      "table_aliases",
+      "--chain",
+      "local-tableland",
+      "--privateKey",
+      privateKey,
+      "--aliases",
+      aliasesFilePath,
+    ])
+      .command(mod)
+      .parse();
+
+    let res = consoleLog.getCall(0).firstArg;
+    let value = JSON.parse(res);
+    const { prefix1, name1 } = value.meta.txn;
+
+    // Check the aliases file was updated and matches with the prefix
+    let nameMap = await jsonFileAliases(aliasesFilePath).read();
+    const tableAlias1 = Object.keys(nameMap).find(
+      (alias) => nameMap[alias] === name1
+    );
+    equal(tableAlias1, prefix1);
+
+    // Make sure that creating another table mutates the file, not overwrites it
+    await yargs([
+      "create",
+      "id int",
+      "--prefix",
+      "second_table",
+      "--chain",
+      "local-tableland",
+      "--privateKey",
+      privateKey,
+      "--aliases",
+      aliasesFilePath,
+    ])
+      .command(mod)
+      .parse();
+
+    res = consoleLog.getCall(0).firstArg;
+    value = JSON.parse(res);
+    const { prefix2, name2 } = value.meta.txn;
+
+    // Check the aliases file was updated and matches with both prefixes
+    nameMap = await jsonFileAliases(aliasesFilePath).read();
+    const tableAlias2 = Object.keys(nameMap).find(
+      (alias) => nameMap[alias] === name2
+    );
+    equal(tableAlias1, prefix1);
+    equal(tableAlias2, prefix2);
   });
 });

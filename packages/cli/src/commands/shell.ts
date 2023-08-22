@@ -10,7 +10,7 @@ const help = `Commands:
 .exit - exit the shell
 .help - show this help
 
-SQL Queries can be multi-line, and must end with a semicolon (;).`;
+SQL Queries can be multi-line, and must end with a semicolon (;)`;
 
 export interface Options extends GlobalOptions {
   statement?: string;
@@ -59,6 +59,7 @@ async function fireFullQuery(
 ): Promise<void> {
   try {
     const { database, ens } = tablelandConnection;
+
     if (argv.enableEnsExperiment != null && ens != null) {
       statement = await ens.resolve(statement);
     }
@@ -70,15 +71,38 @@ async function fireFullQuery(
     const response = await stmt.all();
 
     logger.log(JSON.stringify(response.results));
+    const tableName = response.meta.txn?.name;
+    // Check if table aliases are enabled and, if so, include them in the logging
+    let tableAlias;
+    const aliasesEnabled = database.config.aliases != null;
+    if (aliasesEnabled) {
+      const tableAliases = await database.config.aliases?.read();
+      if (tableAliases != null) {
+        tableAlias = Object.keys(tableAliases).find(
+          (alias) => tableAliases[alias] === tableName
+        );
+      }
+    }
+    const logDataCreate: Partial<{ createdTable: string; alias: string }> = {
+      createdTable: tableName,
+    };
+    const logDataWrite: Partial<{ updatedTable: string; alias: string }> = {
+      updatedTable: tableName,
+    };
+    if (tableAlias != null) {
+      logDataCreate.alias = tableAlias;
+      logDataWrite.alias = tableAlias;
+    }
     switch (type) {
       case "create":
-        logger.log(JSON.stringify({ createdTable: response.meta.txn?.name }));
+        logger.log(JSON.stringify(logDataCreate));
         break;
       case "write":
-        logger.log(JSON.stringify({ updatedTable: response.meta.txn?.name }));
+        logger.log(JSON.stringify(logDataWrite));
         break;
       default:
     }
+
     /* c8 ignore next 3 */
   } catch (err: any) {
     logger.error(
@@ -105,7 +129,7 @@ async function shellYeah(
         history,
         input: process.stdin,
         output: process.stdout,
-        prompt: "tableland>",
+        prompt: "tableland> ",
         terminal: true,
       });
       rl.prompt();
@@ -131,7 +155,6 @@ async function shellYeah(
             case "help":
             default:
               logger.log(help);
-
               break;
           }
         }
@@ -177,7 +200,7 @@ export const builder: CommandBuilder<Record<string, unknown>, Options> = (
     .option("format", {
       type: "string",
       choices: ["pretty", "table", "objects"] as const,
-      description: "Output format. One of 'pretty', 'table', or 'objects'.",
+      description: "Output format. One of 'pretty', 'table', or 'objects'",
       default: "pretty",
     }) as yargs.Argv<Options>;
 

@@ -48,10 +48,10 @@ async function setHandler(
       const valueRegex = /^[a-zA-Z_][a-zA-Z0-9_]*_[0-9]+_[0-9]+$/;
 
       if (keyRegex.exec(key) === null) {
-        throw new Error("Only letters or underscores in key name");
+        throw new Error("only letters or underscores in key name");
       }
       if (valueRegex.exec(value) === null) {
-        throw new Error("Tablename is invalid");
+        throw new Error("table name is invalid");
       }
       return {
         key,
@@ -84,7 +84,7 @@ export const builder: CommandBuilder<Record<string, unknown>, Options> = (
   yargs
     .command(
       "get <record>",
-      "Pass in a record to find it's table name",
+      "Pass in a record to find its table name",
       (yargs) =>
         yargs.positional("record", {
           type: "string",

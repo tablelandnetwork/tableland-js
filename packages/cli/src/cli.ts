@@ -46,6 +46,7 @@ export interface GlobalOptions {
   verbose: boolean;
   ensProviderUrl?: string;
   enableEnsExperiment?: boolean;
+  aliases?: string;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -59,7 +60,7 @@ const _argv = yargs(hideBin(process.argv))
   .env("TBL")
   .config(config?.config)
   // the help and version options are internal to yargs, hence they are
-  // at the top of the help message no matter what order we specifiy
+  // at the top of the help message no matter what order we specify
   .option("help", {
     alias: "h",
   })
@@ -91,7 +92,13 @@ const _argv = yargs(hideBin(process.argv))
     alias: "p",
     type: "string",
     description:
-      "JSON RPC API provider URL. (e.g., https://eth-rinkeby.alchemyapi.io/v2/123abc123a...)",
+            "JSON RPC API provider URL (e.g., https://eth-sepolia.g.alchemy.com/v2/123abc123a...)",
+  })
+  .option("aliases", {
+    alias: "a",
+    type: "string",
+    description:
+      "Path to table aliases JSON file (e.g., ./tableland.aliases.json)",
   })
   .demandCommand(1, "")
   .strict().argv;

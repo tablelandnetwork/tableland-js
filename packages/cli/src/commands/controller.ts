@@ -1,7 +1,9 @@
 import type yargs from "yargs";
 import type { Arguments, CommandBuilder } from "yargs";
 import { Registry } from "@tableland/sdk";
+import { init } from "@tableland/sqlparser";
 import {
+  getTableNameWithAlias,
   getWalletWithProvider,
   getLink,
   logger,
@@ -28,11 +30,13 @@ export const builder: CommandBuilder<Record<string, unknown>, Options> = (
       (yargs) =>
         yargs.positional("name", {
           type: "string",
-          description: "The target table name",
+          description: "The target table name (or alias, if enabled)",
         }) as yargs.Argv<Options>,
       async (argv) => {
-        const { name, privateKey, providerUrl } = argv;
+        await init();
+        const { privateKey, providerUrl } = argv;
         const chain = getChainName(argv.chain);
+        let { name } = argv;
 
         try {
           const signer = await getWalletWithProvider({
@@ -40,8 +44,12 @@ export const builder: CommandBuilder<Record<string, unknown>, Options> = (
             chain,
             providerUrl,
           });
-          const reg = new Registry({ signer });
 
+          // Check if the passed `name` is a table alias
+          if (argv.aliases != null)
+            name = await getTableNameWithAlias(argv.aliases, name);
+
+          const reg = new Registry({ signer });
           const res = await reg.getController(name);
 
           logger.log(res);
@@ -62,11 +70,13 @@ export const builder: CommandBuilder<Record<string, unknown>, Options> = (
           })
           .positional("name", {
             type: "string",
-            description: "The target table name",
+            description: "The target table name (or alias, if enabled)",
           }) as yargs.Argv<Options>,
       async (argv) => {
-        const { name, controller, privateKey, providerUrl } = argv;
+        await init();
+        const { controller, privateKey, providerUrl } = argv;
         const chain = getChainName(argv.chain);
+        let { name } = argv;
 
         try {
           const signer = await getWalletWithProvider({
@@ -74,6 +84,10 @@ export const builder: CommandBuilder<Record<string, unknown>, Options> = (
             chain,
             providerUrl,
           });
+
+          // Check if the passed `name` is a table alias
+          if (argv.aliases != null)
+            name = await getTableNameWithAlias(argv.aliases, name);
 
           const reg = new Registry({ signer });
           const res = await reg.setController({ tableName: name, controller });
@@ -93,11 +107,13 @@ export const builder: CommandBuilder<Record<string, unknown>, Options> = (
       (yargs) =>
         yargs.positional("name", {
           type: "string",
-          description: "The target table name",
+          description: "The target table name (or alias, if enabled)",
         }) as yargs.Argv<Options>,
       async (argv) => {
-        const { name, privateKey, providerUrl } = argv;
+        await init();
+        const { privateKey, providerUrl } = argv;
         const chain = getChainName(argv.chain);
+        let { name } = argv;
 
         try {
           const signer = await getWalletWithProvider({
@@ -106,8 +122,11 @@ export const builder: CommandBuilder<Record<string, unknown>, Options> = (
             providerUrl,
           });
 
-          const reg = new Registry({ signer });
+          // Check if the passed `name` is a table alias
+          if (argv.aliases != null)
+            name = await getTableNameWithAlias(argv.aliases, name);
 
+          const reg = new Registry({ signer });
           const res = await reg.lockController(name);
 
           const link = getLink(chain, res.hash);

@@ -52,7 +52,7 @@ Options:
       --version      Show version number                               [boolean]
   -k, --privateKey   Private key string                                 [string]
   -c, --chain        The EVM chain to target      [string] [default: "maticmum"]
-  -p, --providerUrl  JSON RPC API provider URL. (e.g., https://eth-rinkeby.alche
+  -p, --providerUrl  JSON RPC API provider URL. (e.g., https://eth-sepolia.alche
                      myapi.io/v2/123abc123a...)                         [string]
 ```
 
