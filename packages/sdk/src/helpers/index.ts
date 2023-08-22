@@ -27,6 +27,7 @@ export {
   extractChainId,
   extractSigner,
   jsonFileAliases,
+  prepReadConfig,
 } from "./config.js";
 export {
   type Signer,

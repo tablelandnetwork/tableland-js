@@ -1,4 +1,4 @@
-import { type Signal } from "../helpers/await.js";
+import { type Signal } from "../helpers/index.js";
 import { type FetchConfig, type Paths, getFetcher } from "./client/index.js";
 import { hoistApiError } from "./errors.js";
 

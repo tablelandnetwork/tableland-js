@@ -148,7 +148,7 @@ export async function extractReadonly(
 ): Promise<ReadConfig> {
   const [{ chainId }] = await validateTables({ tables, type });
   const baseUrl = await extractBaseUrl(conn, chainId);
-  return { baseUrl };
+  return { baseUrl, apiKey: conn.apiKey };
 }
 
 /**

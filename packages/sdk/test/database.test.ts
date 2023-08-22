@@ -701,6 +701,8 @@ describe("database", function () {
           return true;
         }
       );
+
+      // need to ensure the following tests aren't affected by validator throttling
       await getDelay(2000);
     });
 
@@ -717,13 +719,14 @@ describe("database", function () {
         })
       );
 
-      equal(responses.length, 15);
-      equal(
-        responses.every((r: unknown) => r === true),
-        true
-      );
       // need to ensure the following tests aren't affected by validator throttling
       await getDelay(2000);
+
+      equal(responses.length, 15);
+      for (const i in responses) {
+        const res = responses[i];
+        deepStrictEqual(res.results, [{ counter: 1 }]);
+      }
     });
   });
 });
