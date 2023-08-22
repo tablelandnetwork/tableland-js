@@ -3,18 +3,30 @@ import { describe, test } from "mocha";
 import { spy, restore, stub, assert } from "sinon";
 import yargs from "yargs/yargs";
 import mockStd from "mock-stdin";
-import { getAccounts, getDatabase } from "@tableland/local";
-import { ethers } from "ethers";
+import { getAccounts } from "@tableland/local";
+import { Database } from "@tableland/sdk";
+import { ethers, getDefaultProvider } from "ethers";
 import { temporaryWrite } from "tempy";
 import * as mod from "../src/commands/shell.js";
 import { wait, logger } from "../src/utils.js";
 import { getResolverMock } from "./mock.js";
+import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
+
+const defaultArgs = [
+  "--providerUrl",
+  TEST_PROVIDER_URL,
+  "--chain",
+  "local-tableland",
+];
+
+const accounts = getAccounts();
+const wallet = accounts[1];
+const provider = getDefaultProvider(TEST_PROVIDER_URL);
+const signer = wallet.connect(provider);
+const db = new Database({ signer, autoWait: true });
 
 describe("commands/shell", function () {
-  this.timeout("30s");
-
-  const accounts = getAccounts();
-  const db = getDatabase(accounts[1]);
+  this.timeout(30000 * TEST_TIMEOUT_FACTOR);
 
   before(async function () {
     await wait(10000);
@@ -27,7 +39,9 @@ describe("commands/shell", function () {
   test("fails without private key", async function () {
     const consoleError = spy(logger, "error");
 
-    await yargs(["shell", "--chain", "local-tableland"]).command(mod).parse();
+    await yargs(["shell", ...defaultArgs])
+      .command(mod)
+      .parse();
 
     const value = consoleError.getCall(0).args[0];
     equal(
@@ -47,8 +61,7 @@ describe("commands/shell", function () {
     const privateKey = accounts[0].privateKey.slice(2);
     await yargs([
       "shell",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--format",
       "objects",
       "--privateKey",
@@ -77,8 +90,7 @@ describe("commands/shell", function () {
     const privateKey = accounts[0].privateKey.slice(2);
     await yargs([
       "shell",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--format",
       "objects",
       "--privateKey",
@@ -112,8 +124,7 @@ describe("commands/shell", function () {
     const privateKey = accounts[0].privateKey.slice(2);
     await yargs([
       "shell",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--format",
       "objects",
       "--privateKey",
@@ -147,8 +158,7 @@ describe("commands/shell", function () {
     const privateKey = accounts[0].privateKey.slice(2);
     await yargs([
       "shell",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--format",
       "objects",
       "--privateKey",
@@ -172,8 +182,7 @@ describe("commands/shell", function () {
     const privateKey = accounts[0].privateKey.slice(2);
     await yargs([
       "shell",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--format",
       "objects",
       "--privateKey",
@@ -198,8 +207,7 @@ describe("commands/shell", function () {
     const privateKey = accounts[0].privateKey.slice(2);
     await yargs([
       "shell",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--format",
       "objects",
       "--privateKey",
@@ -226,8 +234,7 @@ describe("commands/shell", function () {
     const privateKey = accounts[0].privateKey.slice(2);
     await yargs([
       "shell",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--format",
       "objects",
       "--privateKey",
@@ -255,8 +262,7 @@ describe("commands/shell", function () {
     const privateKey = accounts[0].privateKey.slice(2);
     await yargs([
       "shell",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--format",
       "objects",
       "--privateKey",
@@ -296,8 +302,7 @@ describe("commands/shell", function () {
     const privateKey = accounts[0].privateKey.slice(2);
     await yargs([
       "shell",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
       "--aliases",
@@ -321,8 +326,7 @@ describe("commands/shell", function () {
     const privateKey = accounts[0].privateKey.slice(2);
     await yargs([
       "shell",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--format",
       "objects",
       "--privateKey",
@@ -346,13 +350,7 @@ describe("commands/shell", function () {
     }, 1000);
 
     const privateKey = accounts[0].privateKey.slice(2);
-    await yargs([
-      "shell",
-      "--chain",
-      "local-tableland",
-      "--privateKey",
-      privateKey,
-    ])
+    await yargs(["shell", ...defaultArgs, "--privateKey", privateKey])
       .command(mod)
       .parse();
     assert.called(exit);
@@ -378,8 +376,7 @@ describe("commands/shell", function () {
     const privateKey = accounts[1].privateKey.slice(2);
     await yargs([
       "shell",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--format",
       "objects",
       "--privateKey",
@@ -403,8 +400,7 @@ describe("commands/shell", function () {
     const privateKey = accounts[0].privateKey.slice(2);
     await yargs([
       "shell",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--format",
       "objects",
       "--privateKey",
@@ -428,8 +424,7 @@ describe("commands/shell", function () {
     const privateKey = accounts[1].privateKey.slice(2);
     await yargs([
       "shell",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--format",
       "objects",
       "--privateKey",
@@ -467,8 +462,7 @@ SQL Queries can be multi-line, and must end with a semicolon (;)`
     const privateKey = accounts[0].privateKey.slice(2);
     await yargs([
       "shell",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
       "--aliases",

@@ -1,19 +1,36 @@
 import { equal, match } from "node:assert";
+import { getDefaultProvider } from "ethers";
 import { describe, test, afterEach, before } from "mocha";
 import { spy, restore } from "sinon";
 import yargs from "yargs/yargs";
-import { getAccounts, getDatabase } from "@tableland/local";
-import { helpers, Database } from "@tableland/sdk";
+import { Database } from "@tableland/sdk";
+import { getAccounts } from "@tableland/local";
 import { temporaryWrite } from "tempy";
 import * as mod from "../src/commands/controller.js";
 import { jsonFileAliases, logger, wait } from "../src/utils.js";
+import {
+  TEST_TIMEOUT_FACTOR,
+  TEST_PROVIDER_URL,
+  TEST_VALIDATOR_URL,
+} from "./setup";
+
+const defaultArgs = [
+  "--providerUrl",
+  TEST_PROVIDER_URL,
+  "--baseUrl",
+  TEST_VALIDATOR_URL,
+  "--chain",
+  "local-tableland",
+];
+
+const accounts = getAccounts();
+const wallet = accounts[1];
+const provider = getDefaultProvider(TEST_PROVIDER_URL, { chainId: 31337 });
+const signer = wallet.connect(provider);
+const db = new Database({ signer, autoWait: true });
 
 describe("commands/controller", function () {
-  this.timeout("30s");
-
-  // account[0] is the Validator's wallet, try to avoid using that
-  const accounts = getAccounts();
-  const db = getDatabase(accounts[1]);
+  this.timeout(30000 * TEST_TIMEOUT_FACTOR);
 
   let tableName: string;
   before(async function () {
@@ -30,7 +47,9 @@ describe("commands/controller", function () {
 
   test("throws without privateKey", async function () {
     const consoleError = spy(logger, "error");
-    await yargs(["controller", "get", "blah"]).command(mod).parse();
+    await yargs(["controller", "get", "blah", ...defaultArgs])
+      .command(mod)
+      .parse();
 
     const value = consoleError.getCall(0).firstArg;
     equal(value, "missing required flag (`-k` or `--privateKey`)");
@@ -46,6 +65,10 @@ describe("commands/controller", function () {
       "another",
       "--privateKey",
       privateKey,
+      "--providerUrl",
+      TEST_PROVIDER_URL,
+      "--chain",
+      "fooz",
     ])
       .command(mod)
       .parse();
@@ -63,8 +86,7 @@ describe("commands/controller", function () {
       "invalid",
       "--privateKey",
       privateKey,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -83,8 +105,7 @@ describe("commands/controller", function () {
       "invalid",
       "--privateKey",
       privateKey,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -102,8 +123,7 @@ describe("commands/controller", function () {
       "invalid",
       "--privateKey",
       privateKey,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -123,8 +143,7 @@ describe("commands/controller", function () {
       tableName,
       "--privateKey",
       privateKey,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -145,8 +164,7 @@ describe("commands/controller", function () {
       tableName,
       "--privateKey",
       privateKey,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -164,8 +182,7 @@ describe("commands/controller", function () {
       tableName,
       "--privateKey",
       privateKey,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -179,7 +196,7 @@ describe("commands/controller", function () {
 
   describe("with table aliases", function () {
     test("throws with invalid get arguments", async function () {
-      const [account] = accounts;
+      const account = accounts[1];
       const privateKey = account.privateKey.slice(2);
       const aliasesFilePath = await temporaryWrite(`{}`, {
         extension: "json",
@@ -192,8 +209,7 @@ describe("commands/controller", function () {
         "invalid",
         "--privateKey",
         privateKey,
-        "--chain",
-        "local-tableland",
+        ...defaultArgs,
         "--aliases",
         aliasesFilePath,
       ])
@@ -205,7 +221,7 @@ describe("commands/controller", function () {
     });
 
     test("throws with invalid set arguments", async function () {
-      const [account] = accounts;
+      const account = accounts[1];
       const privateKey = account.privateKey.slice(2);
       const aliasesFilePath = await temporaryWrite(`{}`, {
         extension: "json",
@@ -219,8 +235,7 @@ describe("commands/controller", function () {
         "invalid",
         "--privateKey",
         privateKey,
-        "--chain",
-        "local-tableland",
+        ...defaultArgs,
         "--aliases",
         aliasesFilePath,
       ])
@@ -232,7 +247,7 @@ describe("commands/controller", function () {
     });
 
     test("throws with invalid lock arguments", async function () {
-      const [account] = accounts;
+      const account = accounts[1];
       const privateKey = account.privateKey.slice(2);
       const aliasesFilePath = await temporaryWrite(`{}`, {
         extension: "json",
@@ -245,8 +260,7 @@ describe("commands/controller", function () {
         "invalid",
         "--privateKey",
         privateKey,
-        "--chain",
-        "local-tableland",
+        ...defaultArgs,
         "--aliases",
         aliasesFilePath,
       ])
@@ -258,19 +272,17 @@ describe("commands/controller", function () {
     });
 
     test("passes when setting a controller", async function () {
-      const [account] = accounts;
-      const privateKey = account.privateKey.slice(2);
       // Set up test aliases file
       const aliasesFilePath = await temporaryWrite(`{}`, {
         extension: "json",
       });
       // Create new db instance to enable aliases
       const db = new Database({
-        signer: account,
-        baseUrl: helpers.getBaseUrl("local-tableland"),
+        signer,
         autoWait: true,
         aliases: jsonFileAliases(aliasesFilePath),
       });
+
       const { meta } = await db
         .prepare("CREATE TABLE table_aliases (id int);")
         .all();
@@ -285,17 +297,19 @@ describe("commands/controller", function () {
         ) ?? "";
       equal(tableAlias, prefix);
 
+      const account1 = accounts[1];
+      const account2 = accounts[2];
+
       // Now, set the controller
       const consoleLog = spy(logger, "log");
       await yargs([
         "controller",
         "set",
-        accounts[2].address,
+        account2.address,
         tableAlias,
         "--privateKey",
-        privateKey,
-        "--chain",
-        "local-tableland",
+        account1.privateKey.slice(2),
+        ...defaultArgs,
         "--aliases",
         aliasesFilePath,
       ])
@@ -310,16 +324,13 @@ describe("commands/controller", function () {
     });
 
     test("passes when getting a controller", async function () {
-      const [account] = accounts;
-      const privateKey = account.privateKey.slice(2);
       // Set up test aliases file
       const aliasesFilePath = await temporaryWrite(`{}`, {
         extension: "json",
       });
       // Create new db instance to enable aliases
       const db = new Database({
-        signer: account,
-        baseUrl: helpers.getBaseUrl("local-tableland"),
+        signer,
         autoWait: true,
         aliases: jsonFileAliases(aliasesFilePath),
       });
@@ -337,6 +348,8 @@ describe("commands/controller", function () {
         ) ?? "";
       equal(tableAlias, prefix);
 
+      const account = accounts[1];
+      const privateKey = account.privateKey.slice(2);
       // Now, get the controller
       const consoleLog = spy(logger, "log");
       await yargs([
@@ -345,8 +358,7 @@ describe("commands/controller", function () {
         tableAlias,
         "--privateKey",
         privateKey,
-        "--chain",
-        "local-tableland",
+        ...defaultArgs,
         "--aliases",
         aliasesFilePath,
       ])
@@ -358,16 +370,13 @@ describe("commands/controller", function () {
     });
 
     test("passes when locking a controller", async function () {
-      const [account] = accounts;
-      const privateKey = account.privateKey.slice(2);
       // Set up test aliases file
       const aliasesFilePath = await temporaryWrite(`{}`, {
         extension: "json",
       });
       // Create new db instance to enable aliases
       const db = new Database({
-        signer: account,
-        baseUrl: helpers.getBaseUrl("local-tableland"),
+        signer,
         autoWait: true,
         aliases: jsonFileAliases(aliasesFilePath),
       });
@@ -385,6 +394,8 @@ describe("commands/controller", function () {
         ) ?? "";
       equal(tableAlias, prefix);
 
+      const account = accounts[1];
+      const privateKey = account.privateKey.slice(2);
       // Now, lock the controller
       const consoleLog = spy(logger, "log");
       await yargs([
@@ -393,8 +404,7 @@ describe("commands/controller", function () {
         tableAlias,
         "--privateKey",
         privateKey,
-        "--chain",
-        "local-tableland",
+        ...defaultArgs,
         "--aliases",
         aliasesFilePath,
       ])

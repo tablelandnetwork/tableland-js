@@ -92,7 +92,7 @@ const _argv = yargs(hideBin(process.argv))
     alias: "p",
     type: "string",
     description:
-            "JSON RPC API provider URL (e.g., https://eth-sepolia.g.alchemy.com/v2/123abc123a...)",
+      "JSON RPC API provider URL (e.g., https://eth-sepolia.g.alchemy.com/v2/123abc123a...)",
   })
   .option("aliases", {
     alias: "a",

@@ -91,6 +91,8 @@ export async function getWalletWithProvider({
 
   // Second we will check if the "local-tableland" chain is being used,
   // because the default provider won't work with this chain.
+  // note: can't test this since the cli tests are using non-standard port for chain
+  /* c8 ignore next 3 */
   if (provider == null && network.chainName === "local-tableland") {
     provider = new providers.JsonRpcProvider("http://127.0.0.1:8545");
   }

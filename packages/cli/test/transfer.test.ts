@@ -1,4 +1,5 @@
 import { equal } from "node:assert";
+import { getDefaultProvider } from "ethers";
 import { describe, test, afterEach, before } from "mocha";
 import { spy, restore } from "sinon";
 import yargs from "yargs/yargs";
@@ -7,13 +8,24 @@ import { getAccounts, getDatabase } from "@tableland/local";
 import { helpers, Database } from "@tableland/sdk";
 import * as mod from "../src/commands/transfer.js";
 import { jsonFileAliases, logger, wait } from "../src/utils.js";
+import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
+
+const defaultArgs = [
+  "--providerUrl",
+  TEST_PROVIDER_URL,
+  "--chain",
+  "local-tableland",
+];
+
+// account[0] is the Validator's wallet, try to avoid using that
+const accounts = getAccounts();
+const wallet = accounts[1];
+const provider = getDefaultProvider(TEST_PROVIDER_URL);
+const signer = wallet.connect(provider);
+const db = new Database({ signer, autoWait: true });
 
 describe("commands/transfer", function () {
-  this.timeout("30s");
-
-  // account[0] is the Validator's wallet, try to avoid using that
-  const accounts = getAccounts();
-  const db = getDatabase(accounts[1]);
+  this.timeout(30000 * TEST_TIMEOUT_FACTOR);
 
   let tableName: string;
   before(async function () {
@@ -30,7 +42,12 @@ describe("commands/transfer", function () {
 
   test("throws without privateKey", async function () {
     const consoleError = spy(logger, "error");
-    await yargs(["transfer", tableName, "0x0000000000000000000000"])
+    await yargs([
+      "transfer",
+      tableName,
+      "0x0000000000000000000000",
+      ...defaultArgs,
+    ])
       .command(mod)
       .parse();
 
@@ -51,6 +68,9 @@ describe("commands/transfer", function () {
       "0x0000000000000000000000000000000000000000",
       "--chain",
       "does-not-exist",
+      // don't use defaults since we are testing chain
+      "--providerUrl",
+      TEST_PROVIDER_URL,
       "--privateKey",
       privateKey,
     ])
@@ -65,7 +85,7 @@ describe("commands/transfer", function () {
     const account = accounts[1];
     const privateKey = account.privateKey.slice(2);
     const consoleError = spy(logger, "error");
-    await yargs(["transfer", "fooz", "blah", "-k", privateKey])
+    await yargs(["transfer", "fooz", "blah", "-k", privateKey, ...defaultArgs])
       .command(mod)
       .parse();
 
@@ -83,8 +103,7 @@ describe("commands/transfer", function () {
       "0x00",
       "--privateKey",
       privateKey,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -109,8 +128,7 @@ describe("commands/transfer", function () {
       account2Address,
       "--privateKey",
       privateKey,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--aliases",
       "./invalid.json",
     ])
@@ -136,8 +154,7 @@ describe("commands/transfer", function () {
       account2Address,
       "--privateKey",
       privateKey,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--aliases",
       aliasesFilePath,
     ])
@@ -160,8 +177,7 @@ describe("commands/transfer", function () {
       account2Address,
       "--privateKey",
       privateKey,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -187,8 +203,7 @@ describe("commands/transfer", function () {
 
     // Create new db instance to enable aliases
     const db = new Database({
-      signer: account1,
-      baseUrl: helpers.getBaseUrl("local-tableland"),
+      signer,
       autoWait: true,
       aliases: jsonFileAliases(aliasesFilePath),
     });
@@ -211,8 +226,7 @@ describe("commands/transfer", function () {
       account2Address,
       "--privateKey",
       privateKey,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--aliases",
       aliasesFilePath,
     ])

@@ -1,4 +1,5 @@
 import { equal } from "node:assert";
+import { getDefaultProvider } from "ethers";
 import { describe, test, afterEach, before } from "mocha";
 import { spy, restore, stub } from "sinon";
 import yargs from "yargs/yargs";
@@ -11,9 +12,26 @@ import * as mod from "../src/commands/schema";
 import * as ns from "../src/commands/namespace.js";
 import { jsonFileAliases, logger, wait } from "../src/utils.js";
 import { getResolverMock } from "./mock.js";
+import {
+  TEST_TIMEOUT_FACTOR,
+  TEST_PROVIDER_URL,
+  TEST_VALIDATOR_URL,
+} from "./setup";
+
+const defaultArgs = [
+  "--chain",
+  "local-tableland",
+  "--baseUrl",
+  TEST_VALIDATOR_URL,
+];
+
+const accounts = getAccounts();
+const wallet = accounts[1];
+const provider = getDefaultProvider(TEST_PROVIDER_URL, { chainId: 31337 });
+const signer = wallet.connect(provider);
 
 describe("commands/schema", function () {
-  this.timeout("30s");
+  this.timeout(10000 * TEST_TIMEOUT_FACTOR);
 
   before(async function () {
     await wait(1000);
@@ -55,10 +73,7 @@ describe("commands/schema", function () {
     await yargs([
       "schema",
       "table_alias",
-      "--chain",
-      "local-tableland",
-      "--baseUrl",
-      "http://localhost:8080/api/v1",
+      ...defaultArgs,
       "--aliases",
       "./invalid.json",
     ])
@@ -78,10 +93,7 @@ describe("commands/schema", function () {
     await yargs([
       "schema",
       "table_alias",
-      "--chain",
-      "local-tableland",
-      "--baseUrl",
-      "http://localhost:8080/api/v1",
+      ...defaultArgs,
       "--aliases",
       aliasesFilePath,
     ])
@@ -144,10 +156,7 @@ describe("commands/schema", function () {
     await yargs([
       "schema",
       "foo.bar.eth",
-      "--chain",
-      "local-tableland",
-      "--baseUrl",
-      "http://localhost:8080/api/v1",
+      ...defaultArgs,
       "--enableEnsExperiment",
       "--ensProviderUrl",
       "https://localhost:7070",
@@ -205,10 +214,7 @@ describe("commands/schema", function () {
     await yargs([
       "schema",
       "foo.bar.eth",
-      "--chain",
-      "local-tableland",
-      "--baseUrl",
-      "http://localhost:8080/api/v1",
+      ...defaultArgs,
       "--enableEnsExperiment",
       "--ensProviderUrl",
       "https://localhost:7070",
@@ -223,15 +229,13 @@ describe("commands/schema", function () {
   });
 
   test("passes with table aliases", async function () {
-    const [account] = getAccounts();
     // Set up test aliases file
     const aliasesFilePath = await temporaryWrite(`{}`, {
       extension: "json",
     });
     // Create new db instance to enable aliases
     const db = new Database({
-      signer: account,
-      baseUrl: helpers.getBaseUrl("local-tableland"),
+      signer,
       autoWait: true,
       aliases: jsonFileAliases(aliasesFilePath),
     });

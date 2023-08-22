@@ -41,6 +41,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
 
     const { registry } = await setupCommand({
       ...argv,
+      /* c8 ignore next 1 */ // can't test because of non-standard chain
       chain: chain != null ? chain : chainId,
     });
 

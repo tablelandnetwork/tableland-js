@@ -1,7 +1,7 @@
 import { equal, match } from "node:assert";
 import { describe, test, afterEach, before } from "mocha";
 import { spy, stub, restore } from "sinon";
-import { ethers } from "ethers";
+import { ethers, getDefaultProvider } from "ethers";
 import yargs from "yargs/yargs";
 import { temporaryWrite } from "tempy";
 import mockStd from "mock-stdin";
@@ -10,12 +10,23 @@ import { helpers, Database } from "@tableland/sdk";
 import * as mod from "../src/commands/write.js";
 import { wait, logger, jsonFileAliases } from "../src/utils.js";
 import { getResolverUndefinedMock } from "./mock.js";
+import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
+
+const defaultArgs = [
+  "--providerUrl",
+  TEST_PROVIDER_URL,
+  "--chain",
+  "local-tableland",
+];
 
 const accounts = getAccounts();
-const db = getDatabase(accounts[1]);
+const wallet = accounts[1];
+const provider = getDefaultProvider(TEST_PROVIDER_URL);
+const signer = wallet.connect(provider);
+const db = new Database({ signer, autoWait: true });
 
 describe("commands/write", function () {
-  this.timeout("30s");
+  this.timeout(30000 * TEST_TIMEOUT_FACTOR);
 
   before(async function () {
     await wait(500);
@@ -27,7 +38,9 @@ describe("commands/write", function () {
 
   test("throws without privateKey", async function () {
     const consoleError = spy(logger, "error");
-    await yargs(["write", "blah"]).command(mod).parse();
+    await yargs(["write", "blah", ...defaultArgs])
+      .command(mod)
+      .parse();
 
     const value = consoleError.getCall(0).firstArg;
     equal(value, "missing required flag (`-k` or `--privateKey`)");
@@ -42,6 +55,8 @@ describe("commands/write", function () {
       "insert into fake_31337_1 values (1, 2, 3);",
       "--privateKey",
       privateKey,
+      "--providerUrl",
+      TEST_PROVIDER_URL,
     ])
       .command(mod)
       .parse();
@@ -61,6 +76,8 @@ describe("commands/write", function () {
       privateKey,
       "--chain",
       "foozbazz",
+      "--providerUrl",
+      TEST_PROVIDER_URL,
     ])
       .command(mod)
       .parse();
@@ -77,8 +94,7 @@ describe("commands/write", function () {
       "write",
       // Note: cannot have a table named "table"
       "update table set counter=1 where rowid=0;",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
     ])
@@ -99,8 +115,7 @@ describe("commands/write", function () {
     await yargs([
       "write",
       "insert into fooz (a) values (1);create table fooz (a int);",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--prefix",
       "cooltable",
       "--privateKey",
@@ -123,8 +138,7 @@ describe("commands/write", function () {
     await yargs([
       "write",
       "create table fooz (a int);",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--prefix",
       "cooltable",
       "--privateKey",
@@ -145,8 +159,7 @@ describe("commands/write", function () {
       "write",
       "--file",
       "missing.sql",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
     ])
@@ -165,13 +178,7 @@ describe("commands/write", function () {
     setTimeout(() => {
       stdin.send("\n").end();
     }, 100);
-    await yargs([
-      "write",
-      "--chain",
-      "local-tableland",
-      "--privateKey",
-      privateKey,
-    ])
+    await yargs(["write", ...defaultArgs, "--privateKey", privateKey])
       .command(mod)
       .parse();
 
@@ -192,8 +199,7 @@ describe("commands/write", function () {
     await yargs([
       "write",
       "INSERT INTO table_aliases (id) VALUES (1);",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
       "--aliases",
@@ -216,8 +222,7 @@ describe("commands/write", function () {
     await yargs([
       "write",
       "INSERT INTO table_aliases (id) VALUES (1);",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
       "--aliases",
@@ -237,8 +242,7 @@ describe("commands/write", function () {
     await yargs([
       "write",
       "update healthbot_31337_1 set counter=1 where rowid=0;", // This just updates in place
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
     ])
@@ -272,8 +276,7 @@ describe("commands/write", function () {
       "write",
       `insert into ${tableName1} (a, b) values (1, 'one');
       insert into ${tableName2} (a, b) values (2, 'two');`,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
     ])
@@ -311,8 +314,7 @@ describe("commands/write", function () {
     );
     await yargs([
       "write",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--file",
       path,
       "--privateKey",
@@ -338,13 +340,7 @@ describe("commands/write", function () {
     setTimeout(() => {
       stdin.send("update healthbot_31337_1 set counter=1;\n").end();
     }, 100);
-    await yargs([
-      "write",
-      "--chain",
-      "local-tableland",
-      "--privateKey",
-      privateKey,
-    ])
+    await yargs(["write", ...defaultArgs, "--privateKey", privateKey])
       .command(mod)
       .parse();
 
@@ -374,8 +370,7 @@ describe("commands/write", function () {
     await yargs([
       "write",
       `insert into ${tableName} (a) values (1);`,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
       "--enableEnsExperiment",
@@ -405,15 +400,14 @@ describe("commands/write", function () {
     // db is configged with account 1
     const { meta } = await db.prepare("CREATE TABLE test_grant (a int);").all();
     const tableName = meta.txn?.name ?? "";
-
+    console.log(tableName);
     const consoleError = spy(logger, "error");
 
     // first ensure account 2 cannot insert
     await yargs([
       "write",
       `INSERT INTO ${tableName} (a) VALUES (333);`,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey2,
     ])
@@ -426,8 +420,7 @@ describe("commands/write", function () {
     await yargs([
       "write",
       `GRANT INSERT ON ${tableName} TO '${account2.address}';`,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey1,
     ])
@@ -437,8 +430,7 @@ describe("commands/write", function () {
     await yargs([
       "write",
       `INSERT INTO ${tableName} (a) VALUES (1);`,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey2,
     ])
@@ -469,8 +461,7 @@ describe("commands/write", function () {
     await yargs([
       "write",
       `GRANT INSERT ON ${tableName} TO '${account2.address}';`,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey1,
     ])
@@ -481,8 +472,7 @@ describe("commands/write", function () {
     await yargs([
       "write",
       `INSERT INTO ${tableName} (a) VALUES (1);`,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey2,
     ])
@@ -500,8 +490,7 @@ describe("commands/write", function () {
     await yargs([
       "write",
       `REVOKE INSERT ON ${tableName} FROM '${account2.address}';`,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey1,
     ])
@@ -514,8 +503,7 @@ describe("commands/write", function () {
     await yargs([
       "write",
       `INSERT INTO ${tableName} (a) VALUES (333);`,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey2,
     ])
@@ -543,8 +531,7 @@ describe("commands/write", function () {
     await yargs([
       "write",
       `INSERT INTO ${tableToSubselect} (address) VALUES ('${account.address}');`,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
     ])
@@ -562,8 +549,7 @@ describe("commands/write", function () {
     await yargs([
       "write",
       `INSERT INTO ${tableToMutate} (data) select '${data}' from ${tableToSubselect} where address = '${account.address}';`,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
     ])
@@ -591,8 +577,7 @@ describe("commands/write", function () {
     const aliasesFilePath = await temporaryWrite(`{}`, { extension: "json" });
     // Create new db instance to enable aliases
     const db = new Database({
-      signer: account,
-      baseUrl: helpers.getBaseUrl("local-tableland"),
+      signer,
       autoWait: true,
       aliases: jsonFileAliases(aliasesFilePath),
     });
@@ -606,6 +591,7 @@ describe("commands/write", function () {
     const nameMap = await jsonFileAliases(aliasesFilePath).read();
     const tableAlias =
       Object.keys(nameMap).find((alias) => nameMap[alias] === name) ?? "";
+
     equal(tableAlias, prefix);
 
     // Write to the table using the alias
@@ -613,8 +599,7 @@ describe("commands/write", function () {
     await yargs([
       "write",
       `insert into ${tableAlias} values (1);`,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
       "--aliases",
@@ -646,8 +631,7 @@ describe("commands/write", function () {
     const aliasesFilePath = await temporaryWrite(`{}`, { extension: "json" });
     // Create new db instance to enable aliases
     const db = new Database({
-      signer: account,
-      baseUrl: helpers.getBaseUrl("local-tableland"),
+      signer,
       autoWait: true,
       aliases: jsonFileAliases(aliasesFilePath),
     });
@@ -678,8 +662,7 @@ describe("commands/write", function () {
       "write",
       `insert into ${tableAlias1} (a, b) values (1, 'one');
       insert into ${tableAlias2} (a, b) values (2, 'two');`,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
       "--aliases",

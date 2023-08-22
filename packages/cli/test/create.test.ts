@@ -9,11 +9,19 @@ import { ethers } from "ethers";
 import * as mod from "../src/commands/create.js";
 import { wait, logger, jsonFileAliases } from "../src/utils.js";
 import { getResolverMock } from "./mock.js";
+import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
+
+const defaultArgs = [
+  "--chain",
+  "local-tableland",
+  "--providerUrl",
+  TEST_PROVIDER_URL,
+];
 
 const accounts = getAccounts();
 
 describe("commands/create", function () {
-  this.timeout("30s");
+  this.timeout(30000 * TEST_TIMEOUT_FACTOR);
 
   before(async function () {
     await wait(1000);
@@ -40,6 +48,8 @@ describe("commands/create", function () {
       "(id int primary key, desc text)",
       "--privateKey",
       privateKey,
+      "--providerUrl",
+      TEST_PROVIDER_URL,
     ])
       .command(mod)
       .parse();
@@ -57,6 +67,8 @@ describe("commands/create", function () {
       "(id int primary key, desc text)",
       "--privateKey",
       privateKey,
+      "--providerUrl",
+      TEST_PROVIDER_URL,
       "--prefix",
       "invalid_chain_table",
       "--chain",
@@ -76,8 +88,7 @@ describe("commands/create", function () {
     await yargs([
       "create",
       "invalid",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--prefix",
       "cooltable",
       "--privateKey",
@@ -100,8 +111,7 @@ describe("commands/create", function () {
     await yargs([
       "create",
       "create table fooz (a int);insert into fooz (a) values (1);",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--prefix",
       "cooltable",
       "--privateKey",
@@ -122,8 +132,7 @@ describe("commands/create", function () {
       "create",
       "--file",
       "missing.sql",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
     ])
@@ -142,13 +151,7 @@ describe("commands/create", function () {
     setTimeout(() => {
       stdin.send("\n").end();
     }, 300);
-    await yargs([
-      "create",
-      "--chain",
-      "local-tableland",
-      "--privateKey",
-      privateKey,
-    ])
+    await yargs(["create", ...defaultArgs, "--privateKey", privateKey])
       .command(mod)
       .parse();
 
@@ -171,8 +174,7 @@ describe("commands/create", function () {
       "id int",
       "--prefix",
       "table_aliases",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
       "--aliases",
@@ -194,8 +196,7 @@ describe("commands/create", function () {
       "id int primary key, name text",
       "--privateKey",
       privateKey,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -214,8 +215,7 @@ describe("commands/create", function () {
     await yargs([
       "create",
       "id int primary key, name text",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
       "--prefix",
@@ -245,6 +245,8 @@ describe("commands/create", function () {
       "id int primary key, name text",
       "--chain",
       "31337",
+      "--providerUrl",
+      TEST_PROVIDER_URL,
       "--privateKey",
       privateKey,
       "--prefix",
@@ -272,8 +274,7 @@ describe("commands/create", function () {
     await yargs([
       "create",
       "create table second_table (id int primary key, name text);",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
       "--prefix",
@@ -302,8 +303,7 @@ describe("commands/create", function () {
       "create",
       `create table first_table (id int primary key, name text);
       create table second_table (id int primary key, name text);`,
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
       "--prefix",
@@ -337,8 +337,7 @@ describe("commands/create", function () {
     const path = await temporaryWrite(`\nid int primary key,\nname text\n`);
     await yargs([
       "create",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--file",
       path,
       "--privateKey",
@@ -371,13 +370,7 @@ describe("commands/create", function () {
         .send("create table stdin_test (id int primary key, name text);\n")
         .end();
     }, 100);
-    await yargs([
-      "create",
-      "--chain",
-      "local-tableland",
-      "--privateKey",
-      privateKey,
-    ])
+    await yargs(["create", ...defaultArgs, "--privateKey", privateKey])
       .command(mod)
       .parse();
 
@@ -406,8 +399,7 @@ describe("commands/create", function () {
       "create",
       "id integer, message text",
       "hello",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
       "--ns",
@@ -436,8 +428,7 @@ describe("commands/create", function () {
       "id int primary key, name text",
       "--prefix",
       "custom_url_table",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
       "--providerUrl",
@@ -462,8 +453,7 @@ describe("commands/create", function () {
       "id int",
       "--prefix",
       "table_aliases",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
       "--aliases",
@@ -489,8 +479,7 @@ describe("commands/create", function () {
       "id int",
       "--prefix",
       "second_table",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
       "--privateKey",
       privateKey,
       "--aliases",
