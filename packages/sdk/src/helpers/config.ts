@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import { type WaitableTransactionReceipt } from "../registry/utils.js";
+import { type FetchConfig } from "../validator/client/index.js";
 import { type ChainName, getBaseUrl } from "./chains.js";
 import { type Signer, type ExternalProvider, getSigner } from "./ethers.js";
-import { type FetchConfig } from "../validator/client/index.js";
 
 export interface ReadConfig {
   baseUrl: string;

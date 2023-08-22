@@ -480,8 +480,7 @@ describe("validator", function () {
       );
 
       equal(responses.length, 15);
-      for (const i in responses) {
-        const res = responses[i];
+      for (const res of responses) {
         deepStrictEqual(res, {
           binaryVersion: "n/a",
           buildDate: "n/a",

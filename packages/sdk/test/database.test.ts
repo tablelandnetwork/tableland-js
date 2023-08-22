@@ -723,8 +723,7 @@ describe("database", function () {
       await getDelay(2000);
 
       equal(responses.length, 15);
-      for (const i in responses) {
-        const res = responses[i];
+      for (const res of responses) {
         deepStrictEqual(res.results, [{ counter: 1 }]);
       }
     });
