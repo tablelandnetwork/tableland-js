@@ -1,11 +1,13 @@
 import fs from "node:fs";
 import { type WaitableTransactionReceipt } from "../registry/utils.js";
+import { type FetchConfig } from "../validator/client/index.js";
 import { type ChainName, getBaseUrl } from "./chains.js";
 import { type Signer, type ExternalProvider, getSigner } from "./ethers.js";
 
 export interface ReadConfig {
   baseUrl: string;
   aliases?: AliasesNameMap;
+  apiKey?: string;
 }
 
 export interface SignerConfig {
@@ -97,4 +99,17 @@ export function jsonFileAliases(filepath: string): AliasesNameMap {
       fs.writeFileSync(filepath, JSON.stringify(nameMap));
     },
   };
+}
+
+export function prepReadConfig(config: Partial<ReadConfig>): FetchConfig {
+  const conf: FetchConfig = {};
+  if (config.apiKey) {
+    conf.init = {
+      headers: {
+        "Api-Key": config.apiKey,
+      },
+    };
+  }
+
+  return { ...config, ...conf };
 }

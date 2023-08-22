@@ -1,11 +1,18 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import assert, { deepStrictEqual, strictEqual, rejects, match } from "assert";
+import assert, {
+  deepStrictEqual,
+  equal,
+  strictEqual,
+  rejects,
+  match,
+} from "assert";
 import { describe, test } from "mocha";
 import { getAccounts } from "@tableland/local";
 import { getDefaultProvider } from "ethers";
 import { Database } from "../src/database.js";
 import { Statement } from "../src/statement.js";
 import { getAbortSignal } from "../src/helpers/await.js";
+import { getDelay, getRange } from "../src/helpers/utils.js";
 import {
   TEST_TIMEOUT_FACTOR,
   TEST_PROVIDER_URL,
@@ -678,6 +685,47 @@ describe("database", function () {
         strictEqual(err.cause.message, "not implemented yet");
         return true;
       });
+    });
+  });
+
+  describe("rate limit", function () {
+    test("when too many read calls are sent", async function () {
+      await rejects(
+        Promise.all(
+          getRange(15).map(async () => {
+            return await db.prepare("select * from healthbot_31337_1;").all();
+          })
+        ),
+        (err: any) => {
+          strictEqual(err.message, "ALL_ERROR: Too Many Requests");
+          return true;
+        }
+      );
+
+      // need to ensure the following tests aren't affected by validator throttling
+      await getDelay(2000);
+    });
+
+    test("when valid api key is used there is no limit on read queries", async function () {
+      const apiKey = "foo";
+      const db = new Database({
+        signer,
+        autoWait: true,
+        apiKey,
+      });
+      const responses = await Promise.all(
+        getRange(15).map(async () => {
+          return await db.prepare("select * from healthbot_31337_1;").all();
+        })
+      );
+
+      // need to ensure the following tests aren't affected by validator throttling
+      await getDelay(2000);
+
+      equal(responses.length, 15);
+      for (const res of responses) {
+        deepStrictEqual(res.results, [{ counter: 1 }]);
+      }
     });
   });
 });

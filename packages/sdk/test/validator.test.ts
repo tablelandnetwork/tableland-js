@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import assert, {
   strictEqual,
+  equal,
   rejects,
   match,
   notStrictEqual,
@@ -449,6 +450,46 @@ describe("validator", function () {
         }
       );
       await getDelay(5000);
+    });
+
+    test("when valid api key is used there is no limit on calls to `health()`", async function () {
+      const apiKey = "foo";
+      const api = new Validator({
+        baseUrl,
+        apiKey,
+      });
+      const responses = await Promise.all(
+        getRange(15).map(async () => await api.health())
+      );
+
+      equal(responses.length, 15);
+      equal(
+        responses.every((r: unknown) => r === true),
+        true
+      );
+    });
+
+    test("when valid api key is used there is no limit on calls to `version()`", async function () {
+      const apiKey = "foo";
+      const api = new Validator({
+        baseUrl,
+        apiKey,
+      });
+      const responses = await Promise.all(
+        getRange(15).map(async () => await api.version())
+      );
+
+      equal(responses.length, 15);
+      for (const res of responses) {
+        deepStrictEqual(res, {
+          binaryVersion: "n/a",
+          buildDate: "n/a",
+          gitBranch: "n/a",
+          gitCommit: "n/a",
+          gitState: "n/a",
+          gitSummary: "n/a",
+        });
+      }
     });
   });
 });
