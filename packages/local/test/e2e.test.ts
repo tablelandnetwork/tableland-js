@@ -1,6 +1,7 @@
 import { type Server } from "node:net";
 import { join } from "node:path";
 import { readFileSync } from "node:fs";
+import { describe, afterEach, after, before, test } from "mocha";
 import chai from "chai";
 import {
   checkPortInUse,
@@ -51,7 +52,7 @@ describe("Validator and Chain startup and shutdown", function () {
     }
   });
 
-  it("successfully starts and shuts down", async function () {
+  test("successfully starts and shuts down", async function () {
     lt = new LocalTableland({ silent: true });
     const startupExecutionTime = await measureExecutionTime(
       async () => await lt?.start()
@@ -68,7 +69,7 @@ describe("Validator and Chain startup and shutdown", function () {
     expect(lt.registry).to.be.equal(undefined);
   });
 
-  it("successfully starts with retry logic after port 8545 initially in use", async function () {
+  test("successfully starts with retry logic after port 8545 initially in use", async function () {
     lt = new LocalTableland({ silent: true });
     // Start a server on port 8545 to block Local Tableland from using it
     server = await startMockServer(defaultPort);
@@ -103,7 +104,7 @@ describe("Validator and Chain startup and shutdown", function () {
     expect(results).to.not.be.deep.equal([]);
   });
 
-  it("fails to start due to port 8545 in use", async function () {
+  test("fails to start due to port 8545 in use", async function () {
     lt = new LocalTableland({ silent: true });
     // Start a server on port 8545 to block Local Tableland from using it
     server = await startMockServer(defaultPort);
@@ -121,7 +122,7 @@ describe("Validator and Chain startup and shutdown", function () {
   });
 
   describe("with custom registryPort", function () {
-    it("successfully starts and works with SDK", async function () {
+    test("successfully starts and works with SDK", async function () {
       const customPort = 9999;
       lt = new LocalTableland({
         silent: true,
@@ -151,7 +152,7 @@ describe("Validator and Chain startup and shutdown", function () {
       expect(tableName).to.match(/^test_registry_31337_\d+$/);
     });
 
-    it("successfully start by overwriting validator config and reset config on shutdown", async function () {
+    test("successfully start by overwriting validator config and reset config on shutdown", async function () {
       const customPort = 9999;
       lt = new LocalTableland({
         silent: true,
@@ -192,7 +193,7 @@ describe("Validator and Chain startup and shutdown", function () {
       );
     });
 
-    it("fails to start due to custom port in use", async function () {
+    test("fails to start due to custom port in use", async function () {
       const customPort = 9999;
       lt = new LocalTableland({ silent: true, registryPort: customPort });
       // Start a server on `customPort` to block Local Tableland from using it
@@ -240,7 +241,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     logMetrics("shutdown()", executionTimes.shutdown);
   });
 
-  it("creates a table that can be read from", async function () {
+  test("creates a table that can be read from", async function () {
     const signer = accounts[1];
     const db = getDatabase(signer);
 
@@ -255,7 +256,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     expect(data.results).to.eql([]);
   });
 
-  it("create a table that can be written to", async function () {
+  test("create a table that can be written to", async function () {
     this.timeout(50000);
     const signer = accounts[1];
     const db = getDatabase(signer);
@@ -279,7 +280,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     expect(readRes.results).to.eql([{ keyy: "tree", val: "aspen" }]);
   });
 
-  it("table cannot be written to unless caller is allowed", async function () {
+  test("table cannot be written to unless caller is allowed", async function () {
     const signer = accounts[1];
     const db = getDatabase(signer);
 
@@ -313,7 +314,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     expect(data2.results).to.eql([]);
   });
 
-  it("create a table can have a row deleted", async function () {
+  test("create a table can have a row deleted", async function () {
     this.timeout(30000);
     const signer = accounts[1];
     const db = getDatabase(signer);
@@ -354,7 +355,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
 
   // TODO: make this a test for some kind of results formatting function
   //       assuming that is still appropriate
-  it("read via `raw` method returns data with `table` output", async function () {
+  test("read via `raw` method returns data with `table` output", async function () {
     const signer = accounts[1];
     const db = getDatabase(signer);
 
@@ -374,7 +375,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     expect(data).to.eql([["tree", "aspen"]]);
   });
 
-  it("count rows in a table", async function () {
+  test("count rows in a table", async function () {
     const signer = accounts[1];
     const db = getDatabase(signer);
 
@@ -402,7 +403,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     expect(data.results).to.eql([{ "count(*)": 2 }]);
   });
 
-  it("read a single row with `first` method", async function () {
+  test("read a single row with `first` method", async function () {
     const signer = accounts[1];
     const db = getDatabase(signer);
 
@@ -428,7 +429,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     expect(data).to.eql({ keyy: "tree", val: "aspen" });
   });
 
-  it("list an account's tables", async function () {
+  test("list an account's tables", async function () {
     const signer = accounts[1];
     const db = getDatabase(signer);
     const registry = getRegistry(signer);
@@ -447,7 +448,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     expect(table?.chainId).to.eql(localTablelandChainId);
   });
 
-  it("write statement validates table name prefix", async function () {
+  test("write statement validates table name prefix", async function () {
     const signer = accounts[1];
     const db = getDatabase(signer);
 
@@ -478,7 +479,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     );
   });
 
-  it("write statement validates table ID", async function () {
+  test("write statement validates table ID", async function () {
     const signer = accounts[1];
     const db = getDatabase(signer);
 
@@ -503,7 +504,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     );
   });
 
-  it("allows setting controller", async function () {
+  test("allows setting controller", async function () {
     const signer = accounts[1];
     const db = getDatabase(signer);
     const registry = getRegistry(signer);
@@ -523,7 +524,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     expect(hash.length).to.eql(66);
   });
 
-  it("get controller returns an address", async function () {
+  test("get controller returns an address", async function () {
     const signer = accounts[1];
     const db = getDatabase(signer);
     const registry = getRegistry(signer);
@@ -549,7 +550,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     expect(controller).to.eql(controllerAddress);
   });
 
-  it("lock controller returns a transaction hash", async function () {
+  test("lock controller returns a transaction hash", async function () {
     const signer = accounts[1];
     const db = getDatabase(signer);
     const registry = getRegistry(signer);
@@ -575,7 +576,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     expect(typeof tx.hash).to.eql("string");
   });
 
-  it("get the schema for a table", async function () {
+  test("get the schema for a table", async function () {
     const signer = accounts[1];
     const db = getDatabase(signer);
     const validator = getValidator();
@@ -604,7 +605,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     expect(table.name).to.eql(tableName);
   });
 
-  it("A write that violates table constraints throws error", async function () {
+  test("A write that violates table constraints throws error", async function () {
     const signer = accounts[1];
     const db = getDatabase(signer);
 

@@ -44,6 +44,7 @@ jobs:
 
       - name: Docs 📓
         run: |
+          cd packages/sdk
           npm run docs
           touch docs/.nojekyll
 
@@ -52,4 +53,4 @@ jobs:
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: gh-pages
-          FOLDER: docs
+          FOLDER: packages/sdk/docs
