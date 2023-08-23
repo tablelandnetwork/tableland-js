@@ -1,8 +1,9 @@
 import type yargs from "yargs";
 import type { Arguments, CommandBuilder } from "yargs";
+import { init } from "@tableland/sqlparser";
 import { type GlobalOptions } from "../cli.js";
 import { setupCommand } from "../lib/commandSetup.js";
-import { logger } from "../utils.js";
+import { getTableNameWithAlias, logger } from "../utils.js";
 
 export interface Options extends GlobalOptions {
   name: string;
@@ -20,10 +21,21 @@ export const builder: CommandBuilder<Record<string, unknown>, Options> = (
   }) as yargs.Argv<Options>;
 
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
+  await init();
   try {
-    let { name } = argv;
-    const [tableId, chainId] = name.split("_").reverse();
+    let name = await getTableNameWithAlias(argv.aliases, argv.name);
 
+    // Check if the passed `name` uses ENS
+    // Note: duplicative `setupCommand` calls will occur with ENS, but this is
+    // required to properly parse the chainId from the table name
+    if (argv.enableEnsExperiment != null && argv.ensProviderUrl != null) {
+      const { ens } = await setupCommand({
+        ...argv,
+      });
+      if (ens != null) name = await ens.resolveTable(name);
+    }
+
+    const [tableId, chainId] = name.split("_").reverse();
     const parts = name.split("_");
 
     if (parts.length < 3 && argv.enableEnsExperiment == null) {
@@ -33,18 +45,15 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       return;
     }
 
-    const { ens, validator } = await setupCommand({
+    const { validator } = await setupCommand({
       ...argv,
       chain: parseInt(chainId) as any,
     });
 
-    /* c8 ignore next 3 */
-    if (argv.enableEnsExperiment != null && ens != null) {
-      name = await ens.resolveTable(name);
-    }
-
+    // Get the table ID, now that the name comes from either an alias, ENS, or
+    // the standard naming convention
     const res = await validator.getTableById({
-      tableId,
+      tableId: tableId.toString(),
       chainId: parseInt(chainId),
     });
     logger.log(JSON.stringify(res));

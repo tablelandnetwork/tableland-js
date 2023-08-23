@@ -42,3 +42,6 @@ packages/local/validator/backups
 
 # registry artifacts
 packages/local/registry/.openzeppelin/
+
+### cli ###
+packages/cli/tableland.aliases.json

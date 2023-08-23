@@ -8,13 +8,22 @@ import { ethers, getDefaultProvider } from "ethers";
 import { Database } from "@tableland/sdk";
 import { getAccounts } from "@tableland/local";
 import * as mod from "../src/commands/read.js";
-import { wait, logger } from "../src/utils.js";
+import { wait, logger, jsonFileAliases } from "../src/utils.js";
 import { getResolverMock } from "./mock.js";
 import {
   TEST_TIMEOUT_FACTOR,
   TEST_PROVIDER_URL,
   TEST_VALIDATOR_URL,
 } from "./setup";
+
+const defaultArgs = [
+  "--baseUrl",
+  TEST_VALIDATOR_URL,
+  "--providerUrl",
+  TEST_PROVIDER_URL,
+  "--chain",
+  "local-tableland",
+];
 
 const accounts = getAccounts();
 const wallet = accounts[1];
@@ -31,7 +40,7 @@ describe("commands/read", function () {
 
   afterEach(async function () {
     restore();
-    // ensure these tests don't hit rate limitting errors
+    // ensure these tests don't hit rate limiting errors
     await wait(500);
   });
 
@@ -94,8 +103,7 @@ describe("commands/read", function () {
       "--format",
       "objects",
       "--unwrap",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -135,14 +143,36 @@ describe("commands/read", function () {
     );
   });
 
+  test("fails with invalid table alias file", async function () {
+    const [account] = accounts;
+    const privateKey = account.privateKey.slice(2);
+    const consoleError = spy(logger, "error");
+    // Set up faux aliases file
+    const aliasesFilePath = "./invalid.json";
+
+    await yargs([
+      "read",
+      "SELECT * FROM table_aliases;",
+      ...defaultArgs,
+      "--privateKey",
+      privateKey,
+      "--aliases",
+      aliasesFilePath,
+    ])
+      .command(mod)
+      .parse();
+
+    const res = consoleError.getCall(0).firstArg;
+    equal(res, "invalid table aliases file");
+  });
+
   test("passes with extract option", async function () {
     const consoleLog = spy(logger, "log");
     await yargs([
       "read",
       "select counter from healthbot_31337_1;",
       "--extract",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -160,8 +190,7 @@ describe("commands/read", function () {
       "read",
       "select counter from healthbot_31337_1 where counter = 1;",
       "--unwrap",
-      "--chain",
-      "local-tableland",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -314,7 +343,7 @@ describe("commands/read", function () {
     deepStrictEqual(value, '{"columns":[{"name":"counter"}],"rows":[[1]]}');
   });
 
-  test("passes withoutput format (table) when results are empty", async function () {
+  test("passes with output format (table) when results are empty", async function () {
     const { meta } = await db
       .prepare("CREATE TABLE empty_table (a int);")
       .all();
@@ -327,5 +356,45 @@ describe("commands/read", function () {
 
     const value = consoleLog.getCall(0).firstArg;
     deepStrictEqual(value, '{"columns":[],"rows":[]}');
+  });
+
+  test("passes with table aliases", async function () {
+    // Set up test aliases file
+    const aliasesFilePath = await temporaryWrite(`{}`, { extension: "json" });
+
+    // Create new db instance to enable aliases
+    const db = new Database({
+      signer,
+      autoWait: true,
+      aliases: jsonFileAliases(aliasesFilePath),
+    });
+    let { meta } = await db
+      .prepare("CREATE TABLE table_aliases (id int);")
+      .all();
+    const name = meta.txn?.name ?? "";
+    const prefix = meta.txn?.prefix ?? "";
+
+    // Check the aliases file was updated and matches with the prefix
+    const nameMap = await jsonFileAliases(aliasesFilePath).read();
+    const tableAlias =
+      Object.keys(nameMap).find((alias) => nameMap[alias] === name) ?? "";
+    equal(tableAlias, prefix);
+
+    // Write to the table
+    ({ meta } = await db.prepare(`INSERT INTO ${name} values (1);`).run());
+    await meta.txn?.wait();
+
+    const consoleLog = spy(logger, "log");
+    await yargs([
+      "read",
+      `select * from ${tableAlias};`,
+      "--aliases",
+      aliasesFilePath,
+    ])
+      .command(mod)
+      .parse();
+
+    const value = consoleLog.getCall(0).firstArg;
+    deepStrictEqual(value, '[{"id":1}]');
   });
 });

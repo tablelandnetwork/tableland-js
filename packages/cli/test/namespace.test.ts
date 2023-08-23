@@ -67,7 +67,7 @@ describe("commands/namespace", function () {
     );
   });
 
-  test("fails if ens name is invalid", async function () {
+  test("fails if ENS name is invalid", async function () {
     const consoleError = spy(logger, "error");
     await yargs([
       "namespace",
@@ -82,7 +82,7 @@ describe("commands/namespace", function () {
       .parse();
 
     const value = consoleError.getCall(0).firstArg;
-    equal(value, "Only letters or underscores in key name");
+    equal(value, "only letters or underscores in key name");
   });
 
   test("fails if table name is invalid", async function () {
@@ -100,10 +100,10 @@ describe("commands/namespace", function () {
       .parse();
 
     const value = consoleError.getCall(0).firstArg;
-    equal(value, "Tablename is invalid");
+    equal(value, "table name is invalid");
   });
 
-  test("Get ENS name", async function () {
+  test("get ENS name", async function () {
     stub(ethers.providers.JsonRpcProvider.prototype, "getResolver").callsFake(
       getResolverMock
     );
@@ -125,7 +125,7 @@ describe("commands/namespace", function () {
     equal(value.value, "healthbot_31337_1");
   });
 
-  test("Set ENS name", async function () {
+  test("set ENS name", async function () {
     const consoleLog = spy(logger, "log");
     await yargs([
       "namespace",

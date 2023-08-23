@@ -4,14 +4,16 @@ import { spy, restore } from "sinon";
 import { getAccounts } from "@tableland/local";
 import yargs from "yargs/yargs";
 import * as mod from "../src/commands/list.js";
-import { logger } from "../src/utils.js";
+import { logger, wait } from "../src/utils.js";
 import { TEST_PROVIDER_URL } from "./setup";
 
 const defaultArgs = ["--providerUrl", TEST_PROVIDER_URL];
 
+const accounts = getAccounts();
+
 describe("commands/list", function () {
   before(async function () {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await wait(1000);
   });
 
   afterEach(function () {
@@ -29,7 +31,7 @@ describe("commands/list", function () {
   });
 
   test("List throws without chain", async function () {
-    const [account] = getAccounts();
+    const account = accounts[1];
     const privateKey = account.privateKey.slice(2);
     const consoleError = spy(logger, "error");
     await yargs(["list", "--privateKey", privateKey, ...defaultArgs])
@@ -41,7 +43,7 @@ describe("commands/list", function () {
   });
 
   test("List throws with invalid chain", async function () {
-    const [account] = getAccounts();
+    const account = accounts[1];
     const privateKey = account.privateKey.slice(2);
     const consoleError = spy(logger, "error");
     await yargs([
@@ -60,7 +62,7 @@ describe("commands/list", function () {
   });
 
   test("throws with custom network", async function () {
-    const [account] = getAccounts();
+    const account = accounts[1];
     const privateKey = account.privateKey.slice(2);
     const consoleError = spy(logger, "error");
     await yargs([
@@ -79,7 +81,9 @@ describe("commands/list", function () {
   });
 
   test("List passes with local-tableland", async function () {
-    const [account] = getAccounts();
+    // need to use the Validator wallet here, since we are asserting
+    // that the healthbot table is returned from `list`
+    const account = accounts[0];
     const privateKey = account.privateKey.slice(2);
     const consoleLog = spy(logger, "log");
     await yargs([

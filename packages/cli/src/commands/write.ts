@@ -6,6 +6,7 @@ import {
   getLink,
   logger,
   getChainName,
+  getTableNameWithAlias,
   type NormalizedStatement,
 } from "../utils.js";
 import { type GlobalOptions } from "../cli.js";
@@ -105,8 +106,13 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
         normalized.statements.map(async function (stmt) {
           // re-normalize so we can be sure we've isolated each statement and it's tableId
           const norm = (await normalize(stmt)) as NormalizedStatement;
-          const { tableId } = await globalThis.sqlparser.validateTableName(
+          const name = await getTableNameWithAlias(
+            argv.aliases,
             norm.tables[0]
+          );
+
+          const { tableId } = await globalThis.sqlparser.validateTableName(
+            name
           );
           return {
             statement: stmt,

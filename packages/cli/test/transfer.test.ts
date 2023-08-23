@@ -1,12 +1,13 @@
 import { equal } from "node:assert";
+import { getDefaultProvider } from "ethers";
 import { describe, test, afterEach, before } from "mocha";
 import { spy, restore } from "sinon";
 import yargs from "yargs/yargs";
-import { getDefaultProvider } from "ethers";
+import { temporaryWrite } from "tempy";
 import { getAccounts } from "@tableland/local";
 import { helpers, Database } from "@tableland/sdk";
 import * as mod from "../src/commands/transfer.js";
-import { wait, logger } from "../src/utils.js";
+import { jsonFileAliases, logger, wait } from "../src/utils.js";
 import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
 
 const defaultArgs = [
@@ -43,9 +44,9 @@ describe("commands/transfer", function () {
     const consoleError = spy(logger, "error");
     await yargs([
       "transfer",
-      ...defaultArgs,
       tableName,
       "0x0000000000000000000000",
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -84,7 +85,7 @@ describe("commands/transfer", function () {
     const account = accounts[1];
     const privateKey = account.privateKey.slice(2);
     const consoleError = spy(logger, "error");
-    await yargs(["transfer", "fooz", "blah", ...defaultArgs, "-k", privateKey])
+    await yargs(["transfer", "fooz", "blah", "-k", privateKey, ...defaultArgs])
       .command(mod)
       .parse();
 
@@ -100,9 +101,9 @@ describe("commands/transfer", function () {
       "transfer",
       tableName,
       "0x00",
-      ...defaultArgs,
       "--privateKey",
       privateKey,
+      ...defaultArgs,
     ])
       .command(mod)
       .parse();
@@ -114,8 +115,58 @@ describe("commands/transfer", function () {
     );
   });
 
+  test("throws with invalid table aliases file", async function () {
+    const [, account1, account2] = accounts;
+    const account2Address = account2.address;
+    const consoleError = spy(logger, "error");
+    const privateKey = account1.privateKey.slice(2);
+
+    // Transfer the table
+    await yargs([
+      "transfer",
+      "invalid",
+      account2Address,
+      "--privateKey",
+      privateKey,
+      ...defaultArgs,
+      "--aliases",
+      "./invalid.json",
+    ])
+      .command(mod)
+      .parse();
+
+    const res = consoleError.getCall(0).firstArg;
+    equal(res, "invalid table aliases file");
+  });
+
+  test("throws with invalid table alias definition", async function () {
+    const [, account1, account2] = accounts;
+    const account2Address = account2.address;
+    const consoleError = spy(logger, "error");
+    const privateKey = account1.privateKey.slice(2);
+    // Set up test aliases file
+    const aliasesFilePath = await temporaryWrite(`{}`, { extension: "json" });
+
+    // Transfer the table
+    await yargs([
+      "transfer",
+      "invalid",
+      account2Address,
+      "--privateKey",
+      privateKey,
+      ...defaultArgs,
+      "--aliases",
+      aliasesFilePath,
+    ])
+      .command(mod)
+      .parse();
+
+    const res = consoleError.getCall(0).firstArg;
+    equal(res, "error validating name: table name has wrong format: invalid");
+  });
+
   // Does transfering table have knock-on effects on other tables?
-  test("Write passes with local-tableland", async function () {
+  test("passes with local-tableland", async function () {
     const [, account1, account2] = accounts;
     const account2Address = account2.address;
     const consoleLog = spy(logger, "log");
@@ -124,9 +175,60 @@ describe("commands/transfer", function () {
       "transfer",
       tableName,
       account2Address,
-      ...defaultArgs,
       "--privateKey",
       privateKey,
+      ...defaultArgs,
+    ])
+      .command(mod)
+      .parse();
+
+    const res = consoleLog.getCall(0).firstArg;
+    const value = JSON.parse(res);
+    const { to, from } = value;
+
+    equal(from.toLowerCase(), account1.address.toLowerCase());
+    equal(
+      to.toLowerCase(),
+      helpers.getContractAddress("local-tableland").toLowerCase()
+    );
+  });
+
+  test("passes with table alias", async function () {
+    const [, account1, account2] = accounts;
+    const account2Address = account2.address;
+    const consoleLog = spy(logger, "log");
+    const privateKey = account1.privateKey.slice(2);
+    // Set up test aliases file
+    const aliasesFilePath = await temporaryWrite(`{}`, { extension: "json" });
+
+    // Create new db instance to enable aliases
+    const db = new Database({
+      signer,
+      autoWait: true,
+      aliases: jsonFileAliases(aliasesFilePath),
+    });
+    const { meta } = await db
+      .prepare("CREATE TABLE table_aliases (id int);")
+      .all();
+    const name = meta.txn?.name ?? "";
+    const prefix = meta.txn?.prefix ?? "";
+
+    // Check the aliases file was updated and matches with the prefix
+    const nameMap = await jsonFileAliases(aliasesFilePath).read();
+    const tableAlias =
+      Object.keys(nameMap).find((alias) => nameMap[alias] === name) ?? "";
+    equal(tableAlias, prefix);
+
+    // Transfer the table
+    await yargs([
+      "transfer",
+      tableAlias,
+      account2Address,
+      "--privateKey",
+      privateKey,
+      ...defaultArgs,
+      "--aliases",
+      aliasesFilePath,
     ])
       .command(mod)
       .parse();

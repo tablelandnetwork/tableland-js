@@ -5,10 +5,10 @@ import { ethers, getDefaultProvider } from "ethers";
 import yargs from "yargs/yargs";
 import { temporaryWrite } from "tempy";
 import mockStd from "mock-stdin";
-import { Database } from "@tableland/sdk";
 import { getAccounts } from "@tableland/local";
+import { Database } from "@tableland/sdk";
 import * as mod from "../src/commands/write.js";
-import { wait, logger } from "../src/utils.js";
+import { wait, logger, jsonFileAliases } from "../src/utils.js";
 import { getResolverUndefinedMock } from "./mock.js";
 import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
 
@@ -178,7 +178,7 @@ describe("commands/write", function () {
     setTimeout(() => {
       stdin.send("\n").end();
     }, 100);
-    await yargs(["write", "--privateKey", privateKey, ...defaultArgs])
+    await yargs(["write", ...defaultArgs, "--privateKey", privateKey])
       .command(mod)
       .parse();
 
@@ -187,6 +187,52 @@ describe("commands/write", function () {
       value,
       "missing input value (`statement`, `file`, or piped input from stdin required)"
     );
+  });
+
+  test("throws with invalid table aliases file", async function () {
+    const [account] = accounts;
+    const privateKey = account.privateKey.slice(2);
+    const consoleError = spy(logger, "error");
+    // Set up faux aliases file
+    const aliasesFilePath = "./invalid.json";
+
+    await yargs([
+      "write",
+      "INSERT INTO table_aliases (id) VALUES (1);",
+      ...defaultArgs,
+      "--privateKey",
+      privateKey,
+      "--aliases",
+      aliasesFilePath,
+    ])
+      .command(mod)
+      .parse();
+
+    const res = consoleError.getCall(0).firstArg;
+    equal(res, "invalid table aliases file");
+  });
+
+  test("throws with invalid table alias definition", async function () {
+    const [account] = accounts;
+    const privateKey = account.privateKey.slice(2);
+    const consoleError = spy(logger, "error");
+    // Set up faux aliases file
+    const aliasesFilePath = await temporaryWrite(`{}`, { extension: "json" });
+
+    await yargs([
+      "write",
+      "INSERT INTO table_aliases (id) VALUES (1);",
+      ...defaultArgs,
+      "--privateKey",
+      privateKey,
+      "--aliases",
+      aliasesFilePath,
+    ])
+      .command(mod)
+      .parse();
+
+    const res = consoleError.getCall(0).firstArg;
+    match(res, /error validating name: table name has wrong format:/);
   });
 
   test("passes when writing with local-tableland", async function () {
@@ -354,7 +400,7 @@ describe("commands/write", function () {
     // db is configged with account 1
     const { meta } = await db.prepare("CREATE TABLE test_grant (a int);").all();
     const tableName = meta.txn?.name ?? "";
-
+    console.log(tableName);
     const consoleError = spy(logger, "error");
 
     // first ensure account 2 cannot insert
@@ -522,5 +568,128 @@ describe("commands/write", function () {
       .run()) as any;
     equal(results[0].id, 1);
     equal(results[0].data, data);
+  });
+
+  test("passes with table aliases", async function () {
+    const account = accounts[1];
+    const privateKey = account.privateKey.slice(2);
+    // Set up test aliases file
+    const aliasesFilePath = await temporaryWrite(`{}`, { extension: "json" });
+    // Create new db instance to enable aliases
+    const db = new Database({
+      signer,
+      autoWait: true,
+      aliases: jsonFileAliases(aliasesFilePath),
+    });
+    const { meta } = await db
+      .prepare("CREATE TABLE table_aliases (id int);")
+      .all();
+    const name = meta.txn?.name ?? "";
+    const prefix = meta.txn?.prefix ?? "";
+
+    // Check the aliases file was updated and matches with the prefix
+    const nameMap = await jsonFileAliases(aliasesFilePath).read();
+    const tableAlias =
+      Object.keys(nameMap).find((alias) => nameMap[alias] === name) ?? "";
+
+    equal(tableAlias, prefix);
+
+    // Write to the table using the alias
+    const consoleLog = spy(logger, "log");
+    await yargs([
+      "write",
+      `insert into ${tableAlias} values (1);`,
+      ...defaultArgs,
+      "--privateKey",
+      privateKey,
+      "--aliases",
+      aliasesFilePath,
+    ])
+      .command(mod)
+      .parse();
+
+    const res = consoleLog.getCall(0).firstArg;
+    const value = JSON.parse(res);
+    const { transactionHash, link } = value.meta?.txn;
+
+    equal(typeof transactionHash, "string");
+    equal(transactionHash.startsWith("0x"), true);
+    equal(link, undefined);
+
+    // Make sure data was materialized (note aliases aren't enabled on `db`)
+    const { results } = await db
+      .prepare(`SELECT * FROM ${name}`)
+      .all<{ id: number }>();
+    equal(results.length, 1);
+    equal(results[0].id, 1);
+  });
+
+  test("passes with table aliases when writing to two different tables", async function () {
+    const account = accounts[1];
+    const privateKey = account.privateKey.slice(2);
+    // Set up test aliases file
+    const aliasesFilePath = await temporaryWrite(`{}`, { extension: "json" });
+    // Create new db instance to enable aliases
+    const db = new Database({
+      signer,
+      autoWait: true,
+      aliases: jsonFileAliases(aliasesFilePath),
+    });
+    const { meta: meta1 } = await db
+      .prepare("create table multi_tbl_1 (a int, b text);")
+      .all();
+    const { meta: meta2 } = await db
+      .prepare("create table multi_tbl_2 (a int, b text);")
+      .all();
+
+    const tableName1 = meta1.txn!.name;
+    const tablePrefix1 = meta1.txn!.prefix;
+    const tableName2 = meta2.txn!.name;
+    const tablePrefix2 = meta2.txn!.prefix;
+
+    // Check the aliases file was updated and matches with the prefix
+    const nameMap = await jsonFileAliases(aliasesFilePath).read();
+    const tableAlias1 =
+      Object.keys(nameMap).find((alias) => nameMap[alias] === tableName1) ?? "";
+    const tableAlias2 =
+      Object.keys(nameMap).find((alias) => nameMap[alias] === tableName2) ?? "";
+    equal(tableAlias1, tablePrefix1);
+    equal(tableAlias2, tablePrefix2);
+
+    // Write to the tables using the aliases
+    const consoleLog = spy(logger, "log");
+    await yargs([
+      "write",
+      `insert into ${tableAlias1} (a, b) values (1, 'one');
+      insert into ${tableAlias2} (a, b) values (2, 'two');`,
+      ...defaultArgs,
+      "--privateKey",
+      privateKey,
+      "--aliases",
+      aliasesFilePath,
+    ])
+      .command(mod)
+      .parse();
+
+    const res = consoleLog.getCall(0).firstArg;
+    const value = JSON.parse(res);
+    const { transactionHash, link } = value.meta?.txn;
+
+    equal(typeof transactionHash, "string");
+    equal(transactionHash.startsWith("0x"), true);
+    equal(link, undefined);
+
+    const results = await db.batch([
+      db.prepare(`select * from ${tableName1};`),
+      db.prepare(`select * from ${tableName2};`),
+    ]);
+
+    const result1 = (results[0] as any)?.results;
+    const result2 = (results[1] as any)?.results;
+
+    equal(result1[0].a, 1);
+    equal(result1[0].b, "one");
+    equal(result2[0].a, 2);
+    equal(result2[0].b, "two");
   });
 });
