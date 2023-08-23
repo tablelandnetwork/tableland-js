@@ -4,7 +4,7 @@ import { describe, test, afterEach, before } from "mocha";
 import { spy, restore } from "sinon";
 import yargs from "yargs/yargs";
 import { temporaryWrite } from "tempy";
-import { getAccounts, getDatabase } from "@tableland/local";
+import { getAccounts } from "@tableland/local";
 import { helpers, Database } from "@tableland/sdk";
 import * as mod from "../src/commands/transfer.js";
 import { jsonFileAliases, logger, wait } from "../src/utils.js";

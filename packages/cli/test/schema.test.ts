@@ -1,11 +1,10 @@
 import { equal } from "node:assert";
-import { getDefaultProvider } from "ethers";
+import { ethers, getDefaultProvider } from "ethers";
 import { describe, test, afterEach, before } from "mocha";
 import { spy, restore, stub } from "sinon";
 import yargs from "yargs/yargs";
-import { ethers } from "ethers";
 import { getAccounts } from "@tableland/local";
-import { helpers, Database } from "@tableland/sdk";
+import { Database } from "@tableland/sdk";
 import { temporaryWrite } from "tempy";
 import ensLib from "../src/lib/EnsCommand";
 import * as mod from "../src/commands/schema";
