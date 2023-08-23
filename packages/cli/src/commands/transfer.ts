@@ -30,11 +30,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
   try {
     await init();
     const { receiver, chain } = argv;
-    let { name } = argv;
-
-    // Check if the passed `name` is a table alias
-    if (argv.aliases != null)
-      name = await getTableNameWithAlias(argv.aliases, name);
+    const name = await getTableNameWithAlias(argv.aliases, argv.name);
 
     const tableDetails = await globalThis.sqlparser.validateTableName(name);
     const chainId = tableDetails.chainId;

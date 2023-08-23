@@ -23,11 +23,8 @@ export const builder: CommandBuilder<Record<string, unknown>, Options> = (
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
   try {
     await init();
-    let { name } = argv;
+    let name = await getTableNameWithAlias(argv.aliases, argv.name);
 
-    // Check if the passed `name` is a table alias
-    if (argv.aliases != null)
-      name = await getTableNameWithAlias(argv.aliases, name);
     // Check if the passed `name` uses ENS
     // Note: duplicative `setupCommand` calls will occur with ENS, but this is
     // required to properly parse the chainId from the table name

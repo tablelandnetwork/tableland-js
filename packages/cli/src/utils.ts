@@ -211,9 +211,11 @@ export function jsonFileAliases(filepath: string): AliasesNameMap {
 }
 
 export async function getTableNameWithAlias(
-  filepath: string,
+  filepath: unknown,
   name: string
 ): Promise<string> {
+  if (typeof filepath !== "string" || filepath.trim() === "") return name;
+
   const nameMap = await jsonFileAliases(filepath).read();
   const uuName = nameMap[name];
   return uuName ?? name;

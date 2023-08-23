@@ -36,7 +36,7 @@ export const builder: CommandBuilder<Record<string, unknown>, Options> = (
         await init();
         const { privateKey, providerUrl } = argv;
         const chain = getChainName(argv.chain);
-        let { name } = argv;
+        const name = await getTableNameWithAlias(argv.aliases, argv.name);
 
         try {
           const signer = await getWalletWithProvider({
@@ -44,10 +44,6 @@ export const builder: CommandBuilder<Record<string, unknown>, Options> = (
             chain,
             providerUrl,
           });
-
-          // Check if the passed `name` is a table alias
-          if (argv.aliases != null)
-            name = await getTableNameWithAlias(argv.aliases, name);
 
           const reg = new Registry({ signer });
           const res = await reg.getController(name);
@@ -76,7 +72,7 @@ export const builder: CommandBuilder<Record<string, unknown>, Options> = (
         await init();
         const { controller, privateKey, providerUrl } = argv;
         const chain = getChainName(argv.chain);
-        let { name } = argv;
+        const name = await getTableNameWithAlias(argv.aliases, argv.name);
 
         try {
           const signer = await getWalletWithProvider({
@@ -84,10 +80,6 @@ export const builder: CommandBuilder<Record<string, unknown>, Options> = (
             chain,
             providerUrl,
           });
-
-          // Check if the passed `name` is a table alias
-          if (argv.aliases != null)
-            name = await getTableNameWithAlias(argv.aliases, name);
 
           const reg = new Registry({ signer });
           const res = await reg.setController({ tableName: name, controller });
@@ -113,7 +105,7 @@ export const builder: CommandBuilder<Record<string, unknown>, Options> = (
         await init();
         const { privateKey, providerUrl } = argv;
         const chain = getChainName(argv.chain);
-        let { name } = argv;
+        const name = await getTableNameWithAlias(argv.aliases, argv.name);
 
         try {
           const signer = await getWalletWithProvider({
@@ -121,10 +113,6 @@ export const builder: CommandBuilder<Record<string, unknown>, Options> = (
             chain,
             providerUrl,
           });
-
-          // Check if the passed `name` is a table alias
-          if (argv.aliases != null)
-            name = await getTableNameWithAlias(argv.aliases, name);
 
           const reg = new Registry({ signer });
           const res = await reg.lockController(name);
