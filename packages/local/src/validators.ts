@@ -166,12 +166,10 @@ class ValidatorDev {
     if (
       validatorConfig.Chains[0].Registry.EthEndpoint !==
       `ws://localhost:${this.registryPort}`
-    )
+    ) {
       validatorConfig.Chains[0].Registry.EthEndpoint = `ws://localhost:${this.registryPort}`;
+    }
 
-    // TODO: this could be parsed out of the deploy process, but since
-    //       it's always the same address just hardcoding it here
-    // TODO: maybe we can get this from evm-tableland?
     validatorConfig.Chains[0].Registry.ContractAddress = registryAddress;
 
     writeFileSync(configFilePath, JSON.stringify(validatorConfig, null, 2));

@@ -28,6 +28,9 @@ import {
 } from "./util.js";
 
 const spawnSync = spawn.sync;
+
+// TODO: maybe this can be parsed out of the deploy process?
+// Since it's always the same address just hardcoding for now.
 const registryAddress = "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512";
 
 class LocalTableland {
