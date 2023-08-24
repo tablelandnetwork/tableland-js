@@ -34,7 +34,7 @@ class ValidatorPkg {
     }
   }
 
-  start(): void {
+  start(registryAddress?: string): void {
     const binPath = getBinPath();
     if (binPath == null) {
       throw new Error(
@@ -141,7 +141,10 @@ class ValidatorDev {
     }
   }
 
-  start(): void {
+  start(registryAddress?: string): void {
+    if (typeof registryAddress !== "string") {
+      throw new Error("must provide registry address");
+    }
     // Add the registry address to the Validator config
     // TODO: when https://github.com/tablelandnetwork/go-tableland/issues/317 is
     //       resolved we may be able to refactor a lot of this
@@ -169,8 +172,7 @@ class ValidatorDev {
     // TODO: this could be parsed out of the deploy process, but since
     //       it's always the same address just hardcoding it here
     // TODO: maybe we can get this from evm-tableland?
-    validatorConfig.Chains[0].Registry.ContractAddress =
-      "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512";
+    validatorConfig.Chains[0].Registry.ContractAddress = registryAddress;
 
     writeFileSync(configFilePath, JSON.stringify(validatorConfig, null, 2));
 
