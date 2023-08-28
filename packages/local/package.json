@@ -1,6 +1,6 @@
 {
   "name": "@tableland/local",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Tooling to start a sandboxed Tableland network.",
   "repository": "https://github.com/tablelandnetwork/local-tableland",
   "license": "MIT",
