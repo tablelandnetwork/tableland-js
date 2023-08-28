@@ -154,6 +154,8 @@ class LocalTableland {
     // wait until initialization is done
     await waitForReady(registryReadyEvent, this.initEmitter);
 
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+
     this._deployRegistry();
 
     const deployed = await this.#_ensureRegistry();
