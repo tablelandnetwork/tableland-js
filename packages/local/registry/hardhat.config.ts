@@ -1,5 +1,7 @@
+import path from "path";
 import { HardhatUserConfig, extendEnvironment } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD } from "hardhat/builtin-tasks/task-names";
 import "@openzeppelin/hardhat-upgrades";
 import "@nomicfoundation/hardhat-toolbox";
 import "@nomiclabs/hardhat-ethers";
@@ -8,6 +10,24 @@ import {
   proxies,
   TablelandNetworkConfig,
 } from "@tableland/evm/network";
+
+subtask(TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD, async (args, hre, runSuper) => {
+  if (args.solcVersion === "0.8.19") {
+    const compilerPath = path.join(__dirname, "soljson-v0.8.19.js");
+
+    return {
+      compilerPath,
+      isSolcJs: true, // if you are using a native compiler, set this to false
+      version: args.solcVersion,
+      // this is used as extra information in the build-info files, but other than
+      // that is not important
+      longVersion: "0.8.19-nightly.2023.2.22+commit.7dd6d40",
+    };
+  }
+
+  // we just use the default subtask if the version is not 0.8.5
+  return runSuper();
+});
 
 const config: HardhatUserConfig = {
   solidity: {
