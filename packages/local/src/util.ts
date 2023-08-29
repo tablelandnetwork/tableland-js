@@ -402,31 +402,6 @@ export async function checkPortInUse(port: number): Promise<boolean> {
   });
 }
 
-/**
- * Probe a port with retries to check if it is in use.
- * @param port The port number.
- * @param tries Number of retries to attempt. Defaults to 5.
- * @param delay Time to wait between retries (in milliseconds). Defaults to 300.
- * @returns true if the port is in use, false otherwise
- */
-export async function probePortInUse(
-  port: number,
-  tries: number = 5,
-  delay: number = 300
-): Promise<boolean> {
-  let numTries = 0;
-  while (numTries < tries) {
-    // Note: consider splitting the delay into before and after this check
-    // Racing two instances might cause this to incorrectly return `false`
-    const portIsTaken = await checkPortInUse(port);
-    if (!portIsTaken) return false;
-
-    await new Promise((resolve) => setTimeout(resolve, delay));
-    numTries++;
-  }
-  return true;
-}
-
 const hardhatAccounts = [
   "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
   "59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",

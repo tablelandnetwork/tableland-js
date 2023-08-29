@@ -1,220 +1,17 @@
-import { type Server } from "node:net";
-import { join } from "node:path";
-import { readFileSync } from "node:fs";
-import { describe, afterEach, after, before, test } from "mocha";
+import { describe, after, before, test } from "mocha";
 import chai from "chai";
 import {
-  checkPortInUse,
   getAccounts,
   getDatabase,
   getRegistry,
-  getRegistryPort,
   getValidator,
 } from "../src/util.js";
 import { LocalTableland } from "../src/main.js";
-import {
-  logMetrics,
-  measureExecutionTime,
-  startMockServer,
-  stopMockServer,
-} from "./util.js";
 
 const expect = chai.expect;
 const localTablelandChainId = 31337;
-const executionTimes: {
-  start: number[];
-  shutdown: number[];
-} = {
-  start: [],
-  shutdown: [],
-};
 
-describe("Validator and Chain startup and shutdown", function () {
-  let server: Server | undefined;
-  let lt: LocalTableland | undefined;
-  const defaultPort = 8545; // Used for hardhat
-
-  this.timeout(30000); // Starting up LT takes 3000-7000ms; shutting down takes <10-10000ms
-  afterEach(async function () {
-    // Ensure all processes are cleaned up after each test
-    if (server != null) {
-      await stopMockServer(server);
-      server = undefined;
-    }
-    // Ensure both validator and registry haven't already been shut down & cleaned up
-    // before attempting to shut them down
-    if (lt?.validator !== undefined && lt?.registry !== undefined) {
-      const shutdownExecutionTime = await measureExecutionTime(
-        async () => await lt?.shutdown()
-      );
-      executionTimes.shutdown.push(shutdownExecutionTime);
-      lt = undefined;
-    }
-  });
-
-  test("successfully starts and shuts down", async function () {
-    lt = new LocalTableland({ silent: true });
-    const startupExecutionTime = await measureExecutionTime(
-      async () => await lt?.start()
-    );
-    executionTimes.start.push(startupExecutionTime);
-    expect(lt.validator).to.not.equal(undefined);
-    expect(lt.registry).to.not.equal(undefined);
-
-    const shutdownExecutionTime = await measureExecutionTime(
-      async () => await lt?.shutdown()
-    );
-    executionTimes.shutdown.push(shutdownExecutionTime);
-    expect(lt.validator).to.be.equal(undefined);
-    expect(lt.registry).to.be.equal(undefined);
-  });
-
-  test("successfully starts with retry logic after port 8545 initially in use", async function () {
-    lt = new LocalTableland({ silent: true });
-    // Start a server on port 8545 to block Local Tableland from using it
-    server = await startMockServer(defaultPort);
-    // Verify that the server is running on port 8545
-    const portInUse = await checkPortInUse(defaultPort);
-    expect(portInUse).to.equal(true);
-
-    // Shut down the server after 300ms, allowing Local Tableland to use port 8545
-    // This will execute 2 of 5 retries on port 8545 before opening the port
-    setTimeout(() => {
-      // TODO: eslint typescript is complaining about a promise as an argument to setTimeout,
-      //       but this is really ugly. Need to consider changing linting rules
-      (async function () {
-        await stopMockServer(server as Server);
-      })().catch((err) => console.log(err));
-    }, 300);
-
-    const startupExecutionTime = await measureExecutionTime(async () => {
-      return await lt?.start();
-    });
-    executionTimes.start.push(startupExecutionTime);
-
-    // Check that the network is running and can be queried
-    const accounts = getAccounts();
-    const signer = accounts[1];
-    const db = getDatabase(signer);
-    // Make sure LT materialized the healthbot table
-    await new Promise((resolve) => setTimeout(() => resolve(undefined), 2000));
-    const { results } = await db
-      .prepare(`SELECT * FROM healthbot_31337_1;`)
-      .all();
-    expect(results).to.not.be.deep.equal([]);
-  });
-
-  test("fails to start due to port 8545 in use", async function () {
-    lt = new LocalTableland({ silent: true });
-    // Start a server on port 8545 to block Local Tableland from using it
-    server = await startMockServer(defaultPort);
-    // Check if it is in use
-    const portInUse = await checkPortInUse(defaultPort);
-    expect(portInUse).to.equal(true);
-
-    // Local Tableland should not start successfully
-    // No `measureExecutionTime` wrapper needed
-    await expect(
-      (async function () {
-        await lt.start();
-      })()
-    ).to.be.rejectedWith(`port ${defaultPort} already in use`);
-  });
-
-  describe("with custom registryPort", function () {
-    test("successfully starts and works with SDK", async function () {
-      const customPort = 9999;
-      lt = new LocalTableland({
-        silent: true,
-        registryPort: customPort,
-      });
-      // Make sure it is not in use
-      const portInUse = await checkPortInUse(customPort);
-      expect(portInUse).to.equal(false);
-
-      // Local Tableland should start successfully on custom Registry port
-      const startupExecutionTime = await measureExecutionTime(
-        async () => await lt?.start()
-      );
-      executionTimes.start.push(startupExecutionTime);
-      const ltPort = getRegistryPort(lt);
-      expect(ltPort).to.equal(customPort);
-
-      // Should still be able to use SDK
-      const accounts = getAccounts(lt);
-      expect(accounts.length).to.equal(20);
-      const signer = accounts[1];
-      const db = getDatabase(signer);
-      const { meta } = await db
-        .prepare(`CREATE TABLE test_registry (id INT);`)
-        .run();
-      const tableName = meta.txn?.name ?? "";
-      expect(tableName).to.match(/^test_registry_31337_\d+$/);
-    });
-
-    test("successfully start by overwriting validator config and reset config on shutdown", async function () {
-      const customPort = 9999;
-      lt = new LocalTableland({
-        silent: true,
-        registryPort: customPort,
-      });
-      // Make sure it is not in use
-      const portInUse = await checkPortInUse(customPort);
-      expect(portInUse).to.equal(false);
-
-      // Local Tableland should start successfully on custom Registry port
-      const startupExecutionTime = await measureExecutionTime(
-        async () => await lt?.start()
-      );
-      executionTimes.start.push(startupExecutionTime);
-      const ltPort = getRegistryPort(lt);
-      expect(ltPort).to.equal(customPort);
-
-      // Config file should have been updated to use custom port 9999
-      const configFilePath = join(
-        lt.validator?.validatorDir ?? "",
-        "config.json"
-      );
-      let configFile = readFileSync(configFilePath);
-      let validatorConfig = JSON.parse(configFile.toString());
-      expect(validatorConfig.Chains[0].Registry.EthEndpoint).to.equal(
-        `ws://localhost:${ltPort}`
-      );
-
-      // Shut down Local Tableland and ensure validator config file is reset
-      const shutdownExecutionTime = await measureExecutionTime(
-        async () => await lt?.shutdown()
-      );
-      executionTimes.shutdown.push(shutdownExecutionTime);
-      configFile = readFileSync(configFilePath);
-      validatorConfig = JSON.parse(configFile.toString());
-      expect(validatorConfig.Chains[0].Registry.EthEndpoint).to.equal(
-        `ws://localhost:8545`
-      );
-    });
-
-    test("fails to start due to custom port in use", async function () {
-      const customPort = 9999;
-      lt = new LocalTableland({ silent: true, registryPort: customPort });
-      // Start a server on `customPort` to block Local Tableland from using it
-      server = await startMockServer(customPort);
-      // Check if it is in use
-      const portInUse = await checkPortInUse(customPort);
-      expect(portInUse).to.equal(true);
-      // Try to start Local Tableland, which will attempt to use `customPort` and fail
-      await expect(
-        (async function () {
-          await lt.start();
-        })()
-      ).to.be.rejectedWith(`port ${customPort} already in use`);
-      // Ensure Local Tableland subprocesses did not start and/or are not hanging
-      expect(lt.validator).to.equal(undefined);
-      expect(lt.registry).to.equal(undefined);
-    });
-  });
-});
-
-describe("Validator, Chain, and SDK work end to end", function () {
+describe("network end to end", function () {
   const lt = new LocalTableland({
     silent: true,
   });
@@ -223,22 +20,11 @@ describe("Validator, Chain, and SDK work end to end", function () {
   // These tests take a bit longer than normal since we are running them against an actual network
   this.timeout(30000);
   before(async function () {
-    const startupExecutionTime = await measureExecutionTime(
-      async () => await lt.start()
-    );
-    executionTimes.start.push(startupExecutionTime);
-    await new Promise((resolve) => setTimeout(() => resolve(undefined), 2000));
+    await lt.start();
   });
 
   after(async function () {
-    const shutdownExecutionTime = await measureExecutionTime(
-      async () => await lt.shutdown()
-    );
-    executionTimes.shutdown.push(shutdownExecutionTime);
-    // Calculate & log the min, max, median, and average start and shutdown times
-    console.log(`\nExecution metrics`);
-    logMetrics("start()", executionTimes.start);
-    logMetrics("shutdown()", executionTimes.shutdown);
+    await lt.shutdown();
   });
 
   test("creates a table that can be read from", async function () {

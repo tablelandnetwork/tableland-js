@@ -5,11 +5,13 @@ import { type ChildProcess } from "node:child_process";
 import { EventEmitter } from "node:events";
 import spawn from "cross-spawn";
 import shell from "shelljs";
+import { getDefaultProvider } from "ethers";
 import { chalk } from "./chalk.js";
 import { ValidatorDev, ValidatorPkg } from "./validators.js";
 import {
   buildConfig,
   type Config,
+  checkPortInUse,
   defaultRegistryDir,
   inDebugMode,
   isValidPort,
@@ -22,11 +24,14 @@ import {
   getValidator,
   logSync,
   pipeNamedSubprocess,
-  probePortInUse,
   waitForReady,
 } from "./util.js";
 
 const spawnSync = spawn.sync;
+
+// TODO: maybe this can be parsed out of the deploy process?
+// Since it's always the same address just hardcoding for now.
+const registryAddress = "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512";
 
 class LocalTableland {
   config;
@@ -62,7 +67,7 @@ class LocalTableland {
       typeof config.registryDir === "string" &&
       config.registryDir.trim() !== ""
     ) {
-      this.registryDir = config.registryDir;
+      this.registryDir = config.registryDir.trim();
     } else {
       this.registryDir = defaultRegistryDir();
     }
@@ -80,19 +85,15 @@ class LocalTableland {
   }
 
   async #_start(config: Config = {}): Promise<void> {
-    if (
-      typeof this.registryDir !== "string" ||
-      this.registryDir.trim() === ""
-    ) {
+    if (typeof this.registryDir !== "string" || this.registryDir === "") {
       throw new Error("cannot start a local network without Registry");
     }
 
     // make sure we are starting fresh
-    // TODO: I don't think this is doing anything anymore...
     this.#_cleanup();
 
     // Check if the hardhat port is in use (defaults to 5 retries, 300ms b/w each try)
-    const registryPortIsTaken = await probePortInUse(this.registryPort);
+    const registryPortIsTaken = await checkPortInUse(this.registryPort);
     // Note: this generally works, but there is a chance that the port will be
     // taken but returns `false`. E.g., try racing two instances at *exactly*
     // the same, and `EADDRINUSE` occurs. But generally, it'll work as expected.
@@ -101,14 +102,18 @@ class LocalTableland {
     // Else, notify the user only if it's a not the default and is custom.
     if (registryPortIsTaken) {
       throw new Error(`port ${this.registryPort} already in use`);
-    } else {
-      // Notify that we're using a custom port since it's not the default 8545
+    }
+
+    // Notify that we're using a custom port since it's not the default 8545
+    if (
       this.registryPort !== this.defaultRegistryPort &&
-        shell.echo(
-          `[${chalk.magenta.bold("Notice")}] Registry is using custom port ${
-            this.registryPort
-          }`
-        );
+      this.silent !== true
+    ) {
+      shell.echo(
+        `[${chalk.magenta.bold("Notice")}] Registry is using custom port ${
+          this.registryPort
+        }`
+      );
     }
 
     // You *must* store these in `process.env` to access within the hardhat subprocess
@@ -149,17 +154,16 @@ class LocalTableland {
     // wait until initialization is done
     await waitForReady(registryReadyEvent, this.initEmitter);
 
-    // Deploy the Registry to the Hardhat node
-    logSync(
-      spawnSync(
-        isWindows() ? "npx.cmd" : "npx",
-        ["hardhat", "run", "--network", "localhost", "scripts/deploy.ts"],
-        {
-          cwd: this.registryDir,
-        }
-      ),
-      !inDebugMode()
-    );
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+
+    this._deployRegistry();
+
+    const deployed = await this.#_ensureRegistry();
+    if (!deployed) {
+      throw new Error(
+        "deploying registry contract failed, cannot start network"
+      );
+    }
 
     // Need to determine if we are starting the validator via docker
     // and a local repo, or if are running a binary etc...
@@ -172,7 +176,7 @@ class LocalTableland {
     // run this before starting in case the last instance of the validator didn't get cleanup after
     // this might be needed if a test runner force quits the parent local-tableland process
     this.validator.cleanup();
-    this.validator.start();
+    this.validator.start(registryAddress);
 
     // TODO: It seems like this check isn't sufficient to see if the process is gonna get to a point
     //       where the on error listener can be attached.
@@ -218,6 +222,33 @@ class LocalTableland {
     console.log("______/                  \\______\n\n");
     console.log("Using Configuration:\n" + JSON.stringify(config, null, 4));
     console.log("\n\n*************************************\n");
+  }
+
+  // note: Tests are using sinon to stub this method. Because typescript compiles ecmascript
+  //       private features, i.e. hash syntax, in a way that does not work with sinon we must
+  //       use the ts private modifier here in order to test the failure to deploy the registry.
+  private _deployRegistry(): void {
+    // Deploy the Registry to the Hardhat node
+    logSync(
+      spawnSync(
+        isWindows() ? "npx.cmd" : "npx",
+        ["hardhat", "run", "--network", "localhost", "scripts/deploy.ts"],
+        {
+          cwd: this.registryDir,
+        }
+      ),
+      !inDebugMode()
+    );
+  }
+
+  async #_ensureRegistry(): Promise<boolean> {
+    const provider = getDefaultProvider(
+      `http://127.0.0.1:${this.registryPort}`
+    );
+    const code = await provider.getCode(registryAddress);
+
+    // if the contract exists, and is not empty, code will not be equal to 0x
+    return code !== "0x";
   }
 
   async #_setReady(): Promise<void> {
