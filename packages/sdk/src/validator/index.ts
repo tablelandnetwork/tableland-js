@@ -1,6 +1,6 @@
 import {
   type Signal,
-  type SignalAndInterval,
+  type PollingController,
   type ReadConfig,
   type ChainName,
   getBaseUrl,
@@ -72,23 +72,23 @@ export class Validator {
    * Get health status
    * @description Returns OK if the validator considers itself healthy
    */
-  async health(opts: Signal = {}): Promise<boolean> {
-    return await getHealth(this.config, opts);
+  async health(signal?: Signal): Promise<boolean> {
+    return await getHealth(this.config, signal);
   }
 
   /**
    * Get version information
    * @description Returns version information about the validator daemon
    */
-  async version(opts: Signal = {}): Promise<Version> {
-    return await getVersion(this.config, opts);
+  async version(signal?: Signal): Promise<Version> {
+    return await getVersion(this.config, signal);
   }
 
   /**
    * Get table information
    * @description Returns information about a single table, including schema information
    */
-  async getTableById(params: TableParams, opts: Signal = {}): Promise<Table> {
+  async getTableById(params: TableParams, signal?: Signal): Promise<Table> {
     if (
       typeof params.chainId !== "number" ||
       typeof params.tableId !== "string"
@@ -104,17 +104,17 @@ export class Validator {
    */
   async queryByStatement<T = unknown>(
     params: QueryParams<"objects" | undefined>,
-    opts?: Signal
+    signal?: Signal
   ): Promise<ObjectsFormat<T>>;
   async queryByStatement<T = unknown>(
     params: QueryParams<"table">,
-    opts?: Signal
+    signal?: Signal
   ): Promise<TableFormat<T>>;
   async queryByStatement<T = unknown>(
     params: QueryParams<Format>,
-    opts: Signal = {}
+    signal?: Signal
   ): Promise<TableFormat<T> | ObjectsFormat<T>> {
-    return await getQuery<T>(this.config, params as any, opts);
+    return await getQuery<T>(this.config, params as any, signal);
   }
 
   /**
@@ -123,9 +123,9 @@ export class Validator {
    */
   async receiptByTransactionHash(
     params: ReceiptParams,
-    opts: Signal = {}
+    signal?: Signal
   ): Promise<TransactionReceipt> {
-    return await getTransactionReceipt(this.config, params, opts);
+    return await getTransactionReceipt(this.config, params, signal);
   }
 
   /**
@@ -134,8 +134,8 @@ export class Validator {
    */
   async pollForReceiptByTransactionHash(
     params: ReceiptParams,
-    opts: SignalAndInterval = {}
+    controller?: PollingController
   ): Promise<TransactionReceipt> {
-    return await pollTransactionReceipt(this.config, params, opts);
+    return await pollTransactionReceipt(this.config, params, controller);
   }
 }
