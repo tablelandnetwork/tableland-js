@@ -1,6 +1,6 @@
 import { type WaitableTransactionReceipt } from "../registry/utils.js";
-import { type PollingController } from "./await.js";
 import { type FetchConfig } from "../validator/client/index.js";
+import { type PollingController } from "./await.js";
 import { type ChainName, getBaseUrl } from "./chains.js";
 import { type Signer, type ExternalProvider, getSigner } from "./ethers.js";
 
