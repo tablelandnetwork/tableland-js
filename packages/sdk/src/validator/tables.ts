@@ -15,9 +15,9 @@ import {
 export type Params =
   Paths["/tables/{chainId}/{tableId}"]["get"]["parameters"]["path"];
 
-type Column = Components["schemas"]["Column"];
+export type Column = Components["schemas"]["Column"];
 type BaseSchema = Components["schemas"]["Schema"];
-interface Schema extends BaseSchema {
+export interface Schema extends BaseSchema {
   readonly columns: Array<PartialRequired<Column, "constraints">>;
 }
 
