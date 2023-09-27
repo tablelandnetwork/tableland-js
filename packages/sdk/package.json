@@ -86,7 +86,7 @@
     "@ethersproject/experimental": "^5.7.0",
     "@playwright/test": "^1.30.0",
     "d1-orm": "^0.7.1",
-    "openapi-typescript": "6.2.4",
+    "openapi-typescript": "6.7.0",
     "typedoc": "^0.25.0"
   },
   "dependencies": {
