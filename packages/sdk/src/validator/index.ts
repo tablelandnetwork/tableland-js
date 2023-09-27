@@ -7,7 +7,13 @@ import {
 } from "../helpers/index.js";
 import { getHealth } from "./health.js";
 import { getVersion, type Version } from "./version.js";
-import { getTable, type Table, type Params as TableParams } from "./tables.js";
+import {
+  getTable,
+  type Table,
+  type Params as TableParams,
+  type Column,
+  type Schema,
+} from "./tables.js";
 import {
   getQuery,
   type Params as QueryParams,
@@ -29,6 +35,8 @@ export {
   type TableFormat,
   type ObjectsFormat,
   type QueryParams,
+  type Column,
+  type Schema,
 };
 
 /**
