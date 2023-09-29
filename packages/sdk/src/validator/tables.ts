@@ -17,7 +17,7 @@ export type Params =
 
 export type Column = Components["schemas"]["Column"];
 type BaseSchema = Components["schemas"]["Schema"];
-export interface Schema extends BaseSchema {
+export interface Schema extends Camelize<BaseSchema> {
   readonly columns: Array<PartialRequired<Column, "constraints">>;
 }
 
