@@ -28,6 +28,7 @@ export {
   extractSigner,
   jsonFileAliases,
   prepReadConfig,
+  studioAliases,
 } from "./config.js";
 export {
   type Signer,

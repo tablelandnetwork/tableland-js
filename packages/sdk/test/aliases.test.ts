@@ -2,13 +2,15 @@ import url from "node:url";
 import path from "node:path";
 import fs from "node:fs";
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { strictEqual, rejects } from "assert";
+import { deepStrictEqual, equal, strictEqual, rejects } from "assert";
 import { describe, test } from "mocha";
+import { Wallet } from "ethers";
 import { getAccounts } from "@tableland/local";
 import {
   type NameMapping,
   getDefaultProvider,
   jsonFileAliases,
+  studioAliases,
 } from "../src/helpers/index.js";
 import { Database } from "../src/index.js";
 import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
@@ -17,7 +19,7 @@ import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
 const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
 
 describe("aliases", function () {
-  this.timeout(TEST_TIMEOUT_FACTOR * 10000);
+  this.timeout(TEST_TIMEOUT_FACTOR * 30000);
   // Note that we're using the second account here
   const [, wallet] = getAccounts();
   const provider = getDefaultProvider(TEST_PROVIDER_URL);
@@ -230,6 +232,78 @@ describe("aliases", function () {
       const nameMap = (await db.config.aliases?.read()) ?? {};
 
       strictEqual(nameMap[tablePrefix], uuTableName);
+    });
+  });
+
+  describe.skip("studio based aliases", function () {
+    // TODO: these values are set per the actual production studio. It's tempting
+    //       to sandbox this, but doing so would add significant complexity.
+    // TODO: move the argument values to env vars.
+    const aliases = studioAliases(
+      "6f254b66-d9cf-482b-a4b9-76cfe5eb2f19",
+      "https://studio-neon.vercel.app/"
+    );
+
+    const wallet = new Wallet(process.env.PRIVATE_KEY as string);
+    const provider = getDefaultProvider(process.env.PROVIDER_URL as string);
+    const signer = wallet.connect(provider);
+    const db = new Database({
+      signer,
+      aliases,
+      autoWait: true,
+    });
+
+    const getNextId = async function (): Promise<number> {
+      const res = await db
+        .prepare("select * from users ORDER BY id DESC LIMIT 1;")
+        .all();
+
+      // @ts-expect-error TODO
+      const nextId = res.results[0]?.id;
+
+      if (typeof nextId !== "number" || isNaN(nextId)) {
+        return 0;
+      }
+
+      return nextId;
+    };
+
+    test("can use the production studio to do reads", async function () {
+      const res = await db
+        .prepare("select * from users ORDER BY id DESC LIMIT 1;")
+        .all();
+
+      // @ts-expect-error TODO
+      deepStrictEqual(res.results[0].full_name, "Bobby Tables");
+      // @ts-expect-error TODO
+      deepStrictEqual(res.results[0].favorite_color, "blue");
+      equal(res.success, true);
+      equal(typeof res.meta.duration, "number");
+    });
+
+    test("can use the production studio to do inserts", async function () {
+      const nextId = await getNextId();
+      await db
+        .prepare(
+          `INSERT INTO users (id, full_name, favorite_color) VALUES (${
+            nextId + 1
+          }, 'Bobby Tables', 'blue');`
+        )
+        .all();
+
+      const res = await db
+        .prepare("select * from users ORDER BY id DESC LIMIT 1;")
+        .all();
+
+      deepStrictEqual(res.results, [
+        {
+          full_name: "Bobby Tables",
+          favorite_color: "blue",
+          id: nextId + 1,
+        },
+      ]);
+      equal(res.success, true);
+      equal(typeof res.meta.duration, "number");
     });
   });
 });

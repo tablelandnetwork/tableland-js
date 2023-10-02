@@ -1,3 +1,4 @@
+import { api as studioApi } from "@tableland/studio-client";
 import { type WaitableTransactionReceipt } from "../registry/utils.js";
 import { type FetchConfig } from "../validator/client/index.js";
 import { type ChainName, getBaseUrl } from "./chains.js";
@@ -112,6 +113,40 @@ export function jsonFileAliases(filepath: string): AliasesNameMap {
     write: async function (nameMap: NameMapping) {
       const fs = await getFsModule();
       fs.writeFileSync(filepath, JSON.stringify(nameMap));
+    },
+  };
+}
+
+// NOTE: In the future we may need to use `environmentId` instead of `projectId`, but
+//  there is currently no concept of an environment for a user, and the api doesn't
+//  support querying for deployments based on environment.
+export function studioAliases(
+  projectId: string,
+  apiUrl?: string
+): AliasesNameMap {
+  const api = studioApi({
+    url: apiUrl,
+  });
+  const loadMap = async function (): Promise<void> {
+    const res = await api.deployments.projectDeployments.query({ projectId });
+
+    _map = {};
+    // map the response to a `NameMapping` Object
+    // { tokenId: string; tableId: string; tableName: string; environmentId: string; chainId: number; blockNumber: number | null; txnHash: string | null; createdAt: string; }
+    res.forEach(function (row) {
+      _map[row.tableName.split("_").slice(0, -2).join("_")] = row.tableName;
+    });
+  };
+
+  let _map: NameMapping;
+  return {
+    read: async function (): Promise<NameMapping> {
+      if (typeof _map === "undefined") await loadMap();
+
+      return _map;
+    },
+    write: async function () {
+      throw new Error("cannot create project tables via studio sdk aliases");
     },
   };
 }
