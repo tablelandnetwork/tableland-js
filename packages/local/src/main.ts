@@ -165,6 +165,49 @@ class LocalTableland {
       );
     }
 
+    await this.#_startValidator();
+    await this.#_setReady();
+
+    if (this.silent as boolean) return;
+
+    console.log("\n\n******  Tableland is running!  ******");
+    console.log("             _________");
+    console.log("         ___/         \\");
+    console.log("        /              \\");
+    console.log("       /                \\");
+    console.log("______/                  \\______\n\n");
+    console.log("Using Configuration:\n" + JSON.stringify(config, null, 4));
+    console.log("\n\n*************************************\n");
+  }
+
+  // note: Tests are using sinon to stub this method. Because typescript compiles ecmascript
+  //       private features, i.e. hash syntax, in a way that does not work with sinon we must
+  //       use the ts private modifier here in order to test the failure to deploy the registry.
+  private _deployRegistry(): void {
+    // Deploy the Registry to the Hardhat node
+    logSync(
+      spawnSync(
+        isWindows() ? "npx.cmd" : "npx",
+        ["hardhat", "run", "--network", "localhost", "scripts/deploy.ts"],
+        {
+          cwd: this.registryDir,
+        }
+      ),
+      !inDebugMode()
+    );
+  }
+
+  async #_ensureRegistry(): Promise<boolean> {
+    const provider = getDefaultProvider(
+      `http://127.0.0.1:${this.registryPort}`
+    );
+    const code = await provider.getCode(registryAddress);
+
+    // if the contract exists, and is not empty, code will not be equal to 0x
+    return code !== "0x";
+  }
+
+  async #_startValidator(): Promise<void> {
     // Need to determine if we are starting the validator via docker
     // and a local repo, or if are running a binary etc...
     const ValidatorClass = (this.docker as boolean)
@@ -210,45 +253,6 @@ class LocalTableland {
 
     // wait until initialization is done
     await waitForReady(validatorReadyEvent, this.initEmitter);
-    await this.#_setReady();
-
-    if (this.silent as boolean) return;
-
-    console.log("\n\n******  Tableland is running!  ******");
-    console.log("             _________");
-    console.log("         ___/         \\");
-    console.log("        /              \\");
-    console.log("       /                \\");
-    console.log("______/                  \\______\n\n");
-    console.log("Using Configuration:\n" + JSON.stringify(config, null, 4));
-    console.log("\n\n*************************************\n");
-  }
-
-  // note: Tests are using sinon to stub this method. Because typescript compiles ecmascript
-  //       private features, i.e. hash syntax, in a way that does not work with sinon we must
-  //       use the ts private modifier here in order to test the failure to deploy the registry.
-  private _deployRegistry(): void {
-    // Deploy the Registry to the Hardhat node
-    logSync(
-      spawnSync(
-        isWindows() ? "npx.cmd" : "npx",
-        ["hardhat", "run", "--network", "localhost", "scripts/deploy.ts"],
-        {
-          cwd: this.registryDir,
-        }
-      ),
-      !inDebugMode()
-    );
-  }
-
-  async #_ensureRegistry(): Promise<boolean> {
-    const provider = getDefaultProvider(
-      `http://127.0.0.1:${this.registryPort}`
-    );
-    const code = await provider.getCode(registryAddress);
-
-    // if the contract exists, and is not empty, code will not be equal to 0x
-    return code !== "0x";
   }
 
   async #_setReady(): Promise<void> {
@@ -271,6 +275,11 @@ class LocalTableland {
     });
 
     return await prom;
+  }
+
+  async restartValidator(): Promise<void> {
+    await this.shutdownValidator();
+    await this.#_startValidator();
   }
 
   async shutdown(): Promise<void> {
