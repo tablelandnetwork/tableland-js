@@ -154,11 +154,17 @@ class LocalTableland {
     // wait until initialization is done
     await waitForReady(registryReadyEvent, this.initEmitter);
 
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    if (process.env.HARDHAT_CLEAN) {
+      console.log("HARDHAT_CLEAN env set, cleaning hardhat");
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      this.#_cleanHardhat();
+    }
 
     this._deployRegistry();
 
     const deployed = await this.#_ensureRegistry();
+
+    // If the deploy process failed silently we will try to clean hardhat and re-deploy
     if (!deployed) {
       throw new Error(
         "deploying registry contract failed, cannot start network"
@@ -233,6 +239,20 @@ class LocalTableland {
       spawnSync(
         isWindows() ? "npx.cmd" : "npx",
         ["hardhat", "run", "--network", "localhost", "scripts/deploy.ts"],
+        {
+          cwd: this.registryDir,
+        }
+      ),
+      !inDebugMode()
+    );
+  }
+
+  #_cleanHardhat(): void {
+    // Deploy the Registry to the Hardhat node
+    logSync(
+      spawnSync(
+        isWindows() ? "npx.cmd" : "npx",
+        ["hardhat", "clean", "--global"],
         {
           cwd: this.registryDir,
         }
