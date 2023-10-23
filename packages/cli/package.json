@@ -47,7 +47,7 @@
     "@types/cosmiconfig": "^6.0.0",
     "@types/js-yaml": "^4.0.5",
     "@types/sinon": "^10.0.13",
-    "@types/yargs": "17.0.19",
+    "@types/yargs": "17.0.29",
     "mock-stdin": "^1.0.0",
     "sinon": "^15.0.1",
     "tempy": "^3.0.0"
