@@ -111,7 +111,8 @@ export function jsonFileAliases(filepath: string): AliasesNameMap {
     },
     write: async function (nameMap: NameMapping) {
       const fs = await getFsModule();
-      fs.writeFileSync(filepath, JSON.stringify(nameMap));
+      const current = await this.read();
+      fs.writeFileSync(filepath, JSON.stringify({ ...current, ...nameMap }));
     },
   };
 }
