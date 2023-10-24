@@ -3,6 +3,7 @@ import { extname } from "path";
 import { Wallet, providers, getDefaultProvider } from "ethers";
 import { helpers } from "@tableland/sdk";
 
+// TODO: should be able to remove the "staging" filter since the SDK handles it
 export const getChains = function (): typeof helpers.supportedChains {
   return Object.fromEntries(
     Object.entries(helpers.supportedChains).filter(
