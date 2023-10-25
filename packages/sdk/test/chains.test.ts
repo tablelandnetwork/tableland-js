@@ -72,11 +72,22 @@ describe("chains", function () {
     });
 
     test("where ensure we have a default set of chains with ids", function () {
+      // Mainnets
       strictEqual(getChainId("mainnet"), 1);
-      strictEqual(getChainId("localhost"), 31337);
-      strictEqual(getChainId("maticmum"), 80001);
+      strictEqual(getChainId("homestead"), 1);
+      strictEqual(getChainId("matic"), 137);
       strictEqual(getChainId("optimism"), 10);
       strictEqual(getChainId("arbitrum"), 42161);
+      strictEqual(getChainId("arbitrum-nova"), 42170);
+      strictEqual(getChainId("filecoin"), 314);
+      // Testnets
+      strictEqual(getChainId("sepolia"), 11155111);
+      strictEqual(getChainId("maticmum"), 80001);
+      strictEqual(getChainId("optimism-goerli"), 420);
+      strictEqual(getChainId("arbitrum-goerli"), 421613);
+      strictEqual(getChainId("filecoin-calibration"), 314159);
+      // Local
+      strictEqual(getChainId("localhost"), 31337);
     });
 
     test("where spot check a few chain info objects", function () {
@@ -93,6 +104,32 @@ describe("chains", function () {
       const maticmum = getChainInfo("maticmum");
       strictEqual(maticmum.baseUrl, testnetsUrl);
       strictEqual(maticmum.chainId, 80001);
+    });
+
+    test("where it fails when invalid chain is passed", function () {
+      // Should not exist for Optimism Goerli staging environment (filtered out)
+      throws(
+        () => getChainId("optimism-goerli-staging"),
+        (err: any) => {
+          strictEqual(
+            err.message,
+            "cannot use unsupported chain: optimism-goerli-staging"
+          );
+          return true;
+        }
+      );
+
+      // Try some random chain ID
+      throws(
+        () => getChainId(999999999999),
+        (err: any) => {
+          strictEqual(
+            err.message,
+            "cannot use unsupported chain: 999999999999"
+          );
+          return true;
+        }
+      );
     });
   });
 

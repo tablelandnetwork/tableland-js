@@ -60,7 +60,7 @@
     "up:dev": "node dist/esm/up.js --validator ../go-tableland --registry ../evm-tableland"
   },
   "dependencies": {
-    "@tableland/sdk": "^4.4.2",
+    "@tableland/sdk": "^4.5.3",
     "@tableland/validator": "^1.8.1",
     "cross-spawn": "^7.0.3",
     "enquirer": "^2.3.6",

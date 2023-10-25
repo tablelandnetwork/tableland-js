@@ -37,11 +37,15 @@ const mapped = entries.map(([chainName, contractAddress]) => {
   ];
   return entry;
 });
+// Filter out "optimism-goerli-staging"
+const filtered = mapped.filter(
+  ([chainName]) => chainName !== "optimism-goerli-staging"
+);
 
 /**
  * The set of chains and their information as supported by the Tableland network.
  */
-export const supportedChains = Object.fromEntries(mapped) as Record<
+export const supportedChains = Object.fromEntries(filtered) as Record<
   ChainName,
   ChainInfo
 >;
