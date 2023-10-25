@@ -9,6 +9,18 @@ import {
 import { getDelay } from "../src/helpers/utils.js";
 
 describe("await", function () {
+  test("ensure default polling controller timeout and interval", function () {
+    const controller = createPollingController();
+    strictEqual(controller.timeout, 60000);
+    strictEqual(controller.interval, 1500);
+  });
+
+  test("ensure custom polling controller timeout and interval", function () {
+    const controller = createPollingController(999, 10);
+    strictEqual(controller.timeout, 999);
+    strictEqual(controller.interval, 10);
+  });
+
   test("ensure polling stops after successful results", async function () {
     let callCount = 0;
     async function testPolling(
