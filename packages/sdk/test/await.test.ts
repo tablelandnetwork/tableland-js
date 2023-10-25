@@ -5,6 +5,7 @@ import {
   type PollingController,
   createPollingController,
   getAsyncPoller,
+  createSignal,
 } from "../src/helpers/await.js";
 import { getDelay } from "../src/helpers/utils.js";
 
@@ -78,5 +79,19 @@ describe("await", function () {
       });
     });
     strictEqual(controller2.signal.aborted, true);
+  });
+
+  test("createSignal should return valid signal", () => {
+    const result = createSignal();
+    strictEqual(typeof result, "object");
+    strictEqual(typeof result.signal, "object");
+    strictEqual(typeof result.abort, "function");
+  });
+
+  test("createSignal should set to aborted when called", () => {
+    const result = createSignal();
+    strictEqual(result.signal.aborted, false);
+    result.abort();
+    strictEqual(result.signal.aborted, true);
   });
 });
