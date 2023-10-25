@@ -68,7 +68,9 @@ describe("database", function () {
         .prepare(
           "CREATE TABLE test_batch (id integer, name text, age integer, primary key (id));"
         )
-        .all(undefined, createPollingController(TEST_TIMEOUT_FACTOR * 60000));
+        .all({
+          controller: createPollingController(TEST_TIMEOUT_FACTOR * 60000),
+        });
       tableName = meta.txn?.name ?? "";
       deepStrictEqual(results, []);
       strictEqual(error, undefined);
@@ -554,7 +556,7 @@ describe("database", function () {
         .prepare(
           "CREATE TABLE test_exec (id integer, name text, age integer, primary key (id));"
         )
-        .run(controller);
+        .run({ controller });
       tableName = meta.txn?.name ?? "";
       deepStrictEqual(results, []);
       strictEqual(error, undefined);

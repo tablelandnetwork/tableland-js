@@ -356,39 +356,36 @@ SELECT * FROM 3.14;
         .bind("Bobby");
       const controller = createPollingController();
       controller.abort();
-      await rejects(stmt.all(undefined, controller), (err: any) => {
+      await rejects(stmt.all({ controller }), (err: any) => {
         match(err.cause.message, /Th(e|is) operation was aborted/);
         return true;
       });
     });
 
     test("when trying to extract a missing column", async function () {
-      const sql1 = `SELECT * FROM ${tableName};`;
-      const sql2 = `SELECT missing FROM ${tableName};`;
+      const sql = `SELECT missing FROM ${tableName};`;
 
-      // In the following, if we aren't using generics, typescript would catch that missing isn't valid
-      // We use "any" as the type just to test passing invalid colum names
-      await rejects(db.prepare(sql1).all<any>("missing"), (err: any) => {
-        strictEqual(err.cause.message, `no such column: missing\n${sql1}`);
-        return true;
-      });
-
-      await rejects(db.prepare(sql2).all<any>(), (err: any) => {
+      await rejects(db.prepare(sql).all<any>(), (err: any) => {
         strictEqual(
           err.cause.message,
-          `running read statement: parsing result to json: executing query: no such column: missing\n${sql2}`
+          `running read statement: parsing result to json: executing query: no such column: missing\n${sql}`
         );
         return true;
       });
     });
 
     test("when extracting a column from multiple rows", async function () {
-      const stmt = db.prepare(`SELECT * FROM ${tableName};`);
-      const { results, meta, error } = await stmt.all<any>("counter");
+      const stmt = db.prepare(`SELECT counter FROM ${tableName};`);
+      const { results, meta, error } = await stmt.all<any>();
       strictEqual(meta.txn, undefined);
       strictEqual(error, undefined);
       assert(meta.duration != null);
-      deepStrictEqual(results, [1, 2, 3, 4]);
+      deepStrictEqual(results, [
+        { counter: 1 },
+        { counter: 2 },
+        { counter: 3 },
+        { counter: 4 },
+      ]);
     });
 
     test("when select all statement has a bound parameter", async function () {

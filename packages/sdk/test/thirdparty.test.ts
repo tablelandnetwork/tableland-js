@@ -87,13 +87,13 @@ describe("thirdparty", function () {
 
       await result.meta.txn.wait();
 
+      // Use `all()` under the hood
       const { results } = await users.All({
         where: { name: "Bobby Tables" },
         limit: 1,
         offset: 0,
         orderBy: ["id"],
       });
-
       deepStrictEqual(results, [
         {
           name: "Bobby Tables",
@@ -101,6 +101,16 @@ describe("thirdparty", function () {
           email: "bobby-tab@gmail.com",
         },
       ]);
+
+      // Use `first()` under the hood
+      const first = await users.First({
+        where: { name: "Bobby Tables" },
+      });
+      deepStrictEqual(first, {
+        name: "Bobby Tables",
+        id: 1,
+        email: "bobby-tab@gmail.com",
+      });
     });
 
     test("basic query building works well to then query the data", async function () {
