@@ -9,6 +9,7 @@ import {
   type Signal,
   getAsyncPoller,
 } from "../helpers/await.js";
+import { getChainPollingController } from "../helpers/chains.js";
 import { hoistApiError } from "./errors.js";
 import {
   type Components,
@@ -83,6 +84,7 @@ export async function pollTransactionReceipt(
       throw err;
     }
   };
-  const receipt = await getAsyncPoller(fn, controller);
+  const control = controller ?? getChainPollingController(params.chainId);
+  const receipt = await getAsyncPoller(fn, control);
   return receipt;
 }
