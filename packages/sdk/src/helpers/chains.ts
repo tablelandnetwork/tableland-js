@@ -1,8 +1,32 @@
 import {
   proxies,
   baseURIs,
+  // validatorPollingTimeouts,
   type TablelandNetworkConfig,
 } from "@tableland/evm/network.js";
+import { createPollingController, type PollingController } from "./await.js";
+
+// TMP: TODO remove once included in @tableland/evm
+const validatorPollingTimeouts = {
+  // mainnets
+  mainnet: 40_000,
+  homestead: 40_000,
+  optimism: 10_000,
+  arbitrum: 10_000,
+  "arbitrum-nova": 10_000,
+  matic: 15_000,
+  filecoin: 210_000,
+  // testnets
+  sepolia: 40_000,
+  "optimism-goerli": 10_000,
+  "arbitrum-goerli": 10_000,
+  maticmum: 15_000,
+  "filecoin-calibration": 210_000,
+  "optimism-goerli-staging": 10_000,
+  // local
+  localhost: 5_000,
+  "local-tableland": 5_000,
+};
 
 /**
  * The set of supported chain names as used by the Tableland network.
@@ -17,6 +41,8 @@ export interface ChainInfo {
   chainId: number;
   contractAddress: string;
   baseUrl: string;
+  pollingTimeout: number;
+  pollingInterval: number;
   [key: string]: ChainInfo[keyof ChainInfo];
 }
 
@@ -31,9 +57,20 @@ const mapped = entries.map(([chainName, contractAddress]) => {
       .filter((v) => v !== "")
       .pop() /* c8 ignore next */ ?? ""
   );
+  // Use per-chain validator polling timeout period
+  const pollingTimeout = validatorPollingTimeouts[chainName];
+  // Default to 1500ms polling interval, except for Filecoin due to long block times
+  const pollingInterval = chainName.includes("filecoin") ? 5000 : 1500;
   const entry: [ChainName, any] = [
     chainName,
-    { chainName, chainId, contractAddress, baseUrl },
+    {
+      chainName,
+      chainId,
+      contractAddress,
+      baseUrl,
+      pollingTimeout,
+      pollingInterval,
+    },
   ];
   return entry;
 });
@@ -110,6 +147,18 @@ export function getChainId(chainNameOrId: ChainName | number): number {
  */
 export function getBaseUrl(chainNameOrId: ChainName | number): string {
   return getChainInfo(chainNameOrId).baseUrl;
+}
+
+/**
+ * Create a `PollingController` with chain-specific timeout & interval.
+ * @param chainNameOrId The requested chain name.
+ * @returns A `PollingController` with standard timeout & interval per-chain.
+ */
+export function getChainPollingController(
+  chainNameOrId: ChainName | number
+): PollingController {
+  const { pollingTimeout, pollingInterval } = getChainInfo(chainNameOrId);
+  return createPollingController(pollingTimeout, pollingInterval);
 }
 
 /**
