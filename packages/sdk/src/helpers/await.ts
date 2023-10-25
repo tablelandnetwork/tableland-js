@@ -10,7 +10,11 @@ export interface Interval {
   cancel: () => void;
 }
 
-export type PollingController = Signal & Interval;
+export interface Timeout {
+  timeout: number;
+}
+
+export type PollingController = Signal & Interval & Timeout;
 
 export interface Wait<T = unknown> {
   wait: (controller?: PollingController) => Promise<T>;
@@ -44,12 +48,14 @@ export function createPollingController(
   return {
     signal: controller.signal,
     abort: () => {
+      clearTimeout(timeoutId);
       controller.abort();
     },
     interval: pollingInterval,
     cancel: () => {
       clearTimeout(timeoutId);
     },
+    timeout,
   };
 }
 
