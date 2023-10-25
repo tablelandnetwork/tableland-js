@@ -1,32 +1,68 @@
+/**
+ * A type that can be awaited.
+ * @property T The type to await.
+ */
 export type Awaitable<T> = T | PromiseLike<T>;
 
+/**
+ * A signal to abort a request.
+ * @property signal The {@link AbortSignal} to abort a request.
+ * @property abort A function to abort a request.
+ */
 export interface Signal {
   signal: AbortSignal;
   abort: () => void;
 }
 
+/**
+ * A polling interval to check for results.
+ * @property interval The interval period to make new requests, in milliseconds.
+ * @property cancel A function to cancel a polling interval.
+ */
 export interface Interval {
   interval: number;
   cancel: () => void;
 }
 
+/**
+ * A polling timeout to abort a request.
+ * @property timeout The timeout period in milliseconds.
+ */
 export interface Timeout {
   timeout: number;
 }
 
+/**
+ * A polling controller with a custom timeout & interval.
+ */
 export type PollingController = Signal & Interval & Timeout;
 
+/**
+ * A waitable interface to check for results.
+ * @property wait A function to check for results.
+ */
 export interface Wait<T = unknown> {
   wait: (controller?: PollingController) => Promise<T>;
 }
 
+/**
+ * Results from an an asynchronous function.
+ */
 export interface AsyncData<T> {
   done: boolean;
   data?: T;
 }
 
+/**
+ * An asynchronous function to check for results.
+ * @returns An {@link AsyncData} object with the results, wrapped in {@link Awaitable}.
+ */
 export type AsyncFunction<T> = () => Awaitable<AsyncData<T>>;
 
+/**
+ * Create a signal to abort a request.
+ * @returns A {@link Signal} to abort a request.
+ */
 export function createSignal(): Signal {
   const controller = new AbortController();
   return {
@@ -37,6 +73,12 @@ export function createSignal(): Signal {
   };
 }
 
+/**
+ * Create a polling controller with a custom timeout & interval.
+ * @param timeout The timeout period in milliseconds.
+ * @param interval The interval period to make new requests, in milliseconds.
+ * @returns A {@link PollingController} with the custom timeout & interval.
+ */
 export function createPollingController(
   timeout: number = 60_000,
   pollingInterval: number = 1500
@@ -59,6 +101,12 @@ export function createPollingController(
   };
 }
 
+/**
+ * Create an asynchronous poller to check for results for a given function.
+ * @param fn An {@link AsyncFunction} to check for results.
+ * @param controller A {@link PollingController} with the custom timeout & interval.
+ * @returns Result from the awaited function's execution or resulting error.
+ */
 export async function getAsyncPoller<T = unknown>(
   fn: AsyncFunction<T>,
   controller?: PollingController

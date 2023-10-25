@@ -34,7 +34,7 @@ export { type ValuesType, type Parameters, type ValueOf, type BaseType };
 
 /**
  * Options for `all`, `first`, `run`, and `raw` methods.
- * @property controller An optional object used to control receipt polling behavior.
+ * @property controller An optional {@link PollingController} used to control receipt polling behavior.
  */
 export interface Options {
   controller?: PollingController;
