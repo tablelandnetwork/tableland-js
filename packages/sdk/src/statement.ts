@@ -153,7 +153,7 @@ export class Statement<S = unknown> {
    * Executes a query and returns all rows and metadata.
    * @param opts An optional object used to control behavior, see {@link Options}
    */
-  async all<T = S>(opts?: Options): Promise<Result<T>> {
+  async all<T = S>(opts: Options = {}): Promise<Result<T>> {
     try {
       const start = performance.now();
       const { sql, type, tables } = await this.#parseAndExtract();
@@ -163,12 +163,12 @@ export class Statement<S = unknown> {
             type,
             tables,
           });
-          const results = await queryAll<T>(config, sql, opts?.controller);
+          const results = await queryAll<T>(config, sql, opts.controller);
           return wrapResult(results, performance.now() - start);
         }
         default: {
           return wrapResult<T>(
-            await this.#waitExec({ type, sql, tables }, opts?.controller),
+            await this.#waitExec({ type, sql, tables }, opts.controller),
             performance.now() - start
           );
         }
@@ -200,7 +200,7 @@ export class Statement<S = unknown> {
   ): Promise<T[K] | null>;
   async first<T = S, K extends keyof T = keyof T>(
     colName?: K,
-    opts?: Options
+    opts: Options = {}
   ): Promise<T | T[K] | null> {
     try {
       const { sql, type, tables } = await this.#parseAndExtract();
@@ -210,7 +210,7 @@ export class Statement<S = unknown> {
             type,
             tables,
           });
-          const results = await queryFirst<T>(config, sql, opts?.controller);
+          const results = await queryFirst<T>(config, sql, opts.controller);
           if (results == null || colName == null) {
             return results;
           }
@@ -223,7 +223,7 @@ export class Statement<S = unknown> {
               sql,
               tables,
             },
-            opts?.controller
+            opts.controller
           );
           return null;
         }
@@ -241,7 +241,7 @@ export class Statement<S = unknown> {
    * @param controller An optional object used to control behavior, see {@link Options}
    * @returns A results object with metadata only (results are null or an empty array).
    */
-  async run(opts?: Options): Promise<Result<never>> {
+  async run(opts: Options = {}): Promise<Result<never>> {
     try {
       const start = performance.now();
       const { sql, type, tables } = await this.#parseAndExtract();
@@ -251,12 +251,12 @@ export class Statement<S = unknown> {
             type,
             tables,
           });
-          const results = await queryAll<never>(config, sql, opts?.controller);
+          const results = await queryAll<never>(config, sql, opts.controller);
           return wrapResult(results, performance.now() - start);
         }
         default: {
           return wrapResult(
-            await this.#waitExec({ type, sql, tables }, opts?.controller),
+            await this.#waitExec({ type, sql, tables }, opts.controller),
             performance.now() - start
           );
         }
@@ -272,7 +272,7 @@ export class Statement<S = unknown> {
    * @param controller An optional object used to control behavior, see {@link Options}
    * @returns An array of raw query results.
    */
-  async raw<T = S>(opts?: Options): Promise<Array<ValueOf<T>>> {
+  async raw<T = S>(opts: Options = {}): Promise<Array<ValueOf<T>>> {
     try {
       const { sql, type, tables } = await this.#parseAndExtract();
       switch (type) {
@@ -281,7 +281,7 @@ export class Statement<S = unknown> {
             type,
             tables,
           });
-          return await queryRaw<T>(config, sql, opts?.controller);
+          return await queryRaw<T>(config, sql, opts.controller);
         }
         default: {
           await this.#waitExec(
@@ -290,7 +290,7 @@ export class Statement<S = unknown> {
               sql,
               tables,
             },
-            opts?.controller
+            opts.controller
           );
           return [];
         }
