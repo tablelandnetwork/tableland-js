@@ -45,7 +45,7 @@ export class Database<D = unknown> {
    */
   static readOnly(chainNameOrId: ChainName | number): Database {
     console.warn(
-      "`Database.readOnly()` is a depricated method, use `new Database()`"
+      "`Database.readOnly()` is a deprecated method, use `new Database()`"
     );
     const baseUrl = getBaseUrl(chainNameOrId);
     return new Database({ baseUrl });
@@ -87,7 +87,7 @@ export class Database<D = unknown> {
    * @returns An array of run results.
    */
   //    Note: if we want this package to mirror the D1 package in a way that
-  //    enables compatability with packages built to exend D1, then the return type
+  //    enables compatability with packages built to extend D1, then the return type
   //    here will potentially affect if/how those packages work.
   //    D1-ORM is a good example: https://github.com/Interactions-as-a-Service/d1-orm/
   async batch<T = D>(
@@ -124,9 +124,7 @@ export class Database<D = unknown> {
       // and return an Array of the query results.
       if (type === "read") {
         return await Promise.all(
-          statements.map(
-            async (stmt) => await stmt.all<T>(undefined, controller)
-          )
+          statements.map(async (stmt) => await stmt.all<T>({ controller }))
         );
       }
 
@@ -202,7 +200,7 @@ export class Database<D = unknown> {
       const { statements } = await normalize(statementStrings);
       const count = statements.length;
       const statement = this.prepare(statementStrings);
-      const result = await statement.run(controller);
+      const result = await statement.run({ controller });
       // Adds a count property which isn't typed
       result.meta.count = count;
       return result;
@@ -252,7 +250,7 @@ async function normalizedToRunnables(
         // check if these tables are in the normalized table names
         // if so, filter them out (i.e., they are not being mutated)
         const filteredTables = norm.tables.filter(
-          (tableName) => !tableNames.includes(tableName)
+          (tableName: string) => !tableNames.includes(tableName)
         );
         // if the filtered tables are greater than 1, then there are two
         // tables being mutated in a single statement, which is not allowed
