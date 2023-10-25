@@ -204,6 +204,66 @@ describe("chains", function () {
     });
   });
 
+  describe("getChainPollingController()", function () {
+    test("where we get polling controller with chain ids", async function () {
+      const homesteadController = getChainPollingController(1); // mainnet
+      const filecoinController = getChainPollingController(314); // filecoin
+      const maticmumController = getChainPollingController(80001); // polygon mumbai
+      const filecoinTestnetController = getChainPollingController(314159); // filecoin testnet
+      const localController = getChainPollingController(31337); // local
+      strictEqual(homesteadController.interval, 1500); // most should use the same 1500ms interval
+      strictEqual(homesteadController.timeout, 40000); // but different timeouts
+      strictEqual(filecoinController.interval, 5000); // filecoin has longer intervals
+      strictEqual(filecoinController.timeout, 210000);
+      strictEqual(maticmumController.interval, 1500);
+      strictEqual(maticmumController.timeout, 15000);
+      strictEqual(filecoinTestnetController.interval, 5000);
+      strictEqual(filecoinTestnetController.timeout, 210000);
+      strictEqual(localController.interval, 1500);
+      strictEqual(localController.timeout, 5000);
+      homesteadController.cancel();
+      filecoinController.cancel();
+      maticmumController.cancel();
+      filecoinTestnetController.cancel();
+      localController.cancel();
+    });
+
+    test("where we get polling controller with chain names", async function () {
+      const homesteadController = getChainPollingController("homestead");
+      const filecoinTestnetController = getChainPollingController(
+        "filecoin-calibration"
+      );
+      const localController = getChainPollingController("local-tableland");
+      strictEqual(homesteadController.interval, 1500);
+      strictEqual(homesteadController.timeout, 40000);
+      strictEqual(filecoinTestnetController.interval, 5000);
+      strictEqual(filecoinTestnetController.timeout, 210000);
+      strictEqual(localController.interval, 1500);
+      strictEqual(localController.timeout, 5000);
+      homesteadController.cancel();
+      filecoinTestnetController.cancel();
+      localController.cancel();
+    });
+
+    test("when called with invalid chain name or id", async function () {
+      throws(
+        // @ts-expect-error need to tell ts to ignore this since we are testing a failure when used without ts
+        () => getChainPollingController("invalid"),
+        (err: any) => {
+          strictEqual(err.message, "cannot use unsupported chain: invalid");
+          return true;
+        }
+      );
+      throws(
+        () => getChainPollingController(99999),
+        (err: any) => {
+          strictEqual(err.message, "cannot use unsupported chain: 99999");
+          return true;
+        }
+      );
+    });
+  });
+
   describe("overrideDefaults()", function () {
     test("when called incorrectly", async function () {
       throws(
