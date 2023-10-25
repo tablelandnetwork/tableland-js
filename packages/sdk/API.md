@@ -258,7 +258,7 @@ const controller = helpers.createPollingController(60_000, 1500); // polling tim
 const stmt = db.prepare("SELECT name, age FROM users WHERE age < ?1");
 
 setTimeout(() => controller.abort(), 10);
-const young = await stmt.bind(20).all(undefined, controller);
+const young = await stmt.bind(20).all({ controller });
 /*
 Error: The operation was aborted.
 */
