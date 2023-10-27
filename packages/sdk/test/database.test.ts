@@ -599,12 +599,12 @@ describe("database", function () {
     test("when executing mutations works and adds rows", async function () {
       const sql = `INSERT INTO ${tableName} (name, age) VALUES ('Bobby', 5);
       INSERT INTO ${tableName} (name, age) VALUES ('Tables', 6);`;
-      const { meta } = await db.exec(sql);
-      assert(meta.duration != null);
-      strictEqual(meta.count, 2);
-      assert(meta.txn != null);
+      const { duration, count, txn } = await db.exec(sql);
+      assert(duration != null);
+      strictEqual(count, 2);
+      assert(txn != null);
 
-      await meta.txn.wait();
+      await txn.wait();
 
       const results = await db.prepare("SELECT * FROM " + tableName).all();
       strictEqual(results.results.length, 2);
@@ -625,10 +625,10 @@ describe("database", function () {
       });
 
       test("when querying a table right after creation", async function () {
-        const { meta } = await db.exec(
+        const { txn } = await db.exec(
           "CREATE TABLE exec_nowait (keyy TEXT, vall TEXT);"
         );
-        const tableName = meta.txn?.name ?? "";
+        const tableName = txn?.name ?? "";
         match(tableName, /^exec_nowait_31337_\d+$/);
 
         const { results } = await db.exec(`SELECT * FROM ${tableName};`);
@@ -664,10 +664,10 @@ describe("database", function () {
         await meta.txn?.wait();
       }
       const sql = `SELECT name, age FROM ${tableName} WHERE name='Bobby';`;
-      const { meta } = await db.exec(sql);
-      strictEqual(meta.count, 1);
-      assert(meta.duration != null);
-      strictEqual(meta.txn, undefined);
+      const { count, duration, txn } = await db.exec(sql);
+      strictEqual(count, 1);
+      assert(duration != null);
+      strictEqual(txn, undefined);
     });
   });
 
