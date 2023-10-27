@@ -153,7 +153,7 @@ export class Statement<S = unknown> {
    * Executes a query and returns all rows and metadata.
    * @param opts An optional object used to control behavior, see {@link Options}
    */
-  async all<T = S>(opts: Options = {}): Promise<Result<T>> {
+  async all<T = Record<string, S>>(opts: Options = {}): Promise<Result<T>> {
     try {
       const start = performance.now();
       const { sql, type, tables } = await this.#parseAndExtract();
@@ -187,13 +187,7 @@ export class Statement<S = unknown> {
    * @param colName If provided, filter results to the provided column.
    * @param opts An optional object used to control behavior, see {@link Options}
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async first<T = S, K extends keyof T = keyof T>(opts?: Options): Promise<T>;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async first<T = S, K extends keyof T = keyof T>(
-    colName: undefined,
-    opts?: Options
-  ): Promise<T>;
+  async first<T = Record<string, S>>(opts?: Options): Promise<T | null>;
   async first<T = S, K extends keyof T = keyof T>(
     colName: K,
     opts?: Options
@@ -241,7 +235,7 @@ export class Statement<S = unknown> {
    * @param controller An optional object used to control behavior, see {@link Options}
    * @returns A results object with metadata only (results are null or an empty array).
    */
-  async run(opts: Options = {}): Promise<Result<never>> {
+  async run<T = Record<string, S>>(opts: Options = {}): Promise<Result<T>> {
     try {
       const start = performance.now();
       const { sql, type, tables } = await this.#parseAndExtract();
@@ -272,7 +266,7 @@ export class Statement<S = unknown> {
    * @param controller An optional object used to control behavior, see {@link Options}
    * @returns An array of raw query results.
    */
-  async raw<T = S>(opts: Options = {}): Promise<Array<ValueOf<T>>> {
+  async raw<T = S[]>(opts: Options = {}): Promise<Array<ValueOf<T>>> {
     try {
       const { sql, type, tables } = await this.#parseAndExtract();
       switch (type) {
