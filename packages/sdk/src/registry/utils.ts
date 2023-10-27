@@ -86,6 +86,12 @@ function isTransactionReceipt(arg: any): arg is WaitableTransactionReceipt {
   );
 }
 
+/**
+ * Wrap results for a Statement `run` or `all` call, or a Database `batch` call.
+ * @param resultsOrReceipt Either query results or the transaction receipt.
+ * @param duration Total client-side duration of the async call.
+ * @returns Wrapped results with metadata.
+ */
 export function wrapResult<T = unknown>(
   resultsOrReceipt: T[] | WaitableTransactionReceipt,
   duration: number
@@ -103,6 +109,28 @@ export function wrapResult<T = unknown>(
 }
 
 /**
+ * Wrap results for a Database `exec` call.
+ * @param result The result of the a {@link wrapResult} call, made by `exec` under the hood.
+ * @param count The count of executed statements.
+ * @returns Wrapped {@link ExecResult} with metadata and transaction
+ * receipt or query results.
+ */
+export function wrapExecResult<T = unknown>(
+  result: Result<T>,
+  count: number
+): ExecResult<T> {
+  const { duration } = result.meta;
+  const execResult: ExecResult<T> = {
+    count,
+    duration,
+  };
+  if (result.meta.txn != null) {
+    return { ...execResult, txn: result.meta.txn };
+  }
+  return { ...execResult, results: result.results };
+}
+
+/**
  * Metadata represents meta information about an executed statement/transaction.
  */
 export interface Metadata {
@@ -111,11 +139,11 @@ export interface Metadata {
    */
   duration: number;
   /**
-   * The optional transactionn information receipt.
+   * The optional transaction information receipt.
    */
   txn?: WaitableTransactionReceipt;
   /**
-   * Metadata may contrain additional arbitrary key/values pairs.
+   * Metadata may constrain additional arbitrary key/values pairs.
    */
   [key: string]: any;
 }
@@ -135,11 +163,26 @@ export interface Result<T = unknown> {
   /**
    * If there was an error, this will contain the error string.
    */
-  error?: string;
+  error?: string; // TODO: this changed to `never` in D1 API
   /**
    * Additional meta information.
    */
   meta: Metadata;
+}
+
+/**
+ * ExecResult represents the return result for executed Database statements via `exec()`.
+ */
+export interface ExecResult<T = unknown>
+  extends Pick<Metadata, "duration" | "txn"> {
+  /**
+   * The count of executed statements.
+   */
+  count: number;
+  /**
+   * The optional list of query results.
+   */
+  results?: T[];
 }
 
 export async function extractReadonly(

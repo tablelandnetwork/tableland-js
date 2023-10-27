@@ -29,6 +29,7 @@ import {
 
 export {
   type Result,
+  type ExecResult,
   type Metadata,
   type WaitableTransactionReceipt,
   type Named,

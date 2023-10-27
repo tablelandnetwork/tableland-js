@@ -1,6 +1,10 @@
 import { type NormalizedStatement } from "@tableland/sqlparser";
-import { type Result, type Runnable } from "./registry/index.js";
-import { wrapResult } from "./registry/utils.js";
+import {
+  type Result,
+  type ExecResult,
+  type Runnable,
+} from "./registry/index.js";
+import { wrapResult, wrapExecResult } from "./registry/utils.js";
 import {
   type Config,
   type AutoWaitConfig,
@@ -194,16 +198,14 @@ export class Database<D = unknown> {
   async exec<T = D>(
     statementStrings: string,
     controller?: PollingController
-  ): Promise<Result<T>> {
+  ): Promise<ExecResult<T>> {
     // TODO: Note that this method appears to be the wrong return type in practice.
     try {
       const { statements } = await normalize(statementStrings);
       const count = statements.length;
       const statement = this.prepare(statementStrings);
-      const result = await statement.run({ controller });
-      // Adds a count property which isn't typed
-      result.meta.count = count;
-      return result;
+      const result = await statement.run<T>({ controller });
+      return wrapExecResult(result, count);
     } catch (cause: any) {
       if (cause.message.startsWith("RUN_ERROR") === true) {
         throw errorWithCause("EXEC_ERROR", cause.cause);
