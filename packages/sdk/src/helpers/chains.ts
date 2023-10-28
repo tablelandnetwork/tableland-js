@@ -1,32 +1,10 @@
 import {
   proxies,
   baseURIs,
-  // validatorPollingTimeouts,
+  validatorPollingTimeouts,
   type TablelandNetworkConfig,
 } from "@tableland/evm/network.js";
 import { createPollingController, type PollingController } from "./await.js";
-
-// TMP: TODO remove once included in @tableland/evm
-const validatorPollingTimeouts = {
-  // mainnets
-  mainnet: 40_000,
-  homestead: 40_000,
-  optimism: 10_000,
-  arbitrum: 10_000,
-  "arbitrum-nova": 10_000,
-  matic: 15_000,
-  filecoin: 210_000,
-  // testnets
-  sepolia: 40_000,
-  "optimism-goerli": 10_000,
-  "arbitrum-goerli": 10_000,
-  maticmum: 15_000,
-  "filecoin-calibration": 210_000,
-  "optimism-goerli-staging": 10_000,
-  // local
-  localhost: 5_000,
-  "local-tableland": 5_000,
-};
 
 /**
  * The set of supported chain names as used by the Tableland network.
@@ -56,6 +34,7 @@ export interface ChainInfo {
 // We simply pull this automatically from @tableland/evm to avoid keeping track separately here.
 const entries = Object.entries(proxies) as Array<[ChainName, string]>;
 const mapped = entries.map(([chainName, contractAddress]) => {
+  // @ts-expect-error this imported object's values are always a string
   const uri = new URL(baseURIs[chainName]);
   const baseUrl = `${uri.protocol}//${uri.host}/api/v1`;
   const chainId = parseInt(
