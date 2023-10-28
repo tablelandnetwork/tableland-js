@@ -6,29 +6,39 @@ export type Awaitable<T> = T | PromiseLike<T>;
 
 /**
  * A signal to abort a request.
- * @property signal The {@link AbortSignal} to abort a request.
- * @property abort A function to abort a request.
  */
 export interface Signal {
+  /**
+   * The {@link AbortSignal} to abort a request.
+   */
   signal: AbortSignal;
+  /**
+   * A function to abort a request.
+   */
   abort: () => void;
 }
 
 /**
  * A polling interval to check for results.
- * @property interval The interval period to make new requests, in milliseconds.
- * @property cancel A function to cancel a polling interval.
  */
 export interface Interval {
+  /**
+   * The interval period to make new requests, in milliseconds.
+   */
   interval: number;
+  /**
+   * A function to cancel a polling interval.
+   */
   cancel: () => void;
 }
 
 /**
  * A polling timeout to abort a request.
- * @property timeout The timeout period in milliseconds.
  */
 export interface Timeout {
+  /**
+   * The timeout period in milliseconds.
+   */
   timeout: number;
 }
 
@@ -39,9 +49,13 @@ export type PollingController = Signal & Interval & Timeout;
 
 /**
  * A waitable interface to check for results.
- * @property wait A function to check for results.
  */
 export interface Wait<T = unknown> {
+  /**
+   * A function to check for results.
+   * @param controller A {@link PollingController} with the custom timeout & interval.
+   * @returns
+   */
   wait: (controller?: PollingController) => Promise<T>;
 }
 
@@ -55,7 +69,6 @@ export interface AsyncData<T> {
 
 /**
  * An asynchronous function to check for results.
- * @returns An {@link AsyncData} object with the results, wrapped in {@link Awaitable}.
  */
 export type AsyncFunction<T> = () => Awaitable<AsyncData<T>>;
 
