@@ -37,7 +37,7 @@ describe("network end to end", function () {
     );
 
     const data = await db
-      .prepare(`SELECT * FROM ${res.meta.txn?.name as string};`)
+      .prepare(`SELECT * FROM ${res.txn?.name as string};`)
       .all();
     expect(data.results).to.eql([]);
   });
