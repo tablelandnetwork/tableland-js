@@ -2,14 +2,14 @@
 import { deepStrictEqual, strictEqual } from "assert";
 import { describe, test } from "mocha";
 import { getAccounts } from "@tableland/local";
-// import {
-//   D1Orm,
-//   DataTypes,
-//   Model,
-//   GenerateQuery,
-//   QueryType,
-//   type Infer,
-// } from "d1-orm";
+import {
+  D1Orm,
+  DataTypes,
+  Model,
+  GenerateQuery,
+  QueryType,
+  type Infer,
+} from "d1-orm";
 import sql, { type FormatConfig } from "@databases/sql";
 import { escapeSQLiteIdentifier } from "@databases/escape-identifier";
 import { NonceManager } from "@ethersproject/experimental";
@@ -29,14 +29,7 @@ describe("thirdparty", function () {
   const signer = new NonceManager(baseSigner);
   const db = new Database({ signer });
 
-  // NOTE: the d1-orm hasn't updated to the latest version of @cloudflare/workers-types
-  // I've opened PR to fix this, which will allow for `CreateTable` to work here
-  // since it uses `exec` under the hood, which now has a different return type
-  // https://github.com/Interactions-as-a-Service/d1-orm/pull/71
-
-  // TODO: Remove this once the above PR is merged
-  /*
-  describe.only("d1-orm", function () {
+  describe("d1-orm", function () {
     const orm = new D1Orm(db);
 
     // We'll define our core model up here and use it in tests below
@@ -46,6 +39,7 @@ describe("thirdparty", function () {
         tableName: "users",
         primaryKeys: "id",
         uniqueKeys: [["email"]],
+        withRowId: true, // If this is not set, `WITHOUT ROWID` will be attached and fail
       },
       {
         id: {
@@ -187,7 +181,6 @@ describe("thirdparty", function () {
       deepStrictEqual(results, user);
     });
   });
-  */
 
   describe("@databases/sql", function () {
     // See https://www.atdatabases.org/docs/sqlite
