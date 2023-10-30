@@ -232,7 +232,7 @@ export class Statement<S = unknown> {
    * Runs the query/queries, but returns no results. Instead, run()
    * returns the metrics only. Useful for write operations like
    * UPDATE, DELETE or INSERT.
-   * @param controller An optional object used to control behavior, see {@link Options}
+   * @param opts An optional object used to control behavior, see {@link Options}
    * @returns A results object with metadata only (results are null or an empty array).
    */
   async run<T = Record<string, S>>(opts: Options = {}): Promise<Result<T>> {
@@ -263,7 +263,7 @@ export class Statement<S = unknown> {
 
   /**
    * Same as stmt.all(), but returns an array of rows instead of objects.
-   * @param controller An optional object used to control behavior, see {@link Options}
+   * @param opts An optional object used to control behavior, see {@link Options}
    * @returns An array of raw query results.
    */
   async raw<T = S[]>(opts: Options = {}): Promise<Array<ValueOf<T>>> {
