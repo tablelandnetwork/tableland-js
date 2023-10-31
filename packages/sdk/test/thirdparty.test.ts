@@ -263,8 +263,7 @@ describe("thirdparty", function () {
     type User = InferSelectModel<typeof user>;
     type NewUser = InferInsertModel<typeof user>;
 
-    // @ts-expect-error Tableland database & D1Database type assignment warning
-    const database = drizzle<User>(db, { schema: user });
+    const database = drizzle(db, { schema: { user } });
 
     this.beforeAll(async function () {
       // Opt for SDK table create over Drizzle migration process for simplicity
