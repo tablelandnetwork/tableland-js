@@ -35,7 +35,8 @@ describe("thirdparty", function () {
   const baseSigner = wallet.connect(provider);
   // Also demonstrates the nonce manager usage
   const signer = new NonceManager(baseSigner);
-  // Name mapping is helpful for Drizzle ORM usage
+  // an `aliases` option is required for Drizzle ORM usage since D1 uses `exec`
+  // internally to do table creation, and we need to capture the uu table name
   const nameMap: NameMapping = {};
   const db = new Database({
     signer,
@@ -53,7 +54,6 @@ describe("thirdparty", function () {
   });
 
   describe("d1-orm", function () {
-    // @ts-expect-error Tableland database & D1Database type assignment warning
     const orm = new D1Orm(db);
 
     // We'll define our core model up here and use it in tests below
@@ -84,15 +84,9 @@ describe("thirdparty", function () {
     type User = Infer<typeof users>;
 
     this.beforeAll(async function () {
-      const create = await users.CreateTable({
+      await users.CreateTable({
         strategy: "default",
       });
-      // @ts-expect-error Tableland database & D1Database `ExecResult` type differences
-      await create.txn.wait();
-
-      // TODO: Find a nicer way to deal with this...
-      // @ts-expect-error Tableland database & D1Database `ExecResult` type differences
-      (users.tableName as any) = create.txn.name;
     });
 
     test("where a basic model is used to create data", async function () {

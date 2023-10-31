@@ -101,6 +101,7 @@ export function wrapResult<T = unknown>(
     meta,
     success: true,
     results: [],
+    error: undefined,
   };
   if (isTransactionReceipt(resultsOrReceipt)) {
     return { ...result, meta: { ...meta, txn: resultsOrReceipt } };
@@ -159,11 +160,13 @@ export interface Result<T = unknown> {
   /**
    * Whether the query or transaction was successful.
    */
-  success: boolean; // almost always true
+  success: true; // TODO: this is a bug in D1, but if we want to be compatible
+  //       we have to type it like this :<
+  //       https://github.com/cloudflare/workerd/issues/940
   /**
    * If there was an error, this will contain the error string.
    */
-  error?: string; // TODO: this changed to `never` in D1 API
+  error: undefined;
   /**
    * Additional meta information.
    */

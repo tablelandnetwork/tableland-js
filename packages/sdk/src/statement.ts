@@ -266,7 +266,7 @@ export class Statement<S = unknown> {
    * @param opts An optional object used to control behavior, see {@link Options}
    * @returns An array of raw query results.
    */
-  async raw<T = S[]>(opts: Options = {}): Promise<Array<ValueOf<T>>> {
+  async raw<T = unknown>(opts: Options = {}): Promise<Array<ValueOf<T>>> {
     try {
       const { sql, type, tables } = await this.#parseAndExtract();
       switch (type) {
