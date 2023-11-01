@@ -150,3 +150,19 @@ export async function getAsyncPoller<T = unknown>(
   };
   return await new Promise<T>(checkCondition);
 }
+
+/**
+ * Check if an argument is a valid {@link PollingController}.
+ * @param arg The argument to check.
+ * @returns An assertion/boolean, indicating if the argument is valid.
+ */
+export function isPollingController(arg: any): arg is PollingController {
+  return (
+    arg != null &&
+    arg.signal instanceof AbortSignal &&
+    typeof arg.abort === "function" &&
+    typeof arg.interval === "number" &&
+    typeof arg.cancel === "function" &&
+    typeof arg.timeout === "number"
+  );
+}
