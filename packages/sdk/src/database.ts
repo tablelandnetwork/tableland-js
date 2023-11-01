@@ -4,12 +4,12 @@ import { wrapResult } from "./registry/utils.js";
 import {
   type Config,
   type AutoWaitConfig,
+  type ChainName,
+  type PollingController,
+  type Signer,
   checkWait,
   extractBaseUrl,
-  type ChainName,
   getBaseUrl,
-  type Signal,
-  type Signer,
   normalize,
   validateTableName,
 } from "./helpers/index.js";
@@ -45,7 +45,7 @@ export class Database<D = unknown> {
    */
   static readOnly(chainNameOrId: ChainName | number): Database {
     console.warn(
-      "`Database.readOnly()` is a depricated method, use `new Database()`"
+      "`Database.readOnly()` is a deprecated method, use `new Database()`"
     );
     const baseUrl = getBaseUrl(chainNameOrId);
     return new Database({ baseUrl });
@@ -83,17 +83,17 @@ export class Database<D = unknown> {
    * in the sequence fails, then an error is returned for that specific
    * statement, and it aborts or rolls back the entire sequence.
    * @param statements A set of Statement objects to batch and submit.
-   * @param opts Additional options to control execution.
+   * @param controller An optional object used to control receipt polling behavior.
    * @returns An array of run results.
    */
   //    Note: if we want this package to mirror the D1 package in a way that
-  //    enables compatability with packages built to exend D1, then the return type
+  //    enables compatability with packages built to extend D1, then the return type
   //    here will potentially affect if/how those packages work.
   //    D1-ORM is a good example: https://github.com/Interactions-as-a-Service/d1-orm/
   async batch<T = D>(
     statements: Statement[],
-    opts: Signal = {}
-    // reads returns an Array with legnth equal to the number of batched statements,
+    controller?: PollingController
+    // reads returns an Array with length equal to the number of batched statements,
     // everything else a single result wrapped in an Array for backward compatability.
   ): Promise<Array<Result<T>>> {
     try {
@@ -124,7 +124,7 @@ export class Database<D = unknown> {
       // and return an Array of the query results.
       if (type === "read") {
         return await Promise.all(
-          statements.map(async (stmt) => await stmt.all<T>(undefined, opts))
+          statements.map(async (stmt) => await stmt.all<T>({ controller }))
         );
       }
 
@@ -135,7 +135,8 @@ export class Database<D = unknown> {
           await execCreateMany(
             this.config,
             statements.map((stmt) => stmt.toString())
-          )
+          ),
+          controller
         );
 
         // TODO: wrapping in an Array is required for back compat, consider changing this for next major
@@ -160,7 +161,8 @@ export class Database<D = unknown> {
 
       const receipt = await checkWait(
         this.config,
-        await execMutateMany(this.config, runnables)
+        await execMutateMany(this.config, runnables),
+        controller
       );
 
       // TODO: wrapping in an Array is required for back compat, consider changing this for next major
@@ -186,19 +188,19 @@ export class Database<D = unknown> {
    * transaction. In the future, more "intelligent" transaction planning,
    * splitting, and batching may be used.
    * @param statementStrings A set of SQL statement strings separated by semi-colons.
-   * @param opts Additional options to control execution.
+   * @param controller An optional object used to control receipt polling behavior.
    * @returns A single run result.
    */
   async exec<T = D>(
     statementStrings: string,
-    opts: Signal = {}
+    controller?: PollingController
   ): Promise<Result<T>> {
     // TODO: Note that this method appears to be the wrong return type in practice.
     try {
       const { statements } = await normalize(statementStrings);
       const count = statements.length;
       const statement = this.prepare(statementStrings);
-      const result = await statement.run(opts);
+      const result = await statement.run({ controller });
       // Adds a count property which isn't typed
       result.meta.count = count;
       return result;
@@ -213,9 +215,9 @@ export class Database<D = unknown> {
   /**
    * Export a (set of) tables to the SQLite binary format.
    * Not implemented yet!
-   * @param _opts Additional options to control execution.
+   * @param controller An optional object used to control receipt polling behavior.
    */
-  async dump(_opts: Signal = {}): Promise<ArrayBuffer> {
+  async dump(_controller?: PollingController): Promise<ArrayBuffer> {
     throw errorWithCause("DUMP_ERROR", new Error("not implemented yet"));
   }
 }
@@ -248,7 +250,7 @@ async function normalizedToRunnables(
         // check if these tables are in the normalized table names
         // if so, filter them out (i.e., they are not being mutated)
         const filteredTables = norm.tables.filter(
-          (tableName) => !tableNames.includes(tableName)
+          (tableName: string) => !tableNames.includes(tableName)
         );
         // if the filtered tables are greater than 1, then there are two
         // tables being mutated in a single statement, which is not allowed
