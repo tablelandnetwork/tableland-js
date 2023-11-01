@@ -12,6 +12,7 @@ import {
   checkWait,
   normalize,
 } from "./helpers/index.js";
+import { isPollingController } from "./helpers/await.js";
 import {
   type ExtractedStatement,
   type Result,
@@ -179,6 +180,11 @@ export class Statement<S = unknown> {
     }
   }
 
+  // Check if the first param seen by `first()` is an Options object
+  #checkIsValidOpts(opts: any): opts is Options {
+    return opts != null && isPollingController(opts.controller);
+  }
+
   /**
    * Executes a query and returns the first row of the results.
    * This does not return metadata like the other methods.
@@ -188,15 +194,25 @@ export class Statement<S = unknown> {
    * @param opts An optional object used to control behavior, see {@link Options}
    */
   async first<T = Record<string, S>>(opts?: Options): Promise<T | null>;
-  async first<T = S, K extends keyof T = keyof T>(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async first<T = S, K extends keyof T & string = keyof T & string>(
+    colName: undefined,
+    opts?: Options
+  ): Promise<T>;
+  async first<T = S, K extends keyof T & string = keyof T & string>(
     colName: K,
     opts?: Options
   ): Promise<T[K] | null>;
-  async first<T = S, K extends keyof T = keyof T>(
-    colName?: K,
+  async first<T = S, K extends keyof T & string = keyof T & string>(
+    colNameOrOpts?: K,
     opts: Options = {}
   ): Promise<T | T[K] | null> {
     try {
+      // Handle first overload to ensure passed `opts` are not set to `colName`
+      const colNameIsOpts = this.#checkIsValidOpts(colNameOrOpts);
+      const { colName, options } = colNameIsOpts
+        ? { colName: undefined, options: colNameOrOpts }
+        : { colName: colNameOrOpts, options: opts };
       const { sql, type, tables } = await this.#parseAndExtract();
       switch (type) {
         case "read": {
@@ -204,7 +220,7 @@ export class Statement<S = unknown> {
             type,
             tables,
           });
-          const results = await queryFirst<T>(config, sql, opts.controller);
+          const results = await queryFirst<T>(config, sql, options.controller);
           if (results == null || colName == null) {
             return results;
           }
@@ -217,7 +233,7 @@ export class Statement<S = unknown> {
               sql,
               tables,
             },
-            opts.controller
+            options.controller
           );
           return null;
         }
