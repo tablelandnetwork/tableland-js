@@ -21,7 +21,6 @@ import {
 import {
   mutate,
   type Runnable,
-  type RunSQLParams,
   type MutateManyParams,
   type MutateOneParams,
   type MutateParams,
@@ -44,7 +43,6 @@ export {
   type MutateOneParams,
   type MutateManyParams,
   type MutateParams,
-  type RunSQLParams, // deprecated
   type Runnable,
   type TransferParams,
   type SetParams,
@@ -163,13 +161,6 @@ export class Registry {
    * - contract must be unpaused
    */
   async create(params: CreateParams): Promise<ContractTransaction> {
-    return await create(this.config, params);
-  }
-
-  /**
-   * @custom:deprecated Use `create` instead.
-   */
-  async createTable(params: CreateOneParams): Promise<ContractTransaction> {
     return await create(this.config, params);
   }
 

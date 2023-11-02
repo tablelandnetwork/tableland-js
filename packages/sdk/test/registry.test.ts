@@ -32,7 +32,7 @@ describe("registry", function () {
   describe("controller", function () {
     let receipt: MultiEventTransactionReceipt;
     this.beforeAll(async function () {
-      const tx = await reg.createTable({
+      const tx = await reg.create({
         chainId: 31337,
         statement: "create table test_controller_31337 (id int, name text)",
       });
@@ -43,7 +43,7 @@ describe("registry", function () {
     });
 
     test("regression: when a tx comes back without a chainId", async function () {
-      const tx = await reg.createTable({
+      const tx = await reg.create({
         chainId: 31337,
         statement: "create table test_no_chainid_31337 (id int, name text)",
       });
@@ -156,7 +156,7 @@ describe("registry", function () {
   describe("list and transfer", function () {
     let receipt: MultiEventTransactionReceipt;
     this.beforeAll(async function () {
-      const tx = await reg.createTable({
+      const tx = await reg.create({
         chainId: 31337,
         statement: "create table test_ownership_31337 (id int, name text)",
       });
@@ -261,7 +261,7 @@ describe("registry", function () {
     // CREATE TABLE test_exec (id integer primary key, counter integer, info text)
     let receipt: MultiEventTransactionReceipt;
     this.beforeAll(async function () {
-      const tx = await reg.createTable({
+      const tx = await reg.create({
         chainId: 31337,
         statement:
           "create table test_runsql_31337 (id integer primary key, counter integer, info text)",
