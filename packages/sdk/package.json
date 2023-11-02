@@ -2,6 +2,7 @@
   "name": "@tableland/sdk",
   "version": "4.5.3",
   "description": "A database client and helpers for the Tableland network",
+  "repository": "https://github.com/tablelandnetwork/tableland-js",
   "publishConfig": {
     "access": "public"
   },
