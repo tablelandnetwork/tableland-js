@@ -286,6 +286,29 @@ CREATE TABLE test_run (counter blurg);
 
       await meta.txn?.wait();
     });
+
+    describe("with options", function () {
+      test("when using an abort controller to halt a query", async function () {
+        const stmt = db.prepare(`SELECT * FROM ${tableName};`);
+        const controller = createPollingController();
+        controller.abort();
+        await rejects(stmt.run({ controller }), (err: any) => {
+          match(err.cause.message, /Th(e|is) operation was aborted/);
+          return true;
+        });
+      });
+
+      test("when using an abort controller and select statement is valid", async function () {
+        const controller = createPollingController();
+        const stmt = db.prepare(`SELECT * FROM ${tableName};`);
+        const { results, meta, error } = await stmt.run<{ counter: number }>({
+          controller,
+        });
+        strictEqual(error, undefined);
+        assert(meta.duration != null);
+        assert(results.length > 0);
+      });
+    });
   });
 
   describe(".all()", function () {
@@ -348,18 +371,6 @@ SELECT * FROM 3.14;
         { id: 3, counter: 3, info: "three" },
         { id: 4, counter: 4, info: "four" },
       ]);
-    });
-
-    test("when using an abort controller to halt a query", async function () {
-      const stmt = db
-        .prepare(`SELECT name, age FROM ${tableName} WHERE name=?`)
-        .bind("Bobby");
-      const controller = createPollingController();
-      controller.abort();
-      await rejects(stmt.all({ controller }), (err: any) => {
-        match(err.cause.message, /Th(e|is) operation was aborted/);
-        return true;
-      });
     });
 
     test("when trying to extract a missing column", async function () {
@@ -493,6 +504,34 @@ SELECT * FROM 3.14;
         db.config.autoWait = false;
       });
     });
+
+    describe("with options", function () {
+      test("when using an abort controller to halt a query", async function () {
+        const stmt = db
+          .prepare(`SELECT name, age FROM ${tableName} WHERE name=?`)
+          .bind("Bobby");
+        const controller = createPollingController();
+        controller.abort();
+        await rejects(stmt.all({ controller }), (err: any) => {
+          match(err.cause.message, /Th(e|is) operation was aborted/);
+          return true;
+        });
+      });
+
+      test("when using an abort controller and select statement is valid", async function () {
+        const controller = createPollingController();
+        const stmt = db.prepare(`SELECT * FROM ${tableName};`);
+        const { results, meta, error } = await stmt.all<{
+          counter: number;
+          info: string;
+        }>({
+          controller,
+        });
+        strictEqual(error, undefined);
+        assert(meta.duration != null);
+        assert(results.length > 0);
+      });
+    });
   });
 
   describe(".first()", function () {
@@ -564,6 +603,20 @@ SELECT * FROM 3.14;
       strictEqual(row, null);
     });
 
+    test("when select statement with colName of undefined is valid", async function () {
+      const stmt = db.prepare(`SELECT * FROM ${tableName};`);
+      const row = await stmt.first<{ counter: number; info: string }>(
+        undefined
+      );
+      deepStrictEqual(row, { counter: 1, info: "one" });
+    });
+
+    test("when select statement with colName of string is valid", async function () {
+      const stmt = db.prepare(`SELECT * FROM ${tableName};`);
+      const row = await stmt.first<{ counter: number }>("counter");
+      deepStrictEqual(row, [1]);
+    });
+
     describe("with autoWait turned on", function () {
       this.beforeAll(() => {
         db.config.autoWait = true;
@@ -575,6 +628,74 @@ SELECT * FROM 3.14;
       });
       this.afterAll(() => {
         db.config.autoWait = false;
+      });
+    });
+
+    describe("with options", function () {
+      test("when using an abort controller to halt a query with no colName param passed", async function () {
+        const stmt = db.prepare(`SELECT * FROM ${tableName};`);
+        const controller = createPollingController();
+        controller.abort();
+        await rejects(
+          stmt.first<{ counter: number; info: string }>({ controller }),
+          (err: any) => {
+            match(err.cause.message, /Th(e|is) operation was aborted/);
+            return true;
+          }
+        );
+      });
+
+      test("when using an abort controller to halt a query with colName as undefined", async function () {
+        const stmt = db.prepare(`SELECT * FROM ${tableName};`);
+        const controller = createPollingController();
+        controller.abort();
+        await rejects(stmt.first(undefined, { controller }), (err: any) => {
+          match(err.cause.message, /Th(e|is) operation was aborted/);
+          return true;
+        });
+      });
+
+      test("when using an abort controller to halt a query with colName as string", async function () {
+        const stmt = db.prepare(`SELECT * FROM ${tableName};`);
+        const controller = createPollingController();
+        controller.abort();
+        await rejects(
+          stmt.first<{ counter: number }>("counter", { controller }),
+          (err: any) => {
+            match(err.cause.message, /Th(e|is) operation was aborted/);
+            return true;
+          }
+        );
+      });
+
+      test("when using an abort controller and select with no colName param passed is valid", async function () {
+        const controller = createPollingController();
+        const stmt = db.prepare(`SELECT * FROM ${tableName};`);
+        const row = await stmt.first<{ counter: number; info: string }>({
+          controller,
+        });
+        deepStrictEqual(row, { counter: 1, info: "one" });
+      });
+
+      test("when using an abort controller and select with colName of undefined is valid", async function () {
+        const controller = createPollingController();
+        const stmt = db.prepare(`SELECT * FROM ${tableName};`);
+        const row = await stmt.first<{ counter: number; info: string }>(
+          undefined,
+          {
+            controller,
+          }
+        );
+        deepStrictEqual(row, { counter: 1, info: "one" });
+      });
+
+      test("when using an abort controller and select with colName of string is valid", async function () {
+        const controller = createPollingController();
+        const stmt = db.prepare(`SELECT * FROM ${tableName};`);
+        const row = await stmt.first<{ counter: number }>("counter", {
+          controller,
+        });
+        deepStrictEqual(row, [1]);
       });
     });
   });
@@ -663,6 +784,31 @@ SELECT * FROM 3.14;
       });
       this.afterAll(() => {
         db.config.autoWait = false;
+      });
+    });
+
+    describe("with options", function () {
+      test("when using an abort controller to halt a query", async function () {
+        const stmt = db.prepare(`SELECT * FROM ${tableName};`);
+        const controller = createPollingController();
+        controller.abort();
+        await rejects(stmt.raw({ controller }), (err: any) => {
+          match(err.cause.message, /Th(e|is) operation was aborted/);
+          return true;
+        });
+      });
+
+      test("when using an abort controller and select statement is valid", async function () {
+        const controller = createPollingController();
+        const stmt = db.prepare(`SELECT * FROM ${tableName};`);
+        const results = await stmt.raw<{
+          id: number;
+          counter: number;
+          info: string;
+        }>({
+          controller,
+        });
+        assert(results.length > 0);
       });
     });
   });

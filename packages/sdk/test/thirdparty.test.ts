@@ -12,9 +12,17 @@ import {
 } from "d1-orm";
 import sql, { type FormatConfig } from "@databases/sql";
 import { escapeSQLiteIdentifier } from "@databases/escape-identifier";
+import {
+  type InferInsertModel,
+  type InferSelectModel,
+  sql as drizzleSql,
+} from "drizzle-orm";
+import { drizzle } from "drizzle-orm/d1";
+import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { NonceManager } from "@ethersproject/experimental";
 import { getDefaultProvider } from "../src/helpers/index.js";
 import { Database } from "../src/index.js";
+import { type NameMapping } from "../src/helpers/index.js";
 import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
 
 describe("thirdparty", function () {
@@ -27,7 +35,23 @@ describe("thirdparty", function () {
   const baseSigner = wallet.connect(provider);
   // Also demonstrates the nonce manager usage
   const signer = new NonceManager(baseSigner);
-  const db = new Database({ signer });
+  // an `aliases` option is required for Drizzle ORM usage since D1 uses `exec`
+  // internally to do table creation, and we need to capture the uu table name
+  const nameMap: NameMapping = {};
+  const db = new Database({
+    signer,
+    // this parameter is the core of the aliases feature
+    aliases: {
+      read: async function () {
+        return nameMap;
+      },
+      write: async function (names) {
+        for (const uuTableName in names) {
+          nameMap[uuTableName] = names[uuTableName];
+        }
+      },
+    },
+  });
 
   describe("d1-orm", function () {
     const orm = new D1Orm(db);
@@ -39,6 +63,7 @@ describe("thirdparty", function () {
         tableName: "users",
         primaryKeys: "id",
         uniqueKeys: [["email"]],
+        withRowId: true, // If this is not set, `WITHOUT ROWID` will be attached and fail
       },
       {
         id: {
@@ -59,13 +84,9 @@ describe("thirdparty", function () {
     type User = Infer<typeof users>;
 
     this.beforeAll(async function () {
-      const create = await users.CreateTable({
+      await users.CreateTable({
         strategy: "default",
       });
-      await create.meta.txn.wait();
-
-      // TODO: Find a nicer way to deal with this...
-      (users.tableName as any) = create.meta.txn.name;
     });
 
     test("where a basic model is used to create data", async function () {
@@ -228,6 +249,60 @@ describe("thirdparty", function () {
       deepStrictEqual(results, [
         { id: 3, counter: 3, info: "three" },
         { id: 4, counter: 4, info: "four" },
+      ]);
+    });
+  });
+
+  describe("drizzle-orm", function () {
+    // See https://orm.drizzle.team/docs/quick-sqlite/d1
+    const user = sqliteTable("user", {
+      id: integer("id").primaryKey(),
+      name: text("name").notNull(),
+      email: text("email").notNull().unique(),
+    });
+    type User = InferSelectModel<typeof user>;
+    type NewUser = InferInsertModel<typeof user>;
+
+    const database = drizzle(db, { schema: { user } });
+
+    this.beforeAll(async function () {
+      // Opt for SDK table create over Drizzle migration process for simplicity
+      const { meta } = await db
+        .prepare(
+          "CREATE TABLE user (id integer primary key, name text not null, email text not null unique);"
+        )
+        .run();
+      await meta.txn?.wait();
+    });
+
+    test("where a basic insert and read statements work", async function () {
+      const values: NewUser = {
+        id: 1,
+        name: "John Doe",
+        email: "john-doe@gmail.com",
+      };
+      const { meta } = await database.insert(user).values(values).run();
+      await meta.txn?.wait();
+      strictEqual(typeof meta.txn?.transactionHash, "string");
+      strictEqual(meta.txn?.transactionHash.length, 66);
+      strictEqual(meta.duration > 0, true);
+
+      const results: User[] = await database.select().from(user);
+      deepStrictEqual(results, [values]);
+    });
+
+    test("where a templating & run() works for update and read", async function () {
+      const writeSql = drizzleSql`update user set id = 2, name = 'Jane Doe', email = 'jane-doe@gmail.com' where id = 1`;
+      const { meta } = await database.run(writeSql);
+      await meta.txn?.wait();
+      strictEqual(typeof meta.txn?.transactionHash, "string");
+      strictEqual(meta.txn?.transactionHash.length, 66);
+      strictEqual(meta.duration > 0, true);
+
+      const readSql = drizzleSql`select * from user where id = 2`;
+      const { results } = await database.run(readSql);
+      deepStrictEqual(results, [
+        { id: 2, name: "Jane Doe", email: "jane-doe@gmail.com" },
       ]);
     });
   });
