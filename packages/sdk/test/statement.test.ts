@@ -681,7 +681,7 @@ SELECT * FROM 3.14;
         const controller = createPollingController();
         const stmt = db.prepare(`SELECT * FROM ${tableName};`);
         const row = await stmt.first<{ counter: number; info: string }>(
-          // undefined,
+          undefined,
           {
             controller,
           }
