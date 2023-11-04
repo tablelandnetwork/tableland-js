@@ -5,9 +5,10 @@ import { spy, restore } from "sinon";
 import yargs from "yargs/yargs";
 import { Database } from "@tableland/sdk";
 import { getAccounts } from "@tableland/local";
+import { jsonFileAliases } from "@tableland/node-helpers";
 import { temporaryWrite } from "tempy";
 import * as mod from "../src/commands/controller.js";
-import { jsonFileAliases, logger, wait } from "../src/utils.js";
+import { logger, wait } from "../src/utils.js";
 import {
   TEST_TIMEOUT_FACTOR,
   TEST_PROVIDER_URL,

@@ -1,16 +1,13 @@
-import { readFileSync, writeFileSync, statSync } from "node:fs";
+import { statSync } from "node:fs";
 import { extname } from "path";
 import { Wallet, providers, getDefaultProvider } from "ethers";
 import { helpers } from "@tableland/sdk";
+import { jsonFileAliases } from "@tableland/node-helpers";
 
-// TODO: should be able to remove the "staging" filter since the SDK handles it
 export const getChains = function (): typeof helpers.supportedChains {
-  return Object.fromEntries(
-    Object.entries(helpers.supportedChains).filter(
-      ([name]) => !name.includes("staging")
-    )
-  ) as Record<helpers.ChainName, helpers.ChainInfo>;
+  return helpers.supportedChains;
 };
+
 export function getChainName(
   chain: number | helpers.ChainName
 ): helpers.ChainName {
@@ -167,49 +164,6 @@ export function checkAliasesPath(path: string): string {
   return type;
 }
 /* c8 ignore stop */
-
-/**
- * Check if a table aliases file exists and is JSON.
- * @param path Path to existing aliases file.
- * @returns true if the file exists and is JSON, false otherwise.
- */
-export function isValidAliasesFile(path: string): boolean {
-  try {
-    const stats = statSync(path);
-    if (stats.isFile() && extname(path) === ".json") return true;
-  } catch {
-    /* c8 ignore next 4 */
-    return false;
-  }
-  return false;
-}
-
-// Recreate SDK helper's `jsonFileAliases` but with updating the file, not overwriting
-type NameMapping = Record<string, string>;
-
-interface AliasesNameMap {
-  read: () => Promise<NameMapping>;
-  write: (map: NameMapping) => Promise<void>;
-}
-
-export function jsonFileAliases(filepath: string): AliasesNameMap {
-  const isValid = isValidAliasesFile(filepath);
-  if (!isValid) {
-    throw new Error(`invalid table aliases file`);
-  }
-  return {
-    read: async function (): Promise<NameMapping> {
-      const file = readFileSync(filepath);
-      return JSON.parse(file.toString());
-    },
-    write: async function (nameMap: NameMapping) {
-      const file = readFileSync(filepath);
-      const original = JSON.parse(file.toString());
-      const merged = { ...original, ...nameMap };
-      writeFileSync(filepath, JSON.stringify(merged));
-    },
-  };
-}
 
 export async function getTableNameWithAlias(
   filepath: unknown,

@@ -7,8 +7,9 @@ import { temporaryWrite } from "tempy";
 import mockStd from "mock-stdin";
 import { getAccounts } from "@tableland/local";
 import { Database } from "@tableland/sdk";
+import { jsonFileAliases } from "@tableland/node-helpers";
 import * as mod from "../src/commands/write.js";
-import { wait, logger, jsonFileAliases } from "../src/utils.js";
+import { wait, logger } from "../src/utils.js";
 import { getResolverUndefinedMock } from "./mock.js";
 import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
 
@@ -194,7 +195,7 @@ describe("commands/write", function () {
     const privateKey = account.privateKey.slice(2);
     const consoleError = spy(logger, "error");
     // Set up faux aliases file
-    const aliasesFilePath = "./invalid.json";
+    const aliasesFilePath = "./path/to/invalid.json";
 
     await yargs([
       "write",
@@ -209,7 +210,7 @@ describe("commands/write", function () {
       .parse();
 
     const res = consoleError.getCall(0).firstArg;
-    equal(res, "invalid table aliases file");
+    equal(res, "invalid aliases path");
   });
 
   test("throws with invalid table alias definition", async function () {

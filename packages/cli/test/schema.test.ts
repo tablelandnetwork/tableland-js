@@ -5,11 +5,12 @@ import { spy, restore, stub } from "sinon";
 import yargs from "yargs/yargs";
 import { getAccounts } from "@tableland/local";
 import { Database } from "@tableland/sdk";
+import { jsonFileAliases } from "@tableland/node-helpers";
 import { temporaryWrite } from "tempy";
 import ensLib from "../src/lib/EnsCommand";
 import * as mod from "../src/commands/schema";
 import * as ns from "../src/commands/namespace.js";
-import { jsonFileAliases, logger, wait } from "../src/utils.js";
+import { logger, wait } from "../src/utils.js";
 import { getResolverMock } from "./mock.js";
 import {
   TEST_TIMEOUT_FACTOR,
@@ -74,13 +75,13 @@ describe("commands/schema", function () {
       "table_alias",
       ...defaultArgs,
       "--aliases",
-      "./invalid.json",
+      "./path/to/invalid.json",
     ])
       .command(mod)
       .parse();
 
     const value = consoleError.getCall(0).firstArg;
-    equal(value, "invalid table aliases file");
+    equal(value, "invalid aliases path");
   });
 
   test("throws with invalid table alias definition", async function () {

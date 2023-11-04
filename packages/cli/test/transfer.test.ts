@@ -6,8 +6,9 @@ import yargs from "yargs/yargs";
 import { temporaryWrite } from "tempy";
 import { getAccounts } from "@tableland/local";
 import { helpers, Database } from "@tableland/sdk";
+import { jsonFileAliases } from "@tableland/node-helpers";
 import * as mod from "../src/commands/transfer.js";
-import { jsonFileAliases, logger, wait } from "../src/utils.js";
+import { logger, wait } from "../src/utils.js";
 import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
 
 const defaultArgs = [
@@ -130,13 +131,13 @@ describe("commands/transfer", function () {
       privateKey,
       ...defaultArgs,
       "--aliases",
-      "./invalid.json",
+      "./path/to/invalid.json",
     ])
       .command(mod)
       .parse();
 
     const res = consoleError.getCall(0).firstArg;
-    equal(res, "invalid table aliases file");
+    equal(res, "invalid aliases path");
   });
 
   test("throws with invalid table alias definition", async function () {

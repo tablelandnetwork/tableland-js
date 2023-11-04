@@ -297,7 +297,7 @@ describe("commands/shell", function () {
   test("throws with invalid table aliases file", async function () {
     const consoleError = spy(logger, "error");
     // Set up faux aliases file
-    const aliasesFilePath = "./invalid.json";
+    const aliasesFilePath = "./path/to/invalid.json";
 
     const privateKey = accounts[0].privateKey.slice(2);
     await yargs([
@@ -312,7 +312,7 @@ describe("commands/shell", function () {
       .parse();
 
     const res = consoleError.getCall(0).args[0];
-    equal(res, "invalid table aliases file");
+    equal(res, "invalid aliases path");
   });
 
   test("works when custom baseUrl is called", async function () {
