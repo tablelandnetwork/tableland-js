@@ -2,7 +2,7 @@
   "name": "@tableland/node-helpers",
   "version": "0.0.1",
   "description": "Helpers for the @tableland/sdk in a Node.js environment",
-  "repository": "https://github.com/tablelandnetwork/tableland-js.git",
+  "repository": "https://github.com/tablelandnetwork/tableland-js",
   "license": "MIT AND Apache-2.0",
   "publishConfig": {
     "access": "public"

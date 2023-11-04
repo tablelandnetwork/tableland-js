@@ -1,9 +1,18 @@
 import { readFileSync, statSync, writeFileSync, existsSync } from "node:fs";
 import { extname, resolve, dirname } from "node:path";
-import { type helpers } from "@tableland/sdk";
 
-type AliasesNameMap = helpers.AliasesNameMap;
-type NameMapping = helpers.NameMapping;
+/**
+ * A series of mappings from a table alias to its globally unique table name.
+ */
+export type NameMapping = Record<string, string>;
+
+/**
+ * Used to read and write table aliases within a `Database` instance.
+ */
+export interface AliasesNameMap {
+  read: () => Promise<NameMapping>;
+  write: (map: NameMapping) => Promise<void>;
+}
 
 /**
  * Get the path to where an aliases file exists or should be created.
