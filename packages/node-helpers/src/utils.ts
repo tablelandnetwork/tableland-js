@@ -33,7 +33,7 @@ function getFilePath(path: string): string {
     // If the full path does not exist, check if the directory exists, meaning,
     // the filename is non-existent and can be created at the full path.
     const dir = dirname(path);
-    if (existsSync(dir)) return resolve(path);
+    if (existsSync(dir) && extname(path) === ".json") return resolve(path);
   }
   // If none of the above, the path does not exist, or the path is pointing to
   // an invalid filetype (not JSON).

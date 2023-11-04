@@ -49,10 +49,21 @@ describe("utils", function () {
     });
 
     test("should fail when path is valid but points to a non-JSON file", async function () {
-      // Path to a .txt file
-      const aliasesFilePath = await temporaryWrite(`{}`, {
+      // Path to an existing .txt file
+      let aliasesFilePath = await temporaryWrite(`{}`, {
         extension: "txt",
       });
+      throws(
+        () => jsonFileAliases(aliasesFilePath),
+        (err: any) => {
+          strictEqual(err.message, "invalid aliases path");
+          return true;
+        }
+      );
+      // Path to an existing directory plus non-existent filename, but the path
+      // is to an invalid .txt filetype
+      const aliasesDirPath = temporaryDirectory();
+      aliasesFilePath = resolve(aliasesDirPath, "aliases-file.txt");
       throws(
         () => jsonFileAliases(aliasesFilePath),
         (err: any) => {
