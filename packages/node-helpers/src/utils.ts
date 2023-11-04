@@ -46,7 +46,7 @@ function getFilePath(path: string): string {
  * should be created (can be a directory path, or directory + filename path).
  * @returns A buffer containing the JSON file contents.
  */
-const findOrCreateFile = async function (path: string): Promise<Buffer> {
+const findOrCreateFile = function (path: string): Buffer {
   if (!existsSync(path)) {
     writeFileSync(path, JSON.stringify({}, null, 2));
   }
@@ -69,7 +69,7 @@ export function jsonFileAliases(path: string): AliasesNameMap {
   const filepath = getFilePath(path);
   return {
     read: async function (): Promise<NameMapping> {
-      const jsonBuf = await findOrCreateFile(filepath);
+      const jsonBuf = findOrCreateFile(filepath);
       return JSON.parse(jsonBuf.toString());
     },
     write: async function (nameMap: NameMapping) {
