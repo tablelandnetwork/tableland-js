@@ -5,11 +5,8 @@ import fs from "node:fs";
 import { strictEqual, rejects } from "assert";
 import { describe, test } from "mocha";
 import { getAccounts } from "@tableland/local";
-import {
-  type NameMapping,
-  getDefaultProvider,
-  jsonFileAliases,
-} from "../src/helpers/index.js";
+import { jsonFileAliases } from "@tableland/node-helpers";
+import { type NameMapping, getDefaultProvider } from "../src/helpers/index.js";
 import { Database } from "../src/index.js";
 import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
 

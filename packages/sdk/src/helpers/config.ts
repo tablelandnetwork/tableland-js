@@ -20,8 +20,14 @@ export interface AutoWaitConfig {
 
 export type Config = Partial<ReadConfig & SignerConfig>;
 
+/**
+ * A series of mappings from a table alias to its globally unique table name.
+ */
 export type NameMapping = Record<string, string>;
 
+/**
+ * Used to read and write table aliases within a `Database` instance.
+ */
 export interface AliasesNameMap {
   read: () => Promise<NameMapping>;
   write: (map: NameMapping) => Promise<void>;
@@ -80,43 +86,6 @@ export async function extractChainId(conn: Config = {}): Promise<number> {
   }
 
   return chainId;
-}
-
-const findOrCreateFile = async function (filepath: string): Promise<Buffer> {
-  const fs = await getFsModule();
-
-  if (!fs.existsSync(filepath)) {
-    fs.writeFileSync(filepath, JSON.stringify({}));
-  }
-
-  return fs.readFileSync(filepath);
-};
-
-// TODO: next major we should remove the jsonFileAliases helper and expose it
-//    in a different package since it doesn't work in the browser.
-const getFsModule = (function () {
-  let fs: any;
-  return async function () {
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-    if (fs) return fs;
-
-    fs = await import(/* webpackIgnore: true */ "fs");
-    return fs;
-  };
-})();
-
-export function jsonFileAliases(filepath: string): AliasesNameMap {
-  return {
-    read: async function (): Promise<NameMapping> {
-      const jsonBuf = await findOrCreateFile(filepath);
-      return JSON.parse(jsonBuf.toString());
-    },
-    write: async function (nameMap: NameMapping) {
-      const fs = await getFsModule();
-      const current = await this.read();
-      fs.writeFileSync(filepath, JSON.stringify({ ...current, ...nameMap }));
-    },
-  };
 }
 
 export function prepReadConfig(config: Partial<ReadConfig>): FetchConfig {

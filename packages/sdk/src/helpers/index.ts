@@ -28,7 +28,6 @@ export {
   extractBaseUrl,
   extractChainId,
   extractSigner,
-  jsonFileAliases,
   prepReadConfig,
 } from "./config.js";
 export {
