@@ -1,11 +1,9 @@
 # @tableland/local
 
-[![Review](https://github.com/tablelandnetwork/local-tableland/actions/workflows/review.yml/badge.svg)](https://github.com/tablelandnetwork/local-tableland/actions/workflows/review.yml)
-[![Test](https://github.com/tablelandnetwork/local-tableland/actions/workflows/test.yml/badge.svg)](https://github.com/tablelandnetwork/local-tableland/actions/workflows/test.yml)
-[![Publish](https://github.com/tablelandnetwork/local-tableland/actions/workflows/publish.yml/badge.svg)](https://github.com/tablelandnetwork/local-tableland/actions/workflows/publish.yml)
-[![License](https://img.shields.io/github/license/tablelandnetwork/local-tableland.svg)](./LICENSE)
-[![Version](https://img.shields.io/github/package-json/v/tablelandnetwork/local-tableland.svg)](./package.json)
-[![Release](https://img.shields.io/github/release/tablelandnetwork/local-tableland.svg)](https://github.com/tablelandnetwork/local-tableland/releases/latest)
+[![Review](https://github.com/tablelandnetwork/tableland-js/actions/workflows/review.yml/badge.svg)](https://github.com/tablelandnetwork/tableland-js/actions/workflows/review.yml)
+[![Test](https://github.com/tablelandnetwork/tableland-js/actions/workflows/test.yml/badge.svg)](https://github.com/tablelandnetwork/tableland-js/actions/workflows/test.yml)
+[![License: MIT AND Apache-2.0](https://img.shields.io/badge/License-MIT%20AND%20Apache--2.0-blue.svg)](./LICENSE)
+[![Version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Ftablelandnetwork%2Ftableland-js%2Fmain%2Fpackages%2Flocal%2Fpackage.json&query=%24.version&label=Version)](./package.json)
 [![standard-readme compliant](https://img.shields.io/badge/standard--readme-OK-green.svg)](https://github.com/RichardLitt/standard-readme)
 
 > A lightweight development environment for Tableland databases.
@@ -37,15 +35,21 @@ This package contains tooling to get a sandboxed single Tableland network node r
 
 ## Install
 
-From your project, install the `@tableland/local` package as a development dependency:
+From your project, install the `@tableland/local` package as a development dependency using npm:
 
 ```bash
 npm install --save-dev @tableland/local
 ```
 
+Or yarn:
+
+```bash
+yarn add --dev @tableland/local
+```
+
 ## Usage
 
-To spin up a Local Tableland network, you can run the following:
+Full library documentation is [available on our docs site](https://docs.tableland.xyz/local-tableland/). To spin up a Local Tableland network, you can run the following:
 
 ```bash
 npx local-tableland
@@ -284,4 +288,4 @@ Small note: If editing the README, please conform to the
 
 ## License
 
-MIT AND Apache-2.0, © 2021-2022 Tableland Network Contributors
+MIT AND Apache-2.0, © 2021-2023 Tableland Network Contributors

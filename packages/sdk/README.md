@@ -1,11 +1,9 @@
 # @tableland/sdk
 
-[![Review](https://github.com/tablelandnetwork/js-tableland/actions/workflows/review.yml/badge.svg)](https://github.com/tablelandnetwork/js-tableland/actions/workflows/review.yml)
-[![Test](https://github.com/tablelandnetwork/js-tableland/actions/workflows/test.yml/badge.svg)](https://github.com/tablelandnetwork/js-tableland/actions/workflows/test.yml)
-[![Publish](https://github.com/tablelandnetwork/js-tableland/actions/workflows/publish.yml/badge.svg)](https://github.com/tablelandnetwork/js-tableland/actions/workflows/publish.yml)
-[![License](https://img.shields.io/github/license/tablelandnetwork/js-tableland.svg)](./LICENSE)
-[![Version](https://img.shields.io/github/package-json/v/tablelandnetwork/js-tableland.svg)](./package.json)
-[![Release](https://img.shields.io/github/release/tablelandnetwork/js-tableland.svg)](https://github.com/tablelandnetwork/js-tableland/releases/latest)
+[![Review](https://github.com/tablelandnetwork/tableland-js/actions/workflows/review.yml/badge.svg)](https://github.com/tablelandnetwork/tableland-js/actions/workflows/review.yml)
+[![Test](https://github.com/tablelandnetwork/tableland-js/actions/workflows/test.yml/badge.svg)](https://github.com/tablelandnetwork/tableland-js/actions/workflows/test.yml)
+[![License: MIT AND Apache-2.0](https://img.shields.io/badge/License-MIT%20AND%20Apache--2.0-blue.svg)](./LICENSE)
+[![Version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Ftablelandnetwork%2Ftableland-js%2Fmain%2Fpackages%2Fsdk%2Fpackage.json&query=%24.version&label=Version)](./package.json)
 [![standard-readme compliant](https://img.shields.io/badge/standard--readme-OK-green.svg)](https://github.com/RichardLitt/standard-readme)
 
 > Tableland JavaScript SDK—the essential tool for building web3 apps with Tableland databases.
@@ -29,23 +27,21 @@ The `@tableland/sdk` library provides an easy-to-use interface for integrating T
 
 ## Install
 
-You can install via npm/yarn:
+You can install via npm:
 
 ```bash
 npm i @tableland/sdk
-# yarn add @tableland/sdk
 ```
 
-Or directly via GitHub:
+Or yarn:
 
 ```bash
-npm i tablelandnetwork/js-tableland
+yarn add @tableland/sdk
 ```
 
 ## Usage
 
-Full library documentation is [generated on GitHub](https://tablelandnetwork.github.io/js-tableland/), and
-general docs, examples, and more are [available on our docs site](https://docs.tableland.xyz/sdk/core/).
+Full library documentation is [available on our docs site](https://docs.tableland.xyz/sdk/).
 
 ### Database
 
@@ -249,4 +245,4 @@ Small note: If editing the README, please conform to the
 
 ## License
 
-MIT AND Apache-2.0, © 2021-2022 Tableland Network Contributors
+MIT AND Apache-2.0, © 2021-2023 Tableland Network Contributors
