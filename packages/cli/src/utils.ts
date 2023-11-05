@@ -1,5 +1,3 @@
-import { statSync } from "node:fs";
-import { extname } from "path";
 import { Wallet, providers, getDefaultProvider } from "ethers";
 import { helpers } from "@tableland/sdk";
 import { jsonFileAliases } from "@tableland/node-helpers";
@@ -141,29 +139,6 @@ export const logger = {
     console.error(message);
   },
 };
-
-/**
- * Check if a table aliases file exists, or if a directory exists where we can
- * create a new one (note: only used with `init`, where creation can happen).
- * @param path Path to existing aliases file or directory to create one at.
- * @returns The type of the path, either "file" or "dir".
- */
-/* c8 ignore start */
-export function checkAliasesPath(path: string): string {
-  let type;
-  let isStatErr;
-  try {
-    const stats = statSync(path);
-    if (stats.isFile() && extname(path) === ".json") type = "file"; // only set "type" if it's JSON
-    if (stats.isDirectory()) type = "dir";
-  } catch {
-    isStatErr = true;
-  }
-  if (type === undefined || isStatErr != null)
-    throw new Error("invalid table aliases path");
-  return type;
-}
-/* c8 ignore stop */
 
 export async function getTableNameWithAlias(
   filepath: unknown,

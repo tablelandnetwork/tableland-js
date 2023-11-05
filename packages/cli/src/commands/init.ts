@@ -1,15 +1,11 @@
 import { resolve, dirname } from "path";
-import {
-  mkdirSync,
-  createWriteStream,
-  type WriteStream,
-  writeFileSync,
-} from "fs";
+import { mkdirSync, createWriteStream, type WriteStream } from "fs";
 import type yargs from "yargs";
 import type { Arguments, CommandBuilder } from "yargs";
 import yaml from "js-yaml";
 import inquirer from "inquirer";
-import { getChains, logger, checkAliasesPath } from "../utils.js";
+import { findOrCreateAliasesFile } from "@tableland/node-helpers";
+import { getChains, logger } from "../utils.js";
 import { type GlobalOptions } from "../cli.js";
 
 export interface Options extends GlobalOptions {
@@ -109,15 +105,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
   // Make sure the table aliases file or provided directory exists
   if (aliases != null) {
     try {
-      const type = checkAliasesPath(aliases);
-      if (type === "file") {
-        rest.aliases = resolve(aliases);
-      }
-      if (type === "dir") {
-        const aliasesFilePath = resolve(aliases, "tableland.aliases.json");
-        writeFileSync(aliasesFilePath, JSON.stringify({}));
-        rest.aliases = aliasesFilePath;
-      }
+      rest.aliases = findOrCreateAliasesFile(aliases);
     } catch (err: any) {
       logger.error(err.message); // exit early since the input was invalid
       return;
