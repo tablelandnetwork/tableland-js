@@ -1,1 +1,6 @@
-export { jsonFileAliases } from "./utils";
+export {
+  type NameMapping,
+  type AliasesNameMap,
+  findOrCreateAliasesFile,
+  jsonFileAliases,
+} from "./utils";

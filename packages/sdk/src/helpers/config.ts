@@ -20,18 +20,46 @@ export interface AutoWaitConfig {
 
 export type Config = Partial<ReadConfig & SignerConfig>;
 
+// TODO: the `NameMapping`, `AliasesNameMapSync`, `AliasesNameMapAsync`, and
+// `AliasesNameMap` types are duplicated from `@tableland/node-helpers`. We
+// should move them to a shared location like `@tableland/types`.
+
 /**
  * A series of mappings from a table alias to its globally unique table name.
  */
 export type NameMapping = Record<string, string>;
 
 /**
- * Used to read and write table aliases within a `Database` instance.
+ * Used to read and write table aliases within a `Database` instance in a
+ * synchronous manner.
+ * @property read A function that returns a `Promise` of a {@link NameMapping}
+ * object, or a {@link NameMapping} object.
+ * @property write A function that accepts a {@link NameMapping} object and
+ * returns `void`.
  */
-export interface AliasesNameMap {
+export interface AliasesNameMapSync {
+  read: () => NameMapping;
+  write: (map: NameMapping) => void;
+}
+
+/**
+ * Used to read and write table aliases within a `Database` instance in an
+ * asynchronous manner.
+ * @property read A function that returns a `Promise` of a {@link NameMapping}
+ * object, or a {@link NameMapping} object.
+ * @property write A function that accepts a {@link NameMapping} object and
+ * returns a `Promise` of `void`.
+ */
+export interface AliasesNameMapAsync {
   read: () => Promise<NameMapping>;
   write: (map: NameMapping) => Promise<void>;
 }
+
+/**
+ * Used to read and write table aliases within a `Database` instance. See
+ * {@link AliasesNameMapAsync} and {@link AliasesNameMapSync} for more details.
+ */
+export type AliasesNameMap = AliasesNameMapSync | AliasesNameMapAsync;
 
 export async function checkWait(
   config: Config & Partial<AutoWaitConfig>,
