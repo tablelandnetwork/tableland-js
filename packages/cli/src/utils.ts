@@ -146,7 +146,7 @@ export async function getTableNameWithAlias(
 ): Promise<string> {
   if (typeof filepath !== "string" || filepath.trim() === "") return name;
 
-  const nameMap = await jsonFileAliases(filepath).read();
+  const nameMap = jsonFileAliases(filepath).read();
   const uuName = nameMap[name];
   return uuName ?? name;
 }
