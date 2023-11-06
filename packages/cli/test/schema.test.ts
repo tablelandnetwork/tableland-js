@@ -246,7 +246,7 @@ describe("commands/schema", function () {
     const prefix = meta.txn?.prefix ?? "";
 
     // Check the aliases file was updated and matches with the prefix
-    const nameMap = await jsonFileAliases(aliasesFilePath).read();
+    const nameMap = jsonFileAliases(aliasesFilePath).read();
     const tableAlias =
       Object.keys(nameMap).find((alias) => nameMap[alias] === nameFromCreate) ??
       "";

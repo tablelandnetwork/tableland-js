@@ -469,7 +469,7 @@ describe("commands/create", function () {
     const { prefix1, name1 } = value.meta.txn;
 
     // Check the aliases file was updated and matches with the prefix
-    let nameMap = await jsonFileAliases(aliasesFilePath).read();
+    let nameMap = jsonFileAliases(aliasesFilePath).read();
     const tableAlias1 = Object.keys(nameMap).find(
       (alias) => nameMap[alias] === name1
     );
@@ -495,7 +495,7 @@ describe("commands/create", function () {
     const { prefix2, name2 } = value.meta.txn;
 
     // Check the aliases file was updated and matches with both prefixes
-    nameMap = await jsonFileAliases(aliasesFilePath).read();
+    nameMap = jsonFileAliases(aliasesFilePath).read();
     const tableAlias2 = Object.keys(nameMap).find(
       (alias) => nameMap[alias] === name2
     );
