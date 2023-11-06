@@ -26,21 +26,10 @@ export async function prepareMutateOne({
   statement,
   chainId,
   first,
-}: PrepareParams): Promise<RunSQLParams & { prefix: string }> {
+}: PrepareParams): Promise<MutateOneParams & { prefix: string }> {
   const { tableId, prefix, chainId: chain } = await validateTableName(first);
   assertChainId(chain, chainId);
   return { tableId: tableId.toString(), statement, prefix, chainId };
-}
-
-/**
- * @custom:deprecated This type will change in the next major version.
- * Use the `MutateOneParams` type.
- */
-export interface RunSQLParams extends TableIdentifier {
-  /**
-   * SQL statement string.
-   */
-  statement: string;
 }
 
 export interface MutateOneParams extends TableIdentifier {

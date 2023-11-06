@@ -15,6 +15,7 @@ import {
   extractBaseUrl,
   getBaseUrl,
   normalize,
+  readNameMapping,
   validateTableName,
 } from "./helpers/index.js";
 import { Statement } from "./statement.js";
@@ -104,7 +105,7 @@ export class Database<D = unknown> {
       const start = performance.now();
       const nameMap =
         typeof this.config.aliases?.read === "function"
-          ? await this.config.aliases?.read()
+          ? await readNameMapping(this.config.aliases)
           : undefined;
 
       // If the statement types are "create" and the statement contains more than one

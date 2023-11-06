@@ -1,16 +1,11 @@
-import { readFileSync, writeFileSync, statSync } from "node:fs";
-import { extname } from "path";
 import { Wallet, providers, getDefaultProvider } from "ethers";
 import { helpers } from "@tableland/sdk";
+import { jsonFileAliases } from "@tableland/node-helpers";
 
-// TODO: should be able to remove the "staging" filter since the SDK handles it
 export const getChains = function (): typeof helpers.supportedChains {
-  return Object.fromEntries(
-    Object.entries(helpers.supportedChains).filter(
-      ([name]) => !name.includes("staging")
-    )
-  ) as Record<helpers.ChainName, helpers.ChainInfo>;
+  return helpers.supportedChains;
 };
+
 export function getChainName(
   chain: number | helpers.ChainName
 ): helpers.ChainName {
@@ -145,79 +140,13 @@ export const logger = {
   },
 };
 
-/**
- * Check if a table aliases file exists, or if a directory exists where we can
- * create a new one (note: only used with `init`, where creation can happen).
- * @param path Path to existing aliases file or directory to create one at.
- * @returns The type of the path, either "file" or "dir".
- */
-/* c8 ignore start */
-export function checkAliasesPath(path: string): string {
-  let type;
-  let isStatErr;
-  try {
-    const stats = statSync(path);
-    if (stats.isFile() && extname(path) === ".json") type = "file"; // only set "type" if it's JSON
-    if (stats.isDirectory()) type = "dir";
-  } catch {
-    isStatErr = true;
-  }
-  if (type === undefined || isStatErr != null)
-    throw new Error("invalid table aliases path");
-  return type;
-}
-/* c8 ignore stop */
-
-/**
- * Check if a table aliases file exists and is JSON.
- * @param path Path to existing aliases file.
- * @returns true if the file exists and is JSON, false otherwise.
- */
-export function isValidAliasesFile(path: string): boolean {
-  try {
-    const stats = statSync(path);
-    if (stats.isFile() && extname(path) === ".json") return true;
-  } catch {
-    /* c8 ignore next 4 */
-    return false;
-  }
-  return false;
-}
-
-// Recreate SDK helper's `jsonFileAliases` but with updating the file, not overwriting
-type NameMapping = Record<string, string>;
-
-interface AliasesNameMap {
-  read: () => Promise<NameMapping>;
-  write: (map: NameMapping) => Promise<void>;
-}
-
-export function jsonFileAliases(filepath: string): AliasesNameMap {
-  const isValid = isValidAliasesFile(filepath);
-  if (!isValid) {
-    throw new Error(`invalid table aliases file`);
-  }
-  return {
-    read: async function (): Promise<NameMapping> {
-      const file = readFileSync(filepath);
-      return JSON.parse(file.toString());
-    },
-    write: async function (nameMap: NameMapping) {
-      const file = readFileSync(filepath);
-      const original = JSON.parse(file.toString());
-      const merged = { ...original, ...nameMap };
-      writeFileSync(filepath, JSON.stringify(merged));
-    },
-  };
-}
-
 export async function getTableNameWithAlias(
   filepath: unknown,
   name: string
 ): Promise<string> {
   if (typeof filepath !== "string" || filepath.trim() === "") return name;
 
-  const nameMap = await jsonFileAliases(filepath).read();
+  const nameMap = jsonFileAliases(filepath).read();
   const uuName = nameMap[name];
   return uuName ?? name;
 }

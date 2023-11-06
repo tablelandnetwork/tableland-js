@@ -77,17 +77,6 @@ export interface CreateManyParams {
 
 export type CreateParams = CreateOneParams | CreateManyParams;
 
-/**
- * @custom deprecated This be removed in the next major version.
- * Use `create`.
- */
-export async function createTable(
-  config: SignerConfig,
-  params: CreateOneParams
-): Promise<ContractTransaction> {
-  return await _createOne(config, params);
-}
-
 export async function create(
   config: SignerConfig,
   params: CreateParams

@@ -5,11 +5,12 @@ import yargs from "yargs/yargs";
 import { ethers, getDefaultProvider } from "ethers";
 import { getAccounts } from "@tableland/local";
 import { Database } from "@tableland/sdk";
+import { jsonFileAliases } from "@tableland/node-helpers";
 import { temporaryWrite } from "tempy";
 import ensLib from "../src/lib/EnsCommand";
 import * as mod from "../src/commands/info.js";
 import * as ns from "../src/commands/namespace.js";
-import { jsonFileAliases, logger, wait } from "../src/utils.js";
+import { logger, wait } from "../src/utils.js";
 import { getResolverMock } from "./mock.js";
 import {
   TEST_TIMEOUT_FACTOR,
@@ -80,13 +81,13 @@ describe("commands/info", function () {
       "table_alias",
       ...defaultArgs,
       "--aliases",
-      "./invalid.json",
+      "./path/to/invalid.json",
     ])
       .command(mod)
       .parse();
 
     const value = consoleError.getCall(0).firstArg;
-    equal(value, "invalid table aliases file");
+    equal(value, "invalid aliases path");
   });
 
   test("throws with invalid table alias definition", async function () {
@@ -270,7 +271,7 @@ describe("commands/info", function () {
     const prefix = meta.txn?.prefix ?? "";
 
     // Check the aliases file was updated and matches with the prefix
-    const nameMap = await jsonFileAliases(aliasesFilePath).read();
+    const nameMap = jsonFileAliases(aliasesFilePath).read();
     const tableAlias =
       Object.keys(nameMap).find((alias) => nameMap[alias] === nameFromCreate) ??
       "";

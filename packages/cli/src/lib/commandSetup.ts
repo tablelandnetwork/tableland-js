@@ -1,8 +1,9 @@
 import { helpers, Database, Registry, Validator } from "@tableland/sdk";
 import { init } from "@tableland/sqlparser";
+import { jsonFileAliases } from "@tableland/node-helpers";
 import { type Signer } from "ethers";
 import { type GlobalOptions } from "../cli.js";
-import { getWalletWithProvider, logger, jsonFileAliases } from "../utils.js";
+import { getWalletWithProvider, logger } from "../utils.js";
 import EnsResolver from "./EnsResolver.js";
 
 export class Connections {

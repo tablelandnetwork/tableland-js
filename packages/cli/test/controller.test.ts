@@ -5,9 +5,10 @@ import { spy, restore } from "sinon";
 import yargs from "yargs/yargs";
 import { Database } from "@tableland/sdk";
 import { getAccounts } from "@tableland/local";
+import { jsonFileAliases } from "@tableland/node-helpers";
 import { temporaryWrite } from "tempy";
 import * as mod from "../src/commands/controller.js";
-import { jsonFileAliases, logger, wait } from "../src/utils.js";
+import { logger, wait } from "../src/utils.js";
 import {
   TEST_TIMEOUT_FACTOR,
   TEST_PROVIDER_URL,
@@ -290,7 +291,7 @@ describe("commands/controller", function () {
       const prefix = meta.txn?.prefix ?? "";
 
       // Check the aliases file was updated and matches with the prefix
-      const nameMap = await jsonFileAliases(aliasesFilePath).read();
+      const nameMap = jsonFileAliases(aliasesFilePath).read();
       const tableAlias =
         Object.keys(nameMap).find(
           (alias) => nameMap[alias] === nameFromCreate
@@ -341,7 +342,7 @@ describe("commands/controller", function () {
       const prefix = meta.txn?.prefix ?? "";
 
       // Check the aliases file was updated and matches with the prefix
-      const nameMap = await jsonFileAliases(aliasesFilePath).read();
+      const nameMap = jsonFileAliases(aliasesFilePath).read();
       const tableAlias =
         Object.keys(nameMap).find(
           (alias) => nameMap[alias] === nameFromCreate
@@ -387,7 +388,7 @@ describe("commands/controller", function () {
       const prefix = meta.txn?.prefix ?? "";
 
       // Check the aliases file was updated and matches with the prefix
-      const nameMap = await jsonFileAliases(aliasesFilePath).read();
+      const nameMap = jsonFileAliases(aliasesFilePath).read();
       const tableAlias =
         Object.keys(nameMap).find(
           (alias) => nameMap[alias] === nameFromCreate

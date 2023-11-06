@@ -7,8 +7,9 @@ import mockStd from "mock-stdin";
 import { ethers, getDefaultProvider } from "ethers";
 import { Database } from "@tableland/sdk";
 import { getAccounts } from "@tableland/local";
+import { jsonFileAliases } from "@tableland/node-helpers";
 import * as mod from "../src/commands/read.js";
-import { wait, logger, jsonFileAliases } from "../src/utils.js";
+import { wait, logger } from "../src/utils.js";
 import { getResolverMock } from "./mock.js";
 import {
   TEST_TIMEOUT_FACTOR,
@@ -148,7 +149,7 @@ describe("commands/read", function () {
     const privateKey = account.privateKey.slice(2);
     const consoleError = spy(logger, "error");
     // Set up faux aliases file
-    const aliasesFilePath = "./invalid.json";
+    const aliasesFilePath = "./path/to/invalid.json";
 
     await yargs([
       "read",
@@ -163,7 +164,7 @@ describe("commands/read", function () {
       .parse();
 
     const res = consoleError.getCall(0).firstArg;
-    equal(res, "invalid table aliases file");
+    equal(res, "invalid aliases path");
   });
 
   test("passes with extract option", async function () {
@@ -375,7 +376,7 @@ describe("commands/read", function () {
     const prefix = meta.txn?.prefix ?? "";
 
     // Check the aliases file was updated and matches with the prefix
-    const nameMap = await jsonFileAliases(aliasesFilePath).read();
+    const nameMap = jsonFileAliases(aliasesFilePath).read();
     const tableAlias =
       Object.keys(nameMap).find((alias) => nameMap[alias] === name) ?? "";
     equal(tableAlias, prefix);

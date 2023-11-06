@@ -3,6 +3,8 @@ import {
   extractBaseUrl,
   extractSigner,
   normalize,
+  readNameMapping,
+  writeNameMapping,
   type Signal,
   type ReadConfig,
   type NameMapping,
@@ -86,7 +88,7 @@ export async function exec(
   switch (type) {
     case "create": {
       if (typeof config.aliases?.read === "function") {
-        const currentAliases = await config.aliases.read();
+        const currentAliases = await readNameMapping(config.aliases);
         if (currentAliases[first] != null) {
           throw new Error("table name already exists in aliases");
         }
@@ -101,7 +103,7 @@ export async function exec(
         const nameMap: NameMapping = {};
         nameMap[first] = uuTableName;
 
-        await config.aliases.write(nameMap);
+        await writeNameMapping(config.aliases, nameMap);
       }
 
       return wrappedTx;
@@ -110,7 +112,7 @@ export async function exec(
     case "acl":
     case "write": {
       if (typeof config.aliases?.read === "function") {
-        const nameMap = await config.aliases.read();
+        const nameMap = await readNameMapping(config.aliases);
         const norm = await normalize(_params.statement, nameMap);
 
         _params.statement = norm.statements[0];
@@ -144,7 +146,7 @@ export async function execMutateMany(
   const params: MutateManyParams = { runnables, chainId };
 
   if (typeof config.aliases?.read === "function") {
-    const nameMap = await config.aliases.read();
+    const nameMap = await readNameMapping(config.aliases);
 
     params.runnables = await Promise.all(
       params.runnables.map(async function (runnable) {
@@ -193,7 +195,7 @@ export async function execCreateMany(
   const wrappedTx = await wrapManyTransaction(_config, statements, tx);
 
   if (typeof config.aliases?.write === "function") {
-    const currentAliases = await config.aliases.read();
+    const currentAliases = await readNameMapping(config.aliases);
 
     // Collect the user provided table names to add to the aliases.
     const aliasesTableNames = await Promise.all(
@@ -212,7 +214,7 @@ export async function execCreateMany(
       nameMap[aliasesTableNames[i]] = uuTableNames[i];
     }
 
-    await config.aliases.write(nameMap);
+    await writeNameMapping(config.aliases, nameMap);
   }
   return wrappedTx;
 }

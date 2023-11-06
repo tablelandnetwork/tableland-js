@@ -3,6 +3,7 @@ import { type FetchConfig } from "../validator/client/index.js";
 import { type PollingController } from "./await.js";
 import { type ChainName, getBaseUrl } from "./chains.js";
 import { type Signer, type ExternalProvider, getSigner } from "./ethers.js";
+import { isPromise } from "./utils.js";
 
 export interface ReadConfig {
   baseUrl: string;
@@ -20,11 +21,21 @@ export interface AutoWaitConfig {
 
 export type Config = Partial<ReadConfig & SignerConfig>;
 
+/**
+ * A series of mappings from a table alias to its globally unique table name.
+ */
 export type NameMapping = Record<string, string>;
 
+/**
+ * Used to read and write table aliases within a `Database` instance
+ * @property read A function that returns a {@link NameMapping} object, or a
+ * `Promise` of a {@link NameMapping} object.
+ * @property write A function that accepts a {@link NameMapping} object and
+ * returns `void`, or a Promise of void.
+ */
 export interface AliasesNameMap {
-  read: () => Promise<NameMapping>;
-  write: (map: NameMapping) => Promise<void>;
+  read: (() => Promise<NameMapping>) | (() => NameMapping);
+  write: ((map: NameMapping) => Promise<void>) | ((map: NameMapping) => void);
 }
 
 export async function checkWait(
@@ -82,43 +93,6 @@ export async function extractChainId(conn: Config = {}): Promise<number> {
   return chainId;
 }
 
-const findOrCreateFile = async function (filepath: string): Promise<Buffer> {
-  const fs = await getFsModule();
-
-  if (!fs.existsSync(filepath)) {
-    fs.writeFileSync(filepath, JSON.stringify({}));
-  }
-
-  return fs.readFileSync(filepath);
-};
-
-// TODO: next major we should remove the jsonFileAliases helper and expose it
-//    in a different package since it doesn't work in the browser.
-const getFsModule = (function () {
-  let fs: any;
-  return async function () {
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-    if (fs) return fs;
-
-    fs = await import(/* webpackIgnore: true */ "fs");
-    return fs;
-  };
-})();
-
-export function jsonFileAliases(filepath: string): AliasesNameMap {
-  return {
-    read: async function (): Promise<NameMapping> {
-      const jsonBuf = await findOrCreateFile(filepath);
-      return JSON.parse(jsonBuf.toString());
-    },
-    write: async function (nameMap: NameMapping) {
-      const fs = await getFsModule();
-      const current = await this.read();
-      fs.writeFileSync(filepath, JSON.stringify({ ...current, ...nameMap }));
-    },
-  };
-}
-
 export function prepReadConfig(config: Partial<ReadConfig>): FetchConfig {
   const conf: FetchConfig = {};
   if (config.apiKey) {
@@ -130,4 +104,36 @@ export function prepReadConfig(config: Partial<ReadConfig>): FetchConfig {
   }
 
   return { ...config, ...conf };
+}
+
+/**
+ * Read the {@link NameMapping} from an {@link AliasesNameMap}, which can
+ * support either synchronous or asynchronous `read()` execution. It will wrap a
+ * synchronous name mapping result, or wrap an unwrapped name mapping if
+ * asynchronous.
+ * @param aliases An `AliasesNameMap` object.
+ * @returns A promise containing a `NameMapping` object.
+ */
+export async function readNameMapping(
+  aliases: AliasesNameMap
+): Promise<NameMapping> {
+  const nameMap = aliases.read();
+  return isPromise(nameMap) ? await nameMap : nameMap;
+}
+
+/**
+ * Write table aliases with an {@link AliasesNameMap} and a provided
+ * {@link NameMapping}, which can support either synchronous or asynchronous
+ * `write()` execution. It will wrap a synchronous result, or wrap an unwrapped
+ * result if asynchronous.
+ * @param aliases An `AliasesNameMap` object to write to.
+ * @param nameMap A `NameMapping` object to write to the `AliasesNameMap`.
+ * @returns A promise containing `void` upon write completion.
+ */
+export async function writeNameMapping(
+  aliases: AliasesNameMap,
+  nameMap: NameMapping
+): Promise<void> {
+  const result = aliases.write(nameMap);
+  return isPromise(result) ? await result : result;
 }

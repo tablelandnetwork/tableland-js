@@ -1,0 +1,49 @@
+{
+  "name": "@tableland/node-helpers",
+  "version": "0.0.1",
+  "description": "Helpers for the @tableland/sdk in a Node.js environment",
+  "repository": "https://github.com/tablelandnetwork/tableland-js",
+  "license": "MIT AND Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "tableland",
+    "sql",
+    "ethereum",
+    "database",
+    "helpers"
+  ],
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "type": "module",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/cjs/index.js",
+      "import": "./dist/esm/index.js",
+      "default": "./dist/esm/index.js"
+    }
+  },
+  "files": [
+    "dist/*",
+    "src/*"
+  ],
+  "scripts": {
+    "prepublishOnly": "npm run build",
+    "test": "mocha --exit",
+    "test:ci": "npm run coverage",
+    "coverage": "c8 --exclude test --exclude dist mocha --exit",
+    "clean": "rm -rf dist coverage",
+    "build:esm": "npx tsc",
+    "build:cjs": "npx tsc -p tsconfig.cjs.json",
+    "build": "npm run build:esm && npm run build:cjs && ./fixup"
+  },
+  "devDependencies": {
+    "@tableland/sdk": "^5.0.0",
+    "tempy": "^3.1.0"
+  }
+}
