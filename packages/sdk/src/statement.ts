@@ -11,6 +11,7 @@ import {
   type PollingController,
   checkWait,
   normalize,
+  readNameMapping,
 } from "./helpers/index.js";
 import { isPollingController } from "./helpers/await.js";
 import {
@@ -112,7 +113,7 @@ export class Statement<S = unknown> {
     const statementWithBindings = this.toString();
     const nameMap =
       typeof this.config.aliases?.read === "function"
-        ? await this.config.aliases.read()
+        ? await readNameMapping(this.config.aliases)
         : undefined;
     const { type, statements, tables } = await normalize(
       statementWithBindings,

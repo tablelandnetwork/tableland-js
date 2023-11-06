@@ -29,6 +29,8 @@ export {
   extractChainId,
   extractSigner,
   prepReadConfig,
+  readNameMapping,
+  writeNameMapping,
 } from "./config.js";
 export {
   type Signer,

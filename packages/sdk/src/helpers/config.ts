@@ -3,6 +3,7 @@ import { type FetchConfig } from "../validator/client/index.js";
 import { type PollingController } from "./await.js";
 import { type ChainName, getBaseUrl } from "./chains.js";
 import { type Signer, type ExternalProvider, getSigner } from "./ethers.js";
+import { isPromise } from "./utils.js";
 
 export interface ReadConfig {
   baseUrl: string;
@@ -103,4 +104,36 @@ export function prepReadConfig(config: Partial<ReadConfig>): FetchConfig {
   }
 
   return { ...config, ...conf };
+}
+
+/**
+ * Read the {@link NameMapping} from an {@link AliasesNameMap}, which can
+ * support either synchronous or asynchronous `read()` execution. It will wrap a
+ * synchronous name mapping result, or wrap an unwrapped name mapping if
+ * asynchronous.
+ * @param aliases An `AliasesNameMap` object.
+ * @returns A promise containing a `NameMapping` object.
+ */
+export async function readNameMapping(
+  aliases: AliasesNameMap
+): Promise<NameMapping> {
+  const nameMap = aliases.read();
+  return isPromise(nameMap) ? await nameMap : nameMap;
+}
+
+/**
+ * Write table aliases with an {@link AliasesNameMap} and a provided
+ * {@link NameMapping}, which can support either synchronous or asynchronous
+ * `write()` execution. It will wrap a synchronous result, or wrap an unwrapped
+ * result if asynchronous.
+ * @param aliases An `AliasesNameMap` object to write to.
+ * @param nameMap A `NameMapping` object to write to the `AliasesNameMap`.
+ * @returns A promise containing `void` upon write completion.
+ */
+export async function writeNameMapping(
+  aliases: AliasesNameMap,
+  nameMap: NameMapping
+): Promise<void> {
+  const result = aliases.write(nameMap);
+  return isPromise(result) ? await result : result;
 }

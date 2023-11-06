@@ -47,3 +47,9 @@ function walk(obj: any): any {
 export function camelize<T>(obj: T): T extends string ? string : Camelize<T> {
   return typeof obj === "string" ? camelCase(obj) : walk(obj);
 }
+
+export function isPromise(arg: any): arg is Promise<any> {
+  return Boolean(
+    arg != null && typeof arg === "object" && typeof arg.then === "function"
+  );
+}
