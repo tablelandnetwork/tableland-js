@@ -1,6 +1,6 @@
 {
   "name": "@tableland/node-helpers",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Helpers for the @tableland/sdk in a Node.js environment",
   "repository": "https://github.com/tablelandnetwork/tableland-js",
   "license": "MIT AND Apache-2.0",
