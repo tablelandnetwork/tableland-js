@@ -1,1 +1,1 @@
-export { jsonFileAliases, findOrCreateAliasesFile } from "./utils";
+export { jsonFileAliases, findOrCreateAliasesFile } from "./utils.js";
