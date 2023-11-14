@@ -49,7 +49,7 @@ describe("chains", function () {
     test("where we make sure a testnet is correctly flagged", function () {
       const testnets: ChainName[] = [
         "sepolia",
-        "arbitrum-goerli",
+        "arbitrum-sepolia",
         "maticmum",
         "optimism-goerli",
         "local-tableland",
@@ -93,7 +93,7 @@ describe("chains", function () {
       strictEqual(getChainId("sepolia"), 11155111);
       strictEqual(getChainId("maticmum"), 80001);
       strictEqual(getChainId("optimism-goerli"), 420);
-      strictEqual(getChainId("arbitrum-goerli"), 421613);
+      strictEqual(getChainId("arbitrum-sepolia"), 421614);
       strictEqual(getChainId("filecoin-calibration"), 314159);
       // Local
       strictEqual(getChainId("localhost"), 31337);
