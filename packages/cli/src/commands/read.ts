@@ -101,7 +101,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
           unwrap: argv.unwrap,
         });
       } catch (err: any) {
-        if (err.message.includes("in JSON at position") as boolean) {
+        if (err.message.includes("JSON at position") as boolean) {
           logger.error("Can't unwrap multiple rows. Use --unwrap=false");
           /* c8 ignore next 3 */
         } else {
