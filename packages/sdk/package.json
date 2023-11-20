@@ -53,11 +53,6 @@
     "dist/**/package.json",
     "src/**/*.ts"
   ],
-  "nx": {
-    "implicitDependencies": [
-      "!@tableland/local"
-    ]
-  },
   "scripts": {
     "prepublishOnly": "npm run build",
     "test": "npm run test:browser && npm run test:mocha",
@@ -81,16 +76,6 @@
     "database"
   ],
   "license": "MIT AND Apache-2.0",
-  "devDependencies": {
-    "@databases/escape-identifier": "^1.0.3",
-    "@databases/sql": "^3.2.0",
-    "@ethersproject/experimental": "^5.7.0",
-    "@playwright/test": "^1.30.0",
-    "d1-orm": "^0.9.0",
-    "drizzle-orm": "^0.29.0",
-    "openapi-typescript": "6.2.4",
-    "typedoc": "^0.25.0"
-  },
   "dependencies": {
     "@async-generators/from-emitter": "^0.3.0",
     "@tableland/evm": "^4.5.0",
