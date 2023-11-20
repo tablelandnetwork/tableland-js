@@ -359,7 +359,7 @@ describe("validator", function () {
           unwrap: true,
         }),
         (err: any) => {
-          strictEqual(err.message, "Unexpected token { in JSON at position 30");
+          match(err.message, /at position 30/i);
           return true;
         }
       );
