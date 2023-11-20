@@ -7,6 +7,6 @@
     "@openzeppelin/hardhat-upgrades": "^1.21.0",
     "@tableland/evm": "^4.5.0",
     "erc721a-upgradeable": "^4.2.2",
-    "hardhat": "^2.14.0"
+    "hardhat": "^2.19.0"
   }
 }
