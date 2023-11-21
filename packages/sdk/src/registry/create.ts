@@ -1,6 +1,6 @@
 import { normalize } from "../helpers/index.js";
 import { type SignerConfig } from "../helpers/config.js";
-import { type ContractTransaction } from "../helpers/ethers.js";
+import { type ContractTransaction, isPolygon } from "../helpers/ethers.js";
 import { validateTableName } from "../helpers/parser.js";
 import { getContractAndOverrides } from "./contract.js";
 
@@ -96,6 +96,14 @@ async function _createOne(
     signer,
     chainId
   );
+  if (isPolygon(chainId)) {
+    const gasLimit = await contract.estimateGas["create(address,string)"](
+      owner,
+      statement,
+      overrides
+    );
+    overrides.gasLimit = Math.floor(gasLimit.toNumber() * 1.2);
+  }
   return await contract["create(address,string)"](owner, statement, overrides);
 }
 
@@ -108,6 +116,14 @@ async function _createMany(
     signer,
     chainId
   );
+  if (isPolygon(chainId)) {
+    const gasLimit = await contract.estimateGas["create(address,string[])"](
+      owner,
+      statements,
+      overrides
+    );
+    overrides.gasLimit = Math.floor(gasLimit.toNumber() * 1.2);
+  }
   return await contract["create(address,string[])"](
     owner,
     statements,

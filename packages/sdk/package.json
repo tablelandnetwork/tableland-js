@@ -1,8 +1,12 @@
 {
   "name": "@tableland/sdk",
-  "version": "5.1.0",
+  "version": "5.1.1",
   "description": "A database client and helpers for the Tableland network",
-  "repository": "https://github.com/tablelandnetwork/tableland-js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tablelandnetwork/tableland-js.git",
+    "directory": "packages/sdk"
+  },
   "publishConfig": {
     "access": "public"
   },

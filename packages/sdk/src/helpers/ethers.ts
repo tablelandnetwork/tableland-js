@@ -29,7 +29,7 @@ export async function getOverrides({
   const opts: Overrides = {};
   const network = await signer.provider?.getNetwork();
   /* c8 ignore next 7 */
-  if (network?.chainId === 137) {
+  if (network && isPolygon(network.chainId)) {
     const feeData = await signer.getFeeData();
     if (feeData.gasPrice != null) {
       opts.gasPrice =
@@ -37,6 +37,15 @@ export async function getOverrides({
     }
   }
   return opts;
+}
+
+/**
+ * Check if a chain is Polygon.
+ * @param chainId The chainId of the network.
+ * @returns A boolean that indicates if the chain is a mainnet/testnet Polygon.
+ */
+export function isPolygon(chainId: number): boolean {
+  return chainId === 137 || chainId === 80001;
 }
 
 /**
