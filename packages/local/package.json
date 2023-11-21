@@ -2,7 +2,11 @@
   "name": "@tableland/local",
   "version": "2.3.0",
   "description": "Tooling to start a sandboxed Tableland network.",
-  "repository": "https://github.com/tablelandnetwork/tableland-js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tablelandnetwork/tableland-js.git",
+    "directory": "packages/local"
+  },
   "license": "MIT AND Apache-2.0",
   "publishConfig": {
     "access": "public"

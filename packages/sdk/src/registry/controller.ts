@@ -1,5 +1,5 @@
 import { type SignerConfig } from "../helpers/config.js";
-import { type ContractTransaction } from "../helpers/ethers.js";
+import { type ContractTransaction, isPolygon } from "../helpers/ethers.js";
 import { type TableIdentifier, getContractSetup } from "./contract.js";
 
 export interface SetParams {
@@ -23,6 +23,16 @@ export async function setController(
   );
   const caller = await signer.getAddress();
   const controller = params.controller;
+  const chainId = await signer.getChainId();
+  if (isPolygon(chainId)) {
+    const gasLimit = await contract.estimateGas.setController(
+      caller,
+      tableId,
+      controller,
+      overrides
+    );
+    overrides.gasLimit = Math.floor(gasLimit.toNumber() * 1.2);
+  }
   return await contract.setController(caller, tableId, controller, overrides);
 }
 
@@ -35,6 +45,15 @@ export async function lockController(
     tableName
   );
   const caller = await signer.getAddress();
+  const chainId = await signer.getChainId();
+  if (isPolygon(chainId)) {
+    const gasLimit = await contract.estimateGas.lockController(
+      caller,
+      tableId,
+      overrides
+    );
+    overrides.gasLimit = Math.floor(gasLimit.toNumber() * 1.2);
+  }
   return await contract.lockController(caller, tableId, overrides);
 }
 

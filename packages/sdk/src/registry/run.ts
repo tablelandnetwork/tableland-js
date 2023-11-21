@@ -1,5 +1,5 @@
 import { type SignerConfig } from "../helpers/config.js";
-import { type ContractTransaction } from "../helpers/ethers.js";
+import { type ContractTransaction, isPolygon } from "../helpers/ethers.js";
 import { validateTableName } from "../helpers/parser.js";
 import {
   getContractAndOverrides,
@@ -84,6 +84,12 @@ async function _mutateOne(
     signer,
     chainId
   );
+  if (isPolygon(chainId)) {
+    const gasLimit = await contract.estimateGas[
+      "mutate(address,uint256,string)"
+    ](caller, tableId, statement, overrides);
+    overrides.gasLimit = Math.floor(gasLimit.toNumber() * 1.2);
+  }
   return await contract["mutate(address,uint256,string)"](
     caller,
     tableId,
@@ -101,6 +107,12 @@ async function _mutateMany(
     signer,
     chainId
   );
+  if (isPolygon(chainId)) {
+    const gasLimit = await contract.estimateGas[
+      "mutate(address,(uint256,string)[])"
+    ](caller, runnables, overrides);
+    overrides.gasLimit = Math.floor(gasLimit.toNumber() * 1.2);
+  }
   return await contract["mutate(address,(uint256,string)[])"](
     caller,
     runnables,
