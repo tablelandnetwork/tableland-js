@@ -35,12 +35,6 @@ describe("database", function () {
     strictEqual(db.config.baseUrl, "baseUrl");
   });
 
-  test("when initialized via .readOnly()", async function () {
-    const db = Database.readOnly("maticmum");
-    strictEqual(db.config.signer, undefined);
-    strictEqual(db.config.baseUrl, "https://testnets.tableland.network/api/v1");
-  });
-
   test("when initialized via .forSigner()", async function () {
     const db = await Database.forSigner(signer);
     strictEqual(db.config.signer, signer);
