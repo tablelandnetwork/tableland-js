@@ -182,12 +182,4 @@ export class Registry {
   async mutate(params: MutateParams): Promise<ContractTransaction> {
     return await mutate(this.config, params);
   }
-
-  /**
-   * Runs a set of SQL statements for `caller` using `runnables`.
-   * @custom:deprecated Using this with a single statement is deprecated. Use `mutate` instead.
-   */
-  async runSQL(params: MutateParams): Promise<ContractTransaction> {
-    return await mutate(this.config, params);
-  }
 }

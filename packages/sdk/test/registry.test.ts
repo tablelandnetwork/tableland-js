@@ -256,40 +256,4 @@ describe("registry", function () {
       strictEqual(rec.transactionHash.length, 66);
     });
   });
-
-  describe(" *deprecated* runSQL()", function () {
-    // CREATE TABLE test_exec (id integer primary key, counter integer, info text)
-    let receipt: MultiEventTransactionReceipt;
-    this.beforeAll(async function () {
-      const tx = await reg.create({
-        chainId: 31337,
-        statement:
-          "create table test_runsql_31337 (id integer primary key, counter integer, info text)",
-      });
-      receipt = await getContractReceipt(tx);
-      notStrictEqual(receipt.tableIds[0], undefined);
-      strictEqual(receipt.chainId, 31337);
-    });
-    test("when insert statement is valid", async function () {
-      const tx = await reg.runSQL({
-        chainId: receipt.chainId,
-        tableId: receipt.tableIds[0],
-        statement: `INSERT INTO test_runsql_${receipt.chainId}_${receipt.tableIds[0]} (counter, info) VALUES (1, 'Tables');`,
-      });
-      const rec = await tx.wait();
-      strictEqual(typeof rec.transactionHash, "string");
-      strictEqual(rec.transactionHash.length, 66);
-    });
-
-    test("when insert statement is valid", async function () {
-      const tx = await reg.runSQL({
-        chainId: receipt.chainId,
-        tableId: receipt.tableIds[0],
-        statement: `UPDATE test_runsql_${receipt.chainId}_${receipt.tableIds[0]} SET counter=2`,
-      });
-      const rec = await tx.wait();
-      strictEqual(typeof rec.transactionHash, "string");
-      strictEqual(rec.transactionHash.length, 66);
-    });
-  });
 });
