@@ -8,12 +8,10 @@ import { wrapResult, wrapExecResult } from "./registry/utils.js";
 import {
   type Config,
   type AutoWaitConfig,
-  type ChainName,
   type PollingController,
   type Signer,
   checkWait,
   extractBaseUrl,
-  getBaseUrl,
   normalize,
   readNameMapping,
   validateTableName,
@@ -22,7 +20,7 @@ import { Statement } from "./statement.js";
 import { execMutateMany, execCreateMany, errorWithCause } from "./lowlevel.js";
 
 /**
- * Database is the primary API for accessing the Tabeland network as a database.
+ * Database is the primary API for accessing the Tableland network as a database.
  * This class provides a small and simple API that will feel very familiar to
  * web2 database users. It includes the concept of prepared statements, SQL
  * parameter binding, execution and query modes, and more. It is actually similar
@@ -40,20 +38,6 @@ export class Database<D = unknown> {
    */
   constructor(config: Config & Partial<AutoWaitConfig> = {}) {
     this.config = config;
-  }
-
-  /**
-   * Create a Database that uses the default baseUrl for a given chain.
-   * @deprecated since 4.0.1, will be deleted in 5.0.0
-   * @param chainNameOrId The name or id of the chain to target.
-   * @returns A Database without a signer configured.
-   */
-  static readOnly(chainNameOrId: ChainName | number): Database {
-    console.warn(
-      "`Database.readOnly()` is a deprecated method, use `new Database()`"
-    );
-    const baseUrl = getBaseUrl(chainNameOrId);
-    return new Database({ baseUrl });
   }
 
   /**
