@@ -1,0 +1,44 @@
+#  (2023-12-14)
+
+
+### Bug Fixes
+
+* **chains:** filter out op goerli staging ([082a313](https://github.com/tablelandnetwork/tableland-js/commit/082a31346b60c7cc67b24b21e0eb8c3a9c73213f))
+* correct dist path + bump dev version ([9a14b64](https://github.com/tablelandnetwork/tableland-js/commit/9a14b648e2b475678e20e3d0a9491b186acaf361))
+* correct interface for create method ([76b3063](https://github.com/tablelandnetwork/tableland-js/commit/76b306392902ff37f69eba3f37dd02b4f4078ff3))
+* fixes [#33](https://github.com/tablelandnetwork/tableland-js/issues/33) by including src in published package ([d17586e](https://github.com/tablelandnetwork/tableland-js/commit/d17586e43157e2866e8a07185a2c7c6a27019cff))
+* include access public ([e9536ac](https://github.com/tablelandnetwork/tableland-js/commit/e9536ac767bd673173b2594f4a48e0b9d610196f))
+* include sub-package files in dist ([c455aac](https://github.com/tablelandnetwork/tableland-js/commit/c455aac42011b011aee493bde972a2b619769d22))
+* mumbai failing to due gas limit issues ([08b7aa2](https://github.com/tablelandnetwork/tableland-js/commit/08b7aa2f26102e71d598798884c92001d3af3268))
+* **node-helpers|cli:** define .js on node-helpers export, bump versions ([0e9c57c](https://github.com/tablelandnetwork/tableland-js/commit/0e9c57cc291a93d6bb116f7506fc8faefa7b1335))
+* **node-helpers:** enforce json filetype for dir & non-existent filename case ([1b927fa](https://github.com/tablelandnetwork/tableland-js/commit/1b927fa66b1040f67b45b796ed62f96547ec52e8))
+* **node-helpers:** remove sdk dep, define duplicative types ([9ad9546](https://github.com/tablelandnetwork/tableland-js/commit/9ad95465264f32c513a6953edcdb5dd348dc1564))
+* **sdk:** D1 API compatability; use opts for db/stmt ([1f310cc](https://github.com/tablelandnetwork/tableland-js/commit/1f310cc1f2025d182a698382adfdae271508220e))
+* **sdk:** handle `first` overload where opts not parsed correctly ([2d7a75e](https://github.com/tablelandnetwork/tableland-js/commit/2d7a75e984d1a102d8956fdb4d345efb94a299cd))
+* update readme ([2e71941](https://github.com/tablelandnetwork/tableland-js/commit/2e71941ff75a36cb252f31dcb92c8c533f34e041))
+* update to latest tableland + provider fix ([d9a13f8](https://github.com/tablelandnetwork/tableland-js/commit/d9a13f81cd7afd419bd5812f92c5838c7b6bc31e))
+
+
+### Features
+
+* add node-helpers package ([bb0bf0a](https://github.com/tablelandnetwork/tableland-js/commit/bb0bf0a9bd03c6368f43bb190a6f1c4332d40bf0))
+* allow rate limited runs without provider ([ee830a4](https://github.com/tablelandnetwork/tableland-js/commit/ee830a4cab41fc4928ee1dee1dcda5e81c669f62))
+* **cli:** dry out get table alias function calls ([d167b90](https://github.com/tablelandnetwork/tableland-js/commit/d167b90298a9c80350cc897cef27e29edc543bdd))
+* export signing tools ([88d4003](https://github.com/tablelandnetwork/tableland-js/commit/88d40039f09627c364571e2b317027e2f7fc2f2e))
+* first commit ([a7f260f](https://github.com/tablelandnetwork/tableland-js/commit/a7f260faceab12d0090cf28a6edd83dd982cc893))
+* gh pages deploy ([6aa63c8](https://github.com/tablelandnetwork/tableland-js/commit/6aa63c8564ef429e0f95e35b3a5074fe8d0d76bf))
+* provide a fallback provider with heavy rate limiting ([492664b](https://github.com/tablelandnetwork/tableland-js/commit/492664bf826f9a0d9e22c916741c7684cceb980b))
+* publish config setup ([4cd5ed6](https://github.com/tablelandnetwork/tableland-js/commit/4cd5ed63c6220a96ff5d1cd1ea15eedab843ea0c))
+* remove Database.readOnly method ([7761d7d](https://github.com/tablelandnetwork/tableland-js/commit/7761d7de1b7ac8909a315713cc9d2997fb712e86))
+* remove runSQL registry method ([d81f772](https://github.com/tablelandnetwork/tableland-js/commit/d81f772c5d1e3d55faa40c64f57de680dc6e00a6))
+* SDK refactor to provide D1Database compatible API plus helper functions/classes for working with validators and registries ([#330](https://github.com/tablelandnetwork/tableland-js/issues/330)) ([d382067](https://github.com/tablelandnetwork/tableland-js/commit/d3820677759c5e976507723c481d4d6463592563))
+* **sdk:** add `isPollingController` helper ([45c66cd](https://github.com/tablelandnetwork/tableland-js/commit/45c66cd0f7a779dbb4515e01a118d6f152a05d67))
+* **sdk:** add per-chain polling info & controller creation ([8196e08](https://github.com/tablelandnetwork/tableland-js/commit/8196e08edff5037fd372969ed0da204a127afa5c))
+* **sdk:** D1 `exec` conformance via `ExecResult`, `wrapExecResult` ([0312010](https://github.com/tablelandnetwork/tableland-js/commit/0312010899de4b0bafa48140b1c9ca308df6d51c))
+* **sdk:** remove jsonFileAliases & refactor tests with node-helpers ([56213c1](https://github.com/tablelandnetwork/tableland-js/commit/56213c1ecc8cdac5987c138e3244724be99e7085))
+* **sdk:** update for D1 type conformance ([4f8d917](https://github.com/tablelandnetwork/tableland-js/commit/4f8d9174f9a6d00ab9d44bdb6d0b57ea46ee9a18))
+* **sdk:** use per-chain controller for receipt ([f29e6ce](https://github.com/tablelandnetwork/tableland-js/commit/f29e6ce497933d980762ce852f89b93b75cf5afb))
+* support etherscan + other fixes ([c892bda](https://github.com/tablelandnetwork/tableland-js/commit/c892bda94a2de8ad45f63992d3768f0b192fbf44))
+
+
+
