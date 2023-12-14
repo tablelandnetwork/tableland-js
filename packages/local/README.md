@@ -10,6 +10,7 @@
 
 ## Table of Contents
 
+- [Table of Contents](#table-of-contents)
 - [Background](#background)
 - [Install](#install)
 - [Usage](#usage)
@@ -240,19 +241,22 @@ Set up a workspace that has all three of these repos cloned into it.
 ```bash
 git clone https://github.com/tablelandnetwork/evm-tableland
 git clone https://github.com/tablelandnetwork/go-tableland
-git clone https://github.com/tablelandnetwork/local-tableland
+git clone https://github.com/tablelandnetwork/tableland-js
 ```
 
 Your workspace should have the following directories:
 
+<!-- prettier-ignore -->
 ```md
 .
 ├── evm-tableland
 ├── go-tableland
-└── local-tableland
+└── tableland-js
+    ├── packages/local
+    ├── ...
 ```
 
-Then, you will want to `cd` into `local-tableland` and create a `tableland.config.js` file by running:
+Then, you will want to `cd` into `packages/local` and create a `tableland.config.js` file by running:
 
 ```bash
 npx local-tableland --init
@@ -262,8 +266,8 @@ This will create `tableland.config.js` in the root of the `local-tableland` dire
 
 ```js
 module.exports = {
-  validatorDir: "../go-tableland",
-  registryDir: "../evm-tableland",
+  validatorDir: "../../../go-tableland",
+  registryDir: "../../../evm-tableland",
   verbose: false,
   silent: false,
 };
@@ -273,6 +277,12 @@ Once this is all set up, you can check if any changes you make to `go-tableland`
 
 ```bash
 npm test
+```
+
+If you make any changes to the code, make sure you also run the linter and prettier before committing:
+
+```shell
+npm run format
 ```
 
 ### Notes

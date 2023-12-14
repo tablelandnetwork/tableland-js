@@ -10,6 +10,7 @@
 
 ## Table of Contents
 
+- [Table of Contents](#table-of-contents)
 - [Background](#background)
 - [Install](#install)
 - [Usage](#usage)
@@ -87,8 +88,17 @@ A configuration file can also be bootstrapped using the `tableland init` command
 Get started with installing and building the project:
 
 ```shell
+git clone git@github.com:tablelandnetwork/tableland-js.git
+cd tableland-js/packages/cli
 npm install
 npm run build
+npm test
+```
+
+If you make any changes to the code, make sure you also run the linter and prettier before committing:
+
+```shell
+npm run format
 ```
 
 ## Contributing
