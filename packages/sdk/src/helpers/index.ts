@@ -50,3 +50,4 @@ export {
   type StatementType,
 } from "./parser.js";
 export { TableEventBus } from "./subscribe.js";
+export { getContractAndOverrides } from "../registry/contract.js";
