@@ -10,6 +10,7 @@
 
 ## Table of Contents
 
+- [Table of Contents](#table-of-contents)
 - [Background](#background)
 - [Install](#install)
 - [Usage](#usage)
@@ -64,11 +65,20 @@ const aliases = await jsonFileAliases("./tableland.aliases.json", true);
 
 ## Development
 
-Get started with installing and building the project:
+Get started with installing, building, and testing the project:
 
 ```shell
+git clone git@github.com:tablelandnetwork/tableland-js.git
+cd tableland-js/packages/node-helpers
 npm install
 npm run build
+npm test
+```
+
+If you make any changes to the code, make sure you also run the linter and prettier before committing:
+
+```shell
+npm run format
 ```
 
 ## Contributing

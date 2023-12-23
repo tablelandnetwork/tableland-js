@@ -10,6 +10,7 @@
 
 ## Table of Contents
 
+- [Table of Contents](#table-of-contents)
 - [Background](#background)
 - [Install](#install)
 - [Usage](#usage)
@@ -222,14 +223,20 @@ See [our own Rigs project](https://github.com/tablelandnetwork/rigs/blob/main/an
 Get started by cloning, installing, building, and testing the project:
 
 ```shell
-git clone git@github.com:tablelandnetwork/js-tableland.git
-cd js-tableland
+git clone git@github.com:tablelandnetwork/tableland-js.git
+cd tableland-js/packages/sdk
 npm install
 npm run build
 npm test
 ```
 
-To run tests in a few of the common browser environments we are using Playwright. Once your code changes are finished you can run the brower tests by doing:
+If you make any changes to the code, make sure you also run the linter and prettier before committing:
+
+```shell
+npm run format
+```
+
+To run tests in a few of the common browser environments we are using Playwright. Once your code changes are finished you can run the browser tests by doing:
 
 - `cd test/browser/server`
 - `npm install`
