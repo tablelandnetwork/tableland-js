@@ -48,7 +48,7 @@
   },
   "license": "MIT AND Apache-2.0",
   "dependencies": {
-    "@ensdomains/ensjs": "3.0.0-alpha.64",
+    "@ensdomains/ensjs": "3.2.0",
     "@tableland/node-helpers": "^0.0.2",
     "@tableland/sdk": "^5.1.1",
     "@tableland/sqlparser": "^1.3.0",
