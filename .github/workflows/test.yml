@@ -53,3 +53,5 @@ jobs:
 
       - name: Test/Coverage 🧪
         run: TEST_TIMEOUT_FACTOR=3 npm test
+        env:
+          INFURA_KEY: ${{ secrets.INFURA_KEY }}

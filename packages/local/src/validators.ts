@@ -17,10 +17,13 @@ const spawnSync = spawn.sync;
 let ORIGINAL_VALIDATOR_CONFIG: string | undefined;
 
 class ValidatorPkg {
-  process?: ChildProcess;
-  validatorDir = resolve(_dirname, "..", "..", "validator");
-  registryPort: number;
   readonly defaultRegistryPort: number = 8545;
+
+  process?: ChildProcess;
+  validatorDir = "";
+  validatorCleanDir = resolve(_dirname, "..", "..", "validator", "clean");
+  validatorForkDir = resolve(_dirname, "..", "..", "validator", "fork");
+  registryPort: number;
 
   constructor(validatorDir?: string, registryPort?: number) {
     if (typeof validatorDir === "string") {
@@ -34,13 +37,18 @@ class ValidatorPkg {
     }
   }
 
-  start(registryAddress?: string): void {
+  start(registryAddress?: string, shouldFork?: boolean): void {
     const binPath = getBinPath();
     if (binPath == null) {
       throw new Error(
         `cannot start with: arch ${process.arch}, platform ${process.platform}`
       );
     }
+    this.validatorDir = shouldFork
+      ? this.validatorForkDir
+      : this.validatorCleanDir;
+
+    // TODO: we need to set the registry address based on the fork, and what chain has been forked
 
     // Get the path to the directory holding the validator config we want to use.
     // Windows looks like C:\Users\tester\Workspaces\test-loc\node_modules\@tableland\local\validator
@@ -74,6 +82,10 @@ class ValidatorPkg {
     ) {
       validatorConfig.Chains[0].Registry.EthEndpoint = `ws://localhost:${this.registryPort}`;
       writeFileSync(configFilePath, JSON.stringify(validatorConfig, null, 2));
+    }
+    if (typeof registryAddress === "string" && registryAddress.trim() !== "") {
+      validatorConfig.Chains[0].Registry.ContractAddress =
+        registryAddress.trim();
     }
 
     // start the validator

@@ -21,8 +21,19 @@ const config: HardhatUserConfig = {
     },
   },
   networks: {
-    // we need automining for the validator event processor to work
     hardhat: {
+      chainId: process.env.FORK_CHAIN_ID
+        ? parseInt(process.env.FORK_CHAIN_ID, 10)
+        : 31337,
+      forking: process.env.FORK_URL
+        ? {
+            url: process.env.FORK_URL,
+            blockNumber: process.env.FORK_BLOCK_NUMBER
+              ? parseInt(process.env.FORK_BLOCK_NUMBER, 10)
+              : undefined,
+          }
+        : undefined,
+      // we need automining for the validator event processor to work
       mining: {
         auto: !(process.env.HARDHAT_DISABLE_AUTO_MINING === "true"),
         interval: [100, 3000],

@@ -36,9 +36,9 @@ packages/sdk/test/validator/backups
 ### local ###
 
 # Validator artifacts
-packages/local/validator/*.db
-packages/local/validator/*.db*
-packages/local/validator/backups
+packages/local/validator/**/*.db
+packages/local/validator/**/*.db*
+packages/local/validator/**/backups
 
 # registry artifacts
 packages/local/registry/.openzeppelin/

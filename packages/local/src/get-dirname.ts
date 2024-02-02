@@ -1,6 +1,7 @@
-// NOTE: this file is only for tests
-import { join } from "node:path";
+// NOTE: this file is only included in the build if compiling to esm
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
 export const getDirname = function (): string {
-  return join(process.cwd(), "dist", "esm");
+  return dirname(fileURLToPath(import.meta.url));
 };
