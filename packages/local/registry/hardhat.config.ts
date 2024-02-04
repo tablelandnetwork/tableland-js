@@ -8,6 +8,51 @@ import {
   proxies,
   TablelandNetworkConfig,
 } from "@tableland/evm/network";
+import { helpers } from "@tableland/sdk";
+
+const networks = {
+  hardhat: {
+    chainId: process.env.FORK_CHAIN_ID
+      ? parseInt(process.env.FORK_CHAIN_ID, 10)
+      : 31337,
+    forking: process.env.FORK_URL
+      ? {
+          url: process.env.FORK_URL,
+          blockNumber: process.env.FORK_BLOCK_NUMBER
+            ? parseInt(process.env.FORK_BLOCK_NUMBER, 10)
+            : undefined,
+        }
+      : undefined,
+    // we need automining for the validator event processor to work
+    mining: {
+      auto: !(process.env.HARDHAT_DISABLE_AUTO_MINING === "true"),
+      interval: [100, 3000],
+    },
+    gas: 40 * 1000 * 1000,
+    allowUnlimitedContractSize: true,
+  },
+  localhost: {
+    url: `http://127.0.0.1:${process.env.HARDHAT_PORT || 8545}`,
+  },
+};
+
+if (process.env.FORK_CHAIN_ID && process.env.FORK_URL) {
+  const chainId = parseInt(process.env.FORK_CHAIN_ID, 10);
+  const chainInfo = helpers.getChainInfo(chainId);
+  const chainName = chainInfo.chainName;
+
+  if (chainName === "matic") {
+    networks.hardhat.chains = {
+      137: {
+        hardforkHistory: {
+          london: 23850000,
+        },
+      },
+    };
+  }
+}
+
+console.log("config object", JSON.stringify(networks, null, 4));
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -20,31 +65,7 @@ const config: HardhatUserConfig = {
       },
     },
   },
-  networks: {
-    hardhat: {
-      chainId: process.env.FORK_CHAIN_ID
-        ? parseInt(process.env.FORK_CHAIN_ID, 10)
-        : 31337,
-      forking: process.env.FORK_URL
-        ? {
-            url: process.env.FORK_URL,
-            blockNumber: process.env.FORK_BLOCK_NUMBER
-              ? parseInt(process.env.FORK_BLOCK_NUMBER, 10)
-              : undefined,
-          }
-        : undefined,
-      // we need automining for the validator event processor to work
-      mining: {
-        auto: !(process.env.HARDHAT_DISABLE_AUTO_MINING === "true"),
-        interval: [100, 3000],
-      },
-      gas: 40 * 1000 * 1000,
-      allowUnlimitedContractSize: true,
-    },
-    localhost: {
-      url: `http://127.0.0.1:${process.env.HARDHAT_PORT || 8545}`,
-    },
-  },
+  networks,
   baseURIs,
   proxies,
 };

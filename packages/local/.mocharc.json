@@ -4,6 +4,7 @@
   "file": ["test/setup.ts"],
   "loader": "ts-node/esm",
   "node-option": [
+    "inspect-brk",
     "experimental-specifier-resolution=node",
     "loader=ts-node/esm",
     "experimental-fetch"

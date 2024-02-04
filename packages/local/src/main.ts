@@ -124,30 +124,29 @@ class LocalTableland {
     // env var, or the config has a fork property.  Either way this means we
     // don't need to deploy the registry, and the validator should listen to
     // a different contract address, specifically the mainnet address.
-    const shouldFork = !!(process.env.FORK_URL ?? config.forkUrl);
+    const shouldFork = !!config.forkUrl;
     const forkChainId = this._getForkChainId(config);
 
-    if (shouldFork) {
-      // default fork chain is mainnet
-      const chainInfo = helpers.getChainInfo(forkChainId);
-      this.registryAddress = chainInfo.contractAddress;
-    }
-
     const hardhatCommandArr = ["hardhat", "node"];
-    const registryEnv: {
+    // eslint-disable-next-line
+    const registryEnv = {
+      ...process.env,
+      HARDHAT_NETWORK: "hardhat",
+      HARDHAT_UNLIMITED_CONTRACT_SIZE: "true",
+    } as {
       HARDHAT_NETWORK: string;
       HARDHAT_UNLIMITED_CONTRACT_SIZE: string;
       FORK_URL: string | undefined;
       FORK_BLOCK_NUMBER: string | undefined;
       FORK_CHAIN_ID: string | undefined;
       TZ?: string | undefined;
-    } = {
-      ...process.env,
-      HARDHAT_NETWORK: "hardhat",
-      HARDHAT_UNLIMITED_CONTRACT_SIZE: "true",
     };
-
+    console.log("should fork:", shouldFork);
     if (config.forkUrl) {
+      // default fork chain is mainnet
+      const chainInfo = helpers.getChainInfo(forkChainId);
+      this.registryAddress = chainInfo.contractAddress;
+
       hardhatCommandArr.push("--fork");
       hardhatCommandArr.push(config.forkUrl);
       registryEnv.FORK_URL = config.forkUrl;
@@ -187,17 +186,18 @@ class LocalTableland {
     await waitForReady(registryReadyEvent, this.initEmitter);
 
     await new Promise((resolve) => setTimeout(resolve, 5000));
+    if (!shouldFork) {
+      this._deployRegistry();
 
-    this._deployRegistry();
-
-    const deployed = await this.#_ensureRegistry();
-    if (!deployed) {
-      throw new Error(
-        "deploying registry contract failed, cannot start network"
-      );
+      const deployed = await this.#_ensureRegistry();
+      if (!deployed) {
+        throw new Error(
+          "deploying registry contract failed, cannot start network"
+        );
+      }
     }
 
-    await this.#_startValidator(shouldFork);
+    await this.#_startValidator(shouldFork, forkChainId);
     await this.#_setReady();
 
     if (this.silent as boolean) return;
@@ -248,7 +248,10 @@ class LocalTableland {
     return code !== "0x";
   }
 
-  async #_startValidator(shouldFork?: boolean): Promise<void> {
+  async #_startValidator(
+    shouldFork?: boolean,
+    chainId?: number
+  ): Promise<void> {
     // Need to determine if we are starting the validator via docker
     // and a local repo, or if are running a binary etc...
     const ValidatorClass = (this.docker as boolean)
@@ -260,7 +263,11 @@ class LocalTableland {
     // run this before starting in case the last instance of the validator didn't get cleanup after
     // this might be needed if a test runner force quits the parent local-tableland process
     this.validator.cleanup();
-    this.validator.start(this.registryAddress, shouldFork);
+    this.validator.start({
+      chainId,
+      registryAddress: this.registryAddress,
+      shouldFork,
+    });
 
     // TODO: It seems like this check isn't sufficient to see if the process is gonna get to a point
     //       where the on error listener can be attached.

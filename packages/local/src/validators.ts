@@ -16,6 +16,12 @@ const spawnSync = spawn.sync;
 // store the Validator config file in memory, so we can restore it during cleanup
 let ORIGINAL_VALIDATOR_CONFIG: string | undefined;
 
+interface StartConfig {
+  chainId?: number;
+  registryAddress?: string;
+  shouldFork?: boolean;
+}
+
 class ValidatorPkg {
   readonly defaultRegistryPort: number = 8545;
 
@@ -37,14 +43,18 @@ class ValidatorPkg {
     }
   }
 
-  start(registryAddress?: string, shouldFork?: boolean): void {
+  start(config: StartConfig): void {
+    console.log(
+      "starting validator with conf:",
+      JSON.stringify(config, null, 4)
+    );
     const binPath = getBinPath();
     if (binPath == null) {
       throw new Error(
         `cannot start with: arch ${process.arch}, platform ${process.platform}`
       );
     }
-    this.validatorDir = shouldFork
+    this.validatorDir = config.shouldFork
       ? this.validatorForkDir
       : this.validatorCleanDir;
 
@@ -81,12 +91,18 @@ class ValidatorPkg {
       `ws://localhost:${this.registryPort}`
     ) {
       validatorConfig.Chains[0].Registry.EthEndpoint = `ws://localhost:${this.registryPort}`;
-      writeFileSync(configFilePath, JSON.stringify(validatorConfig, null, 2));
     }
-    if (typeof registryAddress === "string" && registryAddress.trim() !== "") {
+    if (
+      typeof config.registryAddress === "string" &&
+      config.registryAddress.trim() !== ""
+    ) {
       validatorConfig.Chains[0].Registry.ContractAddress =
-        registryAddress.trim();
+        config.registryAddress.trim();
     }
+    if (typeof config.chainId === "number") {
+      validatorConfig.Chains[0].ChainID = config.chainId;
+    }
+    writeFileSync(configFilePath, JSON.stringify(validatorConfig, null, 2));
 
     // start the validator
     this.process = spawn(binPath, ["--dir", validatorUri], {
@@ -153,8 +169,8 @@ class ValidatorDev {
     }
   }
 
-  start(registryAddress?: string): void {
-    if (typeof registryAddress !== "string") {
+  start(config: StartConfig): void {
+    if (typeof config.registryAddress !== "string") {
       throw new Error("must provide registry address");
     }
     // Add the registry address to the Validator config
@@ -182,7 +198,7 @@ class ValidatorDev {
       validatorConfig.Chains[0].Registry.EthEndpoint = `ws://localhost:${this.registryPort}`;
     }
 
-    validatorConfig.Chains[0].Registry.ContractAddress = registryAddress;
+    validatorConfig.Chains[0].Registry.ContractAddress = config.registryAddress;
 
     writeFileSync(configFilePath, JSON.stringify(validatorConfig, null, 2));
 

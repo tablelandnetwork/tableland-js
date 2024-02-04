@@ -130,11 +130,6 @@ export interface components {
       readonly constraints?: readonly (string)[];
     };
     readonly VersionInfo: {
-      /**
-       * Format: int32 
-       * @example 0
-       */
-      readonly version?: number;
       /** @example 79688910d4689dcc0991a0d8eb9d988200586d8f */
       readonly git_commit?: string;
       /** @example foo/experimentalfeature */
