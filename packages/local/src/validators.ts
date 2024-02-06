@@ -44,10 +44,6 @@ class ValidatorPkg {
   }
 
   start(config: StartConfig): void {
-    console.log(
-      "starting validator with conf:",
-      JSON.stringify(config, null, 4)
-    );
     const binPath = getBinPath();
     if (binPath == null) {
       throw new Error(
@@ -57,8 +53,6 @@ class ValidatorPkg {
     this.validatorDir = config.shouldFork
       ? this.validatorForkDir
       : this.validatorCleanDir;
-
-    // TODO: we need to set the registry address based on the fork, and what chain has been forked
 
     // Get the path to the directory holding the validator config we want to use.
     // Windows looks like C:\Users\tester\Workspaces\test-loc\node_modules\@tableland\local\validator
@@ -92,6 +86,7 @@ class ValidatorPkg {
     ) {
       validatorConfig.Chains[0].Registry.EthEndpoint = `ws://localhost:${this.registryPort}`;
     }
+    // If we are using a fork the registry address will change
     if (
       typeof config.registryAddress === "string" &&
       config.registryAddress.trim() !== ""
@@ -99,7 +94,6 @@ class ValidatorPkg {
       validatorConfig.Chains[0].Registry.ContractAddress =
         config.registryAddress.trim();
     }
-    console.log("validator config.chainId", config.chainId);
     if (typeof config.chainId === "number") {
       validatorConfig.Chains[0].ChainID = config.chainId;
     }

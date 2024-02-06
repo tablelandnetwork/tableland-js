@@ -52,8 +52,6 @@ if (process.env.FORK_CHAIN_ID && process.env.FORK_URL) {
   }
 }
 
-console.log("config object", JSON.stringify(networks, null, 4));
-
 const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.19",

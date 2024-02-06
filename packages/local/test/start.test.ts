@@ -106,7 +106,7 @@ describe("startup and shutdown", function () {
     test("successfully starts and works with SDK", async function () {
       const customPort = 9999;
       lt = new LocalTableland({
-        silent: false,
+        silent: true,
         registryPort: customPort,
       });
       // Make sure it is not in use

@@ -59,7 +59,7 @@ class LocalTableland {
   async start(): Promise<void> {
     const configFile = await getConfigFile();
     const config = buildConfig({ ...configFile, ...this.config });
-    console.log("start config:", config);
+
     if (typeof config.validatorDir === "string")
       this.validatorDir = config.validatorDir;
     if (
