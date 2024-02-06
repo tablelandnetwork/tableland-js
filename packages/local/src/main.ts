@@ -123,7 +123,7 @@ class LocalTableland {
     // There's two ways of signaling a fork should be used. The `FORK_URL`
     // env var, or the config has a fork property.  Either way this means we
     // don't need to deploy the registry, and the validator should listen to
-    // a different contract address, specifically the mainnet address.
+    // a different address, specifically the address of the forked chain.
     const shouldFork = !!config.forkUrl;
     const forkChainId = this._getForkChainId(config);
 
@@ -191,6 +191,10 @@ class LocalTableland {
     await waitForReady(registryReadyEvent, this.initEmitter);
 
     await new Promise((resolve) => setTimeout(resolve, 5000));
+
+    // If we are starting a fork, there is no need to deploy since the contract
+    // is already in the chain state. Note that folks must choose a block after
+    // the beginning of the tableland network.
     if (!shouldFork) {
       this._deployRegistry();
 
@@ -204,7 +208,8 @@ class LocalTableland {
 
     await this.#_startValidator(
       shouldFork,
-      shouldFork ? forkChainId : undefined
+      // if a fork url is provided, but not a chain id we default to homestead
+      shouldFork ? forkChainId ?? 1 : undefined
     );
     await this.#_setReady();
 
@@ -229,9 +234,10 @@ class LocalTableland {
     return typeof chainId !== "number" || isNaN(chainId) ? 1 : chainId;
   }
 
-  // note: Tests are using sinon to stub this method. Because typescript compiles ecmascript
-  //       private features, i.e. hash syntax, in a way that does not work with sinon we must
-  //       use the ts private modifier here in order to test the failure to deploy the registry.
+  // note: Tests are using sinon to stub this method. Because typescript
+  //    compiles ecmascript private features, i.e. hash syntax, in a way that
+  //    does not work with sinon we must use the ts private modifier here in
+  //    order to test the failure to deploy the registry.
   private _deployRegistry(): void {
     // Deploy the Registry to the Hardhat node
     logSync(
@@ -268,17 +274,20 @@ class LocalTableland {
 
     this.validator = new ValidatorClass(this.validatorDir, this.registryPort);
 
-    // run this before starting in case the last instance of the validator didn't get cleanup after
-    // this might be needed if a test runner force quits the parent local-tableland process
+    // run this before starting in case the last instance of the validator
+    // didn't get cleanup after this might be needed if a test runner force
+    // quits the parent local-tableland process
     this.validator.cleanup();
+    // shouldFork and chainId are optional, and the validator.start method
+    // handles parsing them and filling in with defaults
     this.validator.start({
       chainId,
       registryAddress: this.registryAddress,
       shouldFork,
     });
 
-    // TODO: It seems like this check isn't sufficient to see if the process is gonna get to a point
-    //       where the on error listener can be attached.
+    // TODO: It seems like this check isn't sufficient to see if the process is
+    //     gonna get to a point where the on error listener can be attached.
     if (this.validator.process == null) {
       throw new Error("could not start Validator process");
     }
@@ -356,13 +365,14 @@ class LocalTableland {
       if (this.registry == null) return resolve();
 
       this.registry.once("close", () => resolve());
-      // If this Class is imported and run by a test runner then the ChildProcess instances are
-      // sub-processes of a ChildProcess instance which means in order to kill them in a way that
-      // enables graceful shut down they have to run in detached mode and be killed by the pid
+      // If this Class is imported and run by a test runner then the
+      // ChildProcess instances are sub-processes of a ChildProcess instance,
+      // which means in order to kill them in a way that enables graceful shut
+      // down they have to run in detached mode and be killed by the pid.
 
       // Although this shouldn't be an issue, catch an error if the registry
-      // process was already killed—it *is* possible with the validator process
-      // but doesn't seem to happen with the Registry
+      // process was already killed. It *is* possible with the validator
+      // process but doesn't seem to happen with the Registry.
       try {
         // @ts-expect-error pid is possibly undefined, which is fine
         process.kill(-this.registry.pid);
