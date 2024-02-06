@@ -2,12 +2,13 @@ import "dotenv/config";
 import chai from "chai";
 import { getAccounts, getDatabase } from "../dist/esm/util.js";
 import { LocalTableland } from "../dist/esm/main.js";
+import { TEST_TIMEOUT_FACTOR } from "./setup.js";
 
 const expect = chai.expect;
 // const localTablelandChainId = 1; // mainnet
 
 describe("Starting a Fork", function () {
-  this.timeout(30000);
+  this.timeout(30000 * TEST_TIMEOUT_FACTOR);
 
   describe("mainnet", function () {
     const lt = new LocalTableland({
@@ -21,7 +22,7 @@ describe("Starting a Fork", function () {
 
     before(async function () {
       // need to allow the history to be materialized in the Validator
-      this.timeout(60000);
+      this.timeout(60000 * TEST_TIMEOUT_FACTOR);
 
       await lt.start();
       await new Promise((resolve) =>
@@ -108,7 +109,7 @@ describe("Starting a Fork", function () {
 
     before(async function () {
       // need to allow the history to be materialized in the Validator
-      this.timeout(90000);
+      this.timeout(90000 * TEST_TIMEOUT_FACTOR);
 
       await lt.start();
       await new Promise((resolve) =>
@@ -194,7 +195,7 @@ describe("Starting a Fork", function () {
 
     before(async function () {
       // need to allow the history to be materialized in the Validator
-      this.timeout(90000);
+      this.timeout(90000 * TEST_TIMEOUT_FACTOR);
 
       await lt.start();
       await new Promise((resolve) =>
@@ -280,7 +281,7 @@ describe("Starting a Fork", function () {
 
     before(async function () {
       // need to allow the history to be materialized in the Validator
-      this.timeout(90000);
+      this.timeout(90000 * TEST_TIMEOUT_FACTOR);
 
       await lt.start();
       await new Promise((resolve) =>
@@ -376,7 +377,7 @@ describe("Starting a Fork", function () {
 
     before(async function () {
       // need to allow the history to be materialized in the Validator
-      this.timeout(90000);
+      this.timeout(90000 * TEST_TIMEOUT_FACTOR);
 
       await lt.start();
       await new Promise((resolve) =>
