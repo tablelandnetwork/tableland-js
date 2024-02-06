@@ -59,7 +59,7 @@ class LocalTableland {
   async start(): Promise<void> {
     const configFile = await getConfigFile();
     const config = buildConfig({ ...configFile, ...this.config });
-
+    console.log("start config:", config);
     if (typeof config.validatorDir === "string")
       this.validatorDir = config.validatorDir;
     if (
@@ -127,7 +127,12 @@ class LocalTableland {
     const shouldFork = !!config.forkUrl;
     const forkChainId = this._getForkChainId(config);
 
-    const hardhatCommandArr = ["hardhat", "node"];
+    const hardhatCommandArr = [
+      "hardhat",
+      "node",
+      "--port",
+      this.registryPort.toString(),
+    ];
     // eslint-disable-next-line
     const registryEnv = {
       ...process.env,
@@ -141,7 +146,7 @@ class LocalTableland {
       FORK_CHAIN_ID: string | undefined;
       TZ?: string | undefined;
     };
-    console.log("should fork:", shouldFork);
+
     if (config.forkUrl) {
       // default fork chain is mainnet
       const chainInfo = helpers.getChainInfo(forkChainId);
@@ -197,7 +202,10 @@ class LocalTableland {
       }
     }
 
-    await this.#_startValidator(shouldFork, forkChainId);
+    await this.#_startValidator(
+      shouldFork,
+      shouldFork ? forkChainId : undefined
+    );
     await this.#_setReady();
 
     if (this.silent as boolean) return;

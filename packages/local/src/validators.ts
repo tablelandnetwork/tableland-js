@@ -99,6 +99,7 @@ class ValidatorPkg {
       validatorConfig.Chains[0].Registry.ContractAddress =
         config.registryAddress.trim();
     }
+    console.log("validator config.chainId", config.chainId);
     if (typeof config.chainId === "number") {
       validatorConfig.Chains[0].ChainID = config.chainId;
     }
