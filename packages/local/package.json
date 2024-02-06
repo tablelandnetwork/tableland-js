@@ -44,7 +44,8 @@
     "registry/contracts/*",
     "registry/scripts/*",
     "validator/bin/*",
-    "validator/config.json"
+    "validator/clean/config.json",
+    "validator/fork/config.json"
   ],
   "scripts": {
     "postinstall": "cd registry && npm install",
