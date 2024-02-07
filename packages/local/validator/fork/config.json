@@ -27,7 +27,7 @@
     "Debug": true
   },
   "Analytics": {
-    "FetchExtraBlockInfo": true
+    "FetchExtraBlockInfo": false
   },
   "Backup": {
     "Enabled": false

@@ -27,7 +27,7 @@
     "Debug": true
   },
   "Analytics": {
-    "FetchExtraBlockInfo": true
+    "FetchExtraBlockInfo": false
   },
   "Backup": {
     "Enabled": false
@@ -41,7 +41,7 @@
       "ChainID": 31337,
       "AllowTransactionRelay": true,
       "Registry": {
-        "EthEndpoint": "ws://localhost:8545",
+        "EthEndpoint": "ws://localhost:9999",
         "ContractAddress": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512"
       },
       "Signer": {
