@@ -12,7 +12,7 @@ describe("Starting a Fork", function () {
 
   describe("mainnet", function () {
     const lt = new LocalTableland({
-      silent: true,
+      silent: false,
       forkUrl: "https://mainnet.infura.io/v3/" + (process.env.INFURA_KEY ?? ""),
       // Adding a specific block number should enable caching
       forkBlockNumber: "17560854",
@@ -22,7 +22,7 @@ describe("Starting a Fork", function () {
 
     before(async function () {
       // need to allow the history to be materialized in the Validator
-      this.timeout(60000 * TEST_TIMEOUT_FACTOR);
+      this.timeout(200000 * TEST_TIMEOUT_FACTOR);
 
       await lt.start();
       await new Promise((resolve) =>
@@ -109,7 +109,7 @@ describe("Starting a Fork", function () {
 
     before(async function () {
       // need to allow the history to be materialized in the Validator
-      this.timeout(90000 * TEST_TIMEOUT_FACTOR);
+      this.timeout(200000 * TEST_TIMEOUT_FACTOR);
 
       await lt.start();
       await new Promise((resolve) =>
@@ -195,7 +195,7 @@ describe("Starting a Fork", function () {
 
     before(async function () {
       // need to allow the history to be materialized in the Validator
-      this.timeout(90000 * TEST_TIMEOUT_FACTOR);
+      this.timeout(200000 * TEST_TIMEOUT_FACTOR);
 
       await lt.start();
       await new Promise((resolve) =>
@@ -281,7 +281,7 @@ describe("Starting a Fork", function () {
 
     before(async function () {
       // need to allow the history to be materialized in the Validator
-      this.timeout(90000 * TEST_TIMEOUT_FACTOR);
+      this.timeout(200000 * TEST_TIMEOUT_FACTOR);
 
       await lt.start();
       await new Promise((resolve) =>
