@@ -70,7 +70,7 @@
     "cross-spawn": "^7.0.3",
     "dotenv": "^16.4.1",
     "enquirer": "^2.3.6",
-    "ethers": "^5.7.2",
+    "ethers": "^6.10.0",
     "shelljs": "^0.8.5",
     "yargs": "^17.5.1"
   }
