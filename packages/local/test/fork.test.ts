@@ -12,7 +12,7 @@ describe("Starting a Fork", function () {
 
   describe("mainnet", function () {
     const lt = new LocalTableland({
-      silent: false,
+      silent: true,
       forkUrl: "https://mainnet.infura.io/v3/" + (process.env.INFURA_KEY ?? ""),
       // Adding a specific block number should enable caching
       forkBlockNumber: "17560854",
