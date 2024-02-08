@@ -28,24 +28,33 @@ export interface ConfigDescriptor {
   env:
     | "VALIDATOR_DIR"
     | "REGISTRY_DIR"
+    | "REGISTRY_PORT"
     | "VERBOSE"
     | "SILENT"
     | "DOCKER"
-    | "REGISTRY_PORT";
+    | "FORK_URL"
+    | "FORK_BLOCK_NUMBER"
+    | "FORK_CHAIN_ID";
   file:
     | "validatorDir"
     | "registryDir"
+    | "registryPort"
     | "verbose"
     | "silent"
     | "docker"
-    | "registryPort";
+    | "forkUrl"
+    | "forkBlockNumber"
+    | "forkChainId";
   arg:
     | "validator"
     | "registry"
+    | "registryPort"
     | "verbose"
     | "silent"
     | "docker"
-    | "registryPort";
+    | "forkUrl"
+    | "forkBlockNumber"
+    | "forkChainId";
   isPath: boolean;
 }
 
@@ -97,6 +106,27 @@ const configDescriptors: ConfigDescriptor[] = [
     arg: "registryPort",
     isPath: false,
   },
+  {
+    name: "forkUrl",
+    env: "FORK_URL",
+    file: "forkUrl",
+    arg: "forkUrl",
+    isPath: false,
+  },
+  {
+    name: "forkBlockNumber",
+    env: "FORK_BLOCK_NUMBER",
+    file: "forkBlockNumber",
+    arg: "forkBlockNumber",
+    isPath: false,
+  },
+  {
+    name: "forkChainId",
+    env: "FORK_CHAIN_ID",
+    file: "forkChainId",
+    arg: "forkChainId",
+    isPath: false,
+  },
 ];
 
 /**
@@ -121,6 +151,13 @@ export interface Config {
    */
   registryDir?: string;
   /**
+   * Use a custom Registry hardhat port, e.g., `http://127.0.0.1:<registryPort>`.
+   * Note that clients will need to be configured to use this port over the
+   * default port, e.g., connect to `http://127.0.0.1:<registryPort>`
+   * instead of `http://127.0.0.1:8545`.
+   */
+  registryPort?: number;
+  /**
    * Use Docker to run the Validator.
    */
   docker?: boolean;
@@ -133,12 +170,14 @@ export interface Config {
    */
   silent?: boolean;
   /**
-   * Use a custom Registry hardhat port, e.g., `http://127.0.0.1:<registryPort>`.
-   * Note that clients will need to be configured to use this port over the
-   * default port, e.g., connect to `http://127.0.0.1:<registryPort>`
-   * instead of `http://127.0.0.1:8545`.
+   * url of provider that will enable forking
    */
-  registryPort?: number;
+  forkUrl?: string;
+  /**
+   * block number to fork from
+   */
+  forkBlockNumber?: string;
+  forkChainId?: string;
 }
 
 export const buildConfig = function (config: Config): Config {

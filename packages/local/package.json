@@ -1,6 +1,6 @@
 {
   "name": "@tableland/local",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "description": "Tooling to start a sandboxed Tableland network.",
   "repository": {
     "type": "git",
@@ -44,7 +44,8 @@
     "registry/contracts/*",
     "registry/scripts/*",
     "validator/bin/*",
-    "validator/config.json"
+    "validator/clean/config.json",
+    "validator/fork/config.json"
   ],
   "scripts": {
     "postinstall": "cd registry && npm install",
@@ -67,6 +68,7 @@
     "@tableland/sdk": "^5.1.0",
     "@tableland/validator": "^1.8.1",
     "cross-spawn": "^7.0.3",
+    "dotenv": "^16.4.1",
     "enquirer": "^2.3.6",
     "ethers": "^5.7.2",
     "shelljs": "^0.8.5",

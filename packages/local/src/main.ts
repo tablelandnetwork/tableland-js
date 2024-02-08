@@ -6,6 +6,7 @@ import { EventEmitter } from "node:events";
 import spawn from "cross-spawn";
 import shell from "shelljs";
 import { getDefaultProvider } from "ethers";
+import { helpers } from "@tableland/sdk";
 import { chalk } from "./chalk.js";
 import { ValidatorDev, ValidatorPkg } from "./validators.js";
 import {
@@ -29,19 +30,17 @@ import {
 
 const spawnSync = spawn.sync;
 
-// TODO: maybe this can be parsed out of the deploy process?
-// Since it's always the same address just hardcoding for now.
-const registryAddress = "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512";
-
 class LocalTableland {
+  readonly defaultRegistryPort: number = 8545;
+
+  #_readyResolves: Array<(value: unknown) => any> = [];
   config;
   initEmitter;
   ready: boolean = false;
-  #_readyResolves: Array<(value: unknown) => any> = [];
+  // default registry address when deployed to clean hardhat chain
+  registryAddress: string = "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512";
   registry?: ChildProcess;
   validator?: ValidatorDev | ValidatorPkg;
-  readonly defaultRegistryPort: number = 8545;
-
   validatorDir?: string;
   registryDir?: string;
   docker?: boolean;
@@ -121,19 +120,56 @@ class LocalTableland {
     process.env.HARDHAT_UNLIMITED_CONTRACT_SIZE = "true";
     process.env.HARDHAT_PORT = this.registryPort.toString();
 
-    // Run a local hardhat node
-    this.registry = spawn(
-      isWindows() ? "npx.cmd" : "npx",
-      ["hardhat", "node", "--port", this.registryPort.toString()], // Use a custom hardhat port
-      {
-        // we can't run in windows if we use detached mode
-        detached: !isWindows(),
-        cwd: this.registryDir,
-        env: {
-          ...process.env,
-        },
+    // There's two ways of signaling a fork should be used. The `FORK_URL`
+    // env var, or the config has a fork property.  Either way this means we
+    // don't need to deploy the registry, and the validator should listen to
+    // a different address, specifically the address of the forked chain.
+    const shouldFork = !!config.forkUrl;
+    const forkChainId = this._getForkChainId(config);
+
+    const hardhatCommandArr = [
+      "hardhat",
+      "node",
+      "--port",
+      this.registryPort.toString(),
+    ];
+    // eslint-disable-next-line
+    const registryEnv = {
+      ...process.env,
+      HARDHAT_NETWORK: "hardhat",
+      HARDHAT_UNLIMITED_CONTRACT_SIZE: "true",
+    } as {
+      HARDHAT_NETWORK: string;
+      HARDHAT_UNLIMITED_CONTRACT_SIZE: string;
+      FORK_URL: string | undefined;
+      FORK_BLOCK_NUMBER: string | undefined;
+      FORK_CHAIN_ID: string | undefined;
+      TZ?: string | undefined;
+    };
+
+    if (config.forkUrl) {
+      // default fork chain is mainnet
+      const chainInfo = helpers.getChainInfo(forkChainId);
+      this.registryAddress = chainInfo.contractAddress;
+
+      hardhatCommandArr.push("--fork");
+      hardhatCommandArr.push(config.forkUrl);
+      registryEnv.FORK_URL = config.forkUrl;
+      registryEnv.FORK_CHAIN_ID = forkChainId.toString();
+      if (config.forkBlockNumber) {
+        hardhatCommandArr.push("--fork-block-number");
+        hardhatCommandArr.push(config.forkBlockNumber);
+        registryEnv.FORK_BLOCK_NUMBER = config.forkBlockNumber;
       }
-    );
+    }
+
+    // Run a local hardhat node
+    this.registry = spawn(isWindows() ? "npx.cmd" : "npx", hardhatCommandArr, {
+      // we can't run in windows if we use detached mode
+      detached: !isWindows(),
+      cwd: this.registryDir,
+      env: registryEnv,
+    });
 
     this.registry.on("error", (err) => {
       throw new Error(`registry errored with: ${err.toString()}`);
@@ -156,16 +192,25 @@ class LocalTableland {
 
     await new Promise((resolve) => setTimeout(resolve, 5000));
 
-    this._deployRegistry();
+    // If we are starting a fork, there is no need to deploy since the contract
+    // is already in the chain state. Note that folks must choose a block after
+    // the beginning of the tableland network.
+    if (!shouldFork) {
+      this._deployRegistry();
 
-    const deployed = await this.#_ensureRegistry();
-    if (!deployed) {
-      throw new Error(
-        "deploying registry contract failed, cannot start network"
-      );
+      const deployed = await this.#_ensureRegistry();
+      if (!deployed) {
+        throw new Error(
+          "deploying registry contract failed, cannot start network"
+        );
+      }
     }
 
-    await this.#_startValidator();
+    await this.#_startValidator(
+      shouldFork,
+      // if a fork url is provided, but not a chain id we default to homestead
+      shouldFork ? forkChainId ?? 1 : undefined
+    );
     await this.#_setReady();
 
     if (this.silent as boolean) return;
@@ -180,9 +225,19 @@ class LocalTableland {
     console.log("\n\n*************************************\n");
   }
 
-  // note: Tests are using sinon to stub this method. Because typescript compiles ecmascript
-  //       private features, i.e. hash syntax, in a way that does not work with sinon we must
-  //       use the ts private modifier here in order to test the failure to deploy the registry.
+  private _getForkChainId(config: Config): number {
+    const rawChainId = process.env.FORK_CHAIN_ID ?? config.forkChainId;
+    if (typeof rawChainId !== "string" && typeof rawChainId !== "number") {
+      return 1;
+    }
+    const chainId = parseInt(rawChainId, 10);
+    return typeof chainId !== "number" || isNaN(chainId) ? 1 : chainId;
+  }
+
+  // note: Tests are using sinon to stub this method. Because typescript
+  //    compiles ecmascript private features, i.e. hash syntax, in a way that
+  //    does not work with sinon we must use the ts private modifier here in
+  //    order to test the failure to deploy the registry.
   private _deployRegistry(): void {
     // Deploy the Registry to the Hardhat node
     logSync(
@@ -201,13 +256,16 @@ class LocalTableland {
     const provider = getDefaultProvider(
       `http://127.0.0.1:${this.registryPort}`
     );
-    const code = await provider.getCode(registryAddress);
+    const code = await provider.getCode(this.registryAddress);
 
     // if the contract exists, and is not empty, code will not be equal to 0x
     return code !== "0x";
   }
 
-  async #_startValidator(): Promise<void> {
+  async #_startValidator(
+    shouldFork?: boolean,
+    chainId?: number
+  ): Promise<void> {
     // Need to determine if we are starting the validator via docker
     // and a local repo, or if are running a binary etc...
     const ValidatorClass = (this.docker as boolean)
@@ -216,13 +274,20 @@ class LocalTableland {
 
     this.validator = new ValidatorClass(this.validatorDir, this.registryPort);
 
-    // run this before starting in case the last instance of the validator didn't get cleanup after
-    // this might be needed if a test runner force quits the parent local-tableland process
+    // run this before starting in case the last instance of the validator
+    // didn't get cleanup after this might be needed if a test runner force
+    // quits the parent local-tableland process
     this.validator.cleanup();
-    this.validator.start(registryAddress);
+    // shouldFork and chainId are optional, and the validator.start method
+    // handles parsing them and filling in with defaults
+    this.validator.start({
+      chainId,
+      registryAddress: this.registryAddress,
+      shouldFork,
+    });
 
-    // TODO: It seems like this check isn't sufficient to see if the process is gonna get to a point
-    //       where the on error listener can be attached.
+    // TODO: It seems like this check isn't sufficient to see if the process is
+    //     gonna get to a point where the on error listener can be attached.
     if (this.validator.process == null) {
       throw new Error("could not start Validator process");
     }
@@ -300,13 +365,14 @@ class LocalTableland {
       if (this.registry == null) return resolve();
 
       this.registry.once("close", () => resolve());
-      // If this Class is imported and run by a test runner then the ChildProcess instances are
-      // sub-processes of a ChildProcess instance which means in order to kill them in a way that
-      // enables graceful shut down they have to run in detached mode and be killed by the pid
+      // If this Class is imported and run by a test runner then the
+      // ChildProcess instances are sub-processes of a ChildProcess instance,
+      // which means in order to kill them in a way that enables graceful shut
+      // down they have to run in detached mode and be killed by the pid.
 
       // Although this shouldn't be an issue, catch an error if the registry
-      // process was already killed—it *is* possible with the validator process
-      // but doesn't seem to happen with the Registry
+      // process was already killed. It *is* possible with the validator
+      // process but doesn't seem to happen with the Registry.
       try {
         // @ts-expect-error pid is possibly undefined, which is fine
         process.kill(-this.registry.pid);
