@@ -50,9 +50,10 @@ class ValidatorPkg {
         `cannot start with: arch ${process.arch}, platform ${process.platform}`
       );
     }
-    this.validatorDir = config.shouldFork
-      ? this.validatorForkDir
-      : this.validatorCleanDir;
+
+    this.validatorDir =
+      this.validatorDir ||
+      (config.shouldFork ? this.validatorForkDir : this.validatorCleanDir);
 
     // Get the path to the directory holding the validator config we want to use.
     // Windows looks like C:\Users\tester\Workspaces\test-loc\node_modules\@tableland\local\validator
