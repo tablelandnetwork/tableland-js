@@ -44,8 +44,8 @@ export function getLink(chain: helpers.ChainName, hash: string): string {
     }
     return `https://polygonscan.com/tx/${hash}`;
   } else if (chain.includes("optimism")) {
-    if (chain.includes("goerli")) {
-      return `https://goerli-optimism.etherscan.io/tx/${hash}`;
+    if (chain.includes("sepolia")) {
+      return `https://sepolia-optimism.etherscan.io/tx/${hash}`;
     }
     return `https://optimistic.etherscan.io/tx/${hash}`;
   } else if (chain.includes("arbitrum")) {
