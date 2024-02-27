@@ -26,7 +26,7 @@ describe("Starting a Fork", function () {
 
       await lt.start();
       await new Promise((resolve) =>
-        setTimeout(() => resolve(undefined), 30000)
+        setTimeout(() => resolve(undefined), 30000 * TEST_TIMEOUT_FACTOR)
       );
     });
 
@@ -113,7 +113,7 @@ describe("Starting a Fork", function () {
 
       await lt.start();
       await new Promise((resolve) =>
-        setTimeout(() => resolve(undefined), 60000)
+        setTimeout(() => resolve(undefined), 60000 * TEST_TIMEOUT_FACTOR)
       );
     });
 
@@ -183,7 +183,7 @@ describe("Starting a Fork", function () {
 
   describe("optimism", function () {
     const lt = new LocalTableland({
-      silent: true,
+      silent: false,
       forkUrl:
         "https://optimism-mainnet.infura.io/v3/" +
         (process.env.INFURA_KEY ?? ""),
@@ -199,7 +199,7 @@ describe("Starting a Fork", function () {
 
       await lt.start();
       await new Promise((resolve) =>
-        setTimeout(() => resolve(undefined), 60000)
+        setTimeout(() => resolve(undefined), 60000 * TEST_TIMEOUT_FACTOR)
       );
     });
 
@@ -285,7 +285,7 @@ describe("Starting a Fork", function () {
 
       await lt.start();
       await new Promise((resolve) =>
-        setTimeout(() => resolve(undefined), 60000)
+        setTimeout(() => resolve(undefined), 60000 * TEST_TIMEOUT_FACTOR)
       );
     });
 
@@ -381,7 +381,7 @@ describe("Starting a Fork", function () {
 
       await lt.start();
       await new Promise((resolve) =>
-        setTimeout(() => resolve(undefined), 60000)
+        setTimeout(() => resolve(undefined), 60000 * TEST_TIMEOUT_FACTOR)
       );
     });
 

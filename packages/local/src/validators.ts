@@ -150,7 +150,11 @@ class ValidatorPkg {
     ];
 
     for (const filepath of dbFiles) {
-      shell.rm("-f", filepath);
+      try {
+        shell.rm("-f", filepath);
+      } catch (err) {
+        console.log("validator cleanup:", err);
+      }
     }
 
     // reset the Validator config file in case it was modified with a custom
