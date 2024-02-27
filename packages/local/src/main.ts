@@ -277,7 +277,7 @@ class LocalTableland {
     // run this before starting in case the last instance of the validator
     // didn't get cleanup after this might be needed if a test runner force
     // quits the parent local-tableland process
-    this.validator.cleanup();
+    this.validator.cleanup(this.validatorDir);
     // shouldFork and chainId are optional, and the validator.start method
     // handles parsing them and filling in with defaults
     this.validator.start({
@@ -351,12 +351,13 @@ class LocalTableland {
     try {
       await this.shutdownValidator();
       await this.shutdownRegistry();
+
+      this.#_cleanup();
     } catch (err: any) {
+      this.#_cleanup();
       throw new Error(
         `unexpected error during shutdown: ${err.message as string}`
       );
-    } finally {
-      this.#_cleanup();
     }
   }
 
@@ -394,6 +395,7 @@ class LocalTableland {
 
       this.validator.process.on("close", () => resolve());
       this.validator.shutdown();
+      this.validator.cleanup();
     });
   }
 
