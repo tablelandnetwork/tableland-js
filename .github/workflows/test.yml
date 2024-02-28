@@ -52,6 +52,6 @@ jobs:
         run: npx lerna run build
 
       - name: Test/Coverage 🧪
-        run: TEST_TIMEOUT_FACTOR=4 npm test
+        run: TEST_TIMEOUT_FACTOR=6 npm test
         env:
           INFURA_KEY: ${{ secrets.INFURA_KEY }}

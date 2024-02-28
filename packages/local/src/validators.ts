@@ -128,15 +128,33 @@ class ValidatorPkg {
   }
 
   // fully nuke the database and reset the config file
-  cleanup(): void {
+  cleanup(validatorDir?: string): void {
+    // we allow passing an optional directory to clean in case the user wants
+    // to cleanup before starting
+    if (typeof validatorDir !== "string") {
+      validatorDir = this.validatorDir;
+    }
+
+    // if there's no directory we can't cleanup
+    if (!validatorDir || validatorDir.trim() === "") return;
+
     shell.rm("-rf", resolve(this.validatorDir, "backups"));
 
     const dbFiles = [
       resolve(this.validatorDir, "database.db"),
+      resolve(this.validatorDir, "database.db-shm"),
+      resolve(this.validatorDir, "database.db-wal"),
       resolve(this.validatorDir, "metrics.db"),
+      resolve(this.validatorDir, "metrics.db-shm"),
+      resolve(this.validatorDir, "metrics.db-wal"),
     ];
+
     for (const filepath of dbFiles) {
-      shell.rm("-f", filepath);
+      try {
+        shell.rm("-f", filepath);
+      } catch (err) {
+        console.log("validator cleanup:", err);
+      }
     }
 
     // reset the Validator config file in case it was modified with a custom
