@@ -51,7 +51,7 @@ describe("chains", function () {
         "sepolia",
         "arbitrum-sepolia",
         "maticmum",
-        "optimism-goerli",
+        "optimism-sepolia",
         "local-tableland",
         "localhost",
       ];
@@ -92,7 +92,7 @@ describe("chains", function () {
       // Testnets
       strictEqual(getChainId("sepolia"), 11155111);
       strictEqual(getChainId("maticmum"), 80001);
-      strictEqual(getChainId("optimism-goerli"), 420);
+      strictEqual(getChainId("optimism-sepolia"), 11155420);
       strictEqual(getChainId("arbitrum-sepolia"), 421614);
       strictEqual(getChainId("filecoin-calibration"), 314159);
       // Local
@@ -118,14 +118,12 @@ describe("chains", function () {
     });
 
     test("where it fails when invalid chain is passed", function () {
-      // Should not exist for Optimism Goerli staging environment (filtered out)
+      // Should not exist for some random chain
       throws(
-        () => getChainId("optimism-goerli-staging"),
+        // @ts-expect-error should throw because chain is unsupported
+        () => getChainId("bitcoin"),
         (err: any) => {
-          strictEqual(
-            err.message,
-            "cannot use unsupported chain: optimism-goerli-staging"
-          );
+          strictEqual(err.message, "cannot use unsupported chain: bitcoin");
           return true;
         }
       );

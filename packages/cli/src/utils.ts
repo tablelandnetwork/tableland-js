@@ -44,18 +44,23 @@ export function getLink(chain: helpers.ChainName, hash: string): string {
     }
     return `https://polygonscan.com/tx/${hash}`;
   } else if (chain.includes("optimism")) {
-    if (chain.includes("goerli")) {
-      return `https://goerli-optimism.etherscan.io/tx/${hash}`;
+    if (chain.includes("sepolia")) {
+      return `https://sepolia-optimism.etherscan.io/tx/${hash}`;
     }
     return `https://optimistic.etherscan.io/tx/${hash}`;
   } else if (chain.includes("arbitrum")) {
-    if (chain.includes("goerli")) {
-      return `https://goerli.arbiscan.io/tx/${hash}`;
+    if (chain.includes("sepolia")) {
+      return `https://sepolia.arbiscan.io/tx/${hash}`;
     }
     if (chain.includes("nova")) {
       return `https://nova.arbiscan.io/tx/${hash}`;
     }
     return `https://arbiscan.io/tx/${hash}`;
+  } else if (chain.includes("filecoin")) {
+    if (chain.includes("calibration")) {
+      return `https://calibration.filfox.info/tx/${hash}`;
+    }
+    return `https://filfox.info/tx/${hash}`;
   }
   return "";
   /* c8 ignore stop */
