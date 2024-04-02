@@ -1,4 +1,4 @@
-import type { Arguments, Argv, CommandBuilder } from "yargs";
+import type { Arguments, Argv } from "yargs";
 import type { GlobalOptions as StudioOptions } from "@tableland/studio-cli";
 import { commands as studioCommands } from "@tableland/studio-cli/dist/commands/index.js";
 import type { GlobalOptions } from "../cli.js";
@@ -10,14 +10,15 @@ export interface Options extends GlobalOptions, StudioOptions {}
 
 export const builder: (yargs: Argv<Record<string, unknown>>) => void =
   function (yargs) {
-    for (const command in studioCommands) {
+    for (const cmnd of studioCommands) {
       yargs
         .command(
-          studioCommands[command].command,
-          studioCommands[command].desc,
-          // @ts-ignore TODO: Everything works at runtime, but I can't figure out why the types don't work here.
-          studioCommands[command].builder,
-          studioCommands[command].handler
+          cmnd.command,
+          cmnd.desc,
+          typeof (cmnd as any).builder !== "undefined"
+            ? (cmnd as any).builder
+            : undefined,
+          cmnd.handler as any
         )
         .option("store", {
           type: "string",
