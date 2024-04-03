@@ -17,7 +17,7 @@ export const builder: (yargs: Argv<Record<string, unknown>>) => void =
           cmnd.desc,
           typeof (cmnd as any).builder !== "undefined"
             ? (cmnd as any).builder
-            : undefined,
+            : {},
           cmnd.handler as any
         )
         .option("store", {
