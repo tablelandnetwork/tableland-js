@@ -22,8 +22,8 @@ describe("chains", function () {
       const testnets = "https://testnets.tableland.network/api/v1";
       const mainnet = "https://tableland.network/api/v1";
       strictEqual(getBaseUrl("localhost"), localhost);
-      strictEqual(getBaseUrl("maticmum"), testnets);
-      strictEqual(getBaseUrl("matic"), mainnet);
+      strictEqual(getBaseUrl("polygon-amoy"), testnets);
+      strictEqual(getBaseUrl("polygon"), mainnet);
       strictEqual(getBaseUrl("optimism"), mainnet);
       strictEqual(getBaseUrl("mainnet"), mainnet);
     });
@@ -32,15 +32,15 @@ describe("chains", function () {
   describe("getContractAddress()", function () {
     test("where we check the known default localhost contract address", async function () {
       const localhost = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
-      const matic = "0x5c4e6A9e5C1e1BF445A062006faF19EA6c49aFeA";
+      const polygon = "0x5c4e6A9e5C1e1BF445A062006faF19EA6c49aFeA";
       // Note we're checking local-tableland here, rather than localhost
       strictEqual(
         getContractAddress("local-tableland").toLowerCase(),
         localhost.toLowerCase()
       );
       strictEqual(
-        getContractAddress("matic").toLowerCase(),
-        matic.toLowerCase()
+        getContractAddress("polygon").toLowerCase(),
+        polygon.toLowerCase()
       );
     });
   });
@@ -50,7 +50,7 @@ describe("chains", function () {
       const testnets: ChainName[] = [
         "sepolia",
         "arbitrum-sepolia",
-        "maticmum",
+        "polygon-amoy",
         "optimism-sepolia",
         "local-tableland",
         "localhost",
@@ -58,7 +58,7 @@ describe("chains", function () {
       const mainnets: ChainName[] = [
         "mainnet",
         "arbitrum",
-        "matic",
+        "polygon",
         "optimism",
       ];
       for (const net of testnets) {
@@ -74,7 +74,7 @@ describe("chains", function () {
     test("where we make sure supportedChains is a valid object", function () {
       strictEqual(Object.keys(supportedChains).length >= 12, true);
       strictEqual(Object.keys(supportedChains).includes("mainnet"), true);
-      strictEqual(Object.keys(supportedChains).includes("maticmum"), true);
+      strictEqual(Object.keys(supportedChains).includes("polygon-amoy"), true);
       strictEqual(Object.keys(supportedChains).includes("localhost"), true);
     });
   });
@@ -84,14 +84,14 @@ describe("chains", function () {
       // Mainnets
       strictEqual(getChainId("mainnet"), 1);
       strictEqual(getChainId("homestead"), 1);
-      strictEqual(getChainId("matic"), 137);
+      strictEqual(getChainId("polygon"), 137);
       strictEqual(getChainId("optimism"), 10);
       strictEqual(getChainId("arbitrum"), 42161);
       strictEqual(getChainId("arbitrum-nova"), 42170);
       strictEqual(getChainId("filecoin"), 314);
       // Testnets
       strictEqual(getChainId("sepolia"), 11155111);
-      strictEqual(getChainId("maticmum"), 80001);
+      strictEqual(getChainId("polygon-amoy"), 80002);
       strictEqual(getChainId("optimism-sepolia"), 11155420);
       strictEqual(getChainId("arbitrum-sepolia"), 421614);
       strictEqual(getChainId("filecoin-calibration"), 314159);
@@ -112,9 +112,9 @@ describe("chains", function () {
       const localhost = getChainInfo("localhost");
       strictEqual(localhost.baseUrl, localhostUrl);
       strictEqual(localhost.chainId, 31337);
-      const maticmum = getChainInfo("maticmum");
-      strictEqual(maticmum.baseUrl, testnetsUrl);
-      strictEqual(maticmum.chainId, 80001);
+      const polygonAmoy = getChainInfo("polygon-amoy");
+      strictEqual(polygonAmoy.baseUrl, testnetsUrl);
+      strictEqual(polygonAmoy.chainId, 80002);
     });
 
     test("where it fails when invalid chain is passed", function () {
@@ -146,22 +146,22 @@ describe("chains", function () {
     test("where we get polling controller with chain ids", async function () {
       const homesteadController = getChainPollingController(1); // mainnet
       const filecoinController = getChainPollingController(314); // filecoin
-      const maticmumController = getChainPollingController(80001); // polygon mumbai
+      const polygonAmoyController = getChainPollingController(80002); // polygon mumbai
       const filecoinTestnetController = getChainPollingController(314159); // filecoin testnet
       const localController = getChainPollingController(31337); // local
       strictEqual(homesteadController.interval, 1500); // most should use the same 1500ms interval
       strictEqual(homesteadController.timeout, 40000); // but different timeouts
       strictEqual(filecoinController.interval, 5000); // filecoin has longer intervals
       strictEqual(filecoinController.timeout, 210000);
-      strictEqual(maticmumController.interval, 1500);
-      strictEqual(maticmumController.timeout, 15000);
+      strictEqual(polygonAmoyController.interval, 1500);
+      strictEqual(polygonAmoyController.timeout, 15000);
       strictEqual(filecoinTestnetController.interval, 5000);
       strictEqual(filecoinTestnetController.timeout, 210000);
       strictEqual(localController.interval, 1500);
       strictEqual(localController.timeout, 5000);
       homesteadController.cancel();
       filecoinController.cancel();
-      maticmumController.cancel();
+      polygonAmoyController.cancel();
       filecoinTestnetController.cancel();
       localController.cancel();
     });
@@ -206,22 +206,22 @@ describe("chains", function () {
     test("where we get polling controller with chain ids", async function () {
       const homesteadController = getChainPollingController(1); // mainnet
       const filecoinController = getChainPollingController(314); // filecoin
-      const maticmumController = getChainPollingController(80001); // polygon mumbai
+      const polygonAmoyController = getChainPollingController(80002); // polygon mumbai
       const filecoinTestnetController = getChainPollingController(314159); // filecoin testnet
       const localController = getChainPollingController(31337); // local
       strictEqual(homesteadController.interval, 1500); // most should use the same 1500ms interval
       strictEqual(homesteadController.timeout, 40000); // but different timeouts
       strictEqual(filecoinController.interval, 5000); // filecoin has longer intervals
       strictEqual(filecoinController.timeout, 210000);
-      strictEqual(maticmumController.interval, 1500);
-      strictEqual(maticmumController.timeout, 15000);
+      strictEqual(polygonAmoyController.interval, 1500);
+      strictEqual(polygonAmoyController.timeout, 15000);
       strictEqual(filecoinTestnetController.interval, 5000);
       strictEqual(filecoinTestnetController.timeout, 210000);
       strictEqual(localController.interval, 1500);
       strictEqual(localController.timeout, 5000);
       homesteadController.cancel();
       filecoinController.cancel();
-      maticmumController.cancel();
+      polygonAmoyController.cancel();
       filecoinTestnetController.cancel();
       localController.cancel();
     });

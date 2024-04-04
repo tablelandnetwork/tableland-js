@@ -39,8 +39,9 @@ export function getLink(chain: helpers.ChainName, hash: string): string {
     }
     return `https://etherscan.io/tx/${hash}`;
   } else if (chain.includes("polygon")) {
-    if (chain.includes("mumbai")) {
-      return `https://mumbai.polygonscan.com/tx/${hash}`;
+    if (chain.includes("amoy")) {
+      // TODO: polyscan says they will support amoy "soon", when that happens replace oklink with polyscan
+      return `https://www.oklink.com/amoy/tx/${hash}`;
     }
     return `https://polygonscan.com/tx/${hash}`;
   } else if (chain.includes("optimism")) {

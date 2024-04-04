@@ -41,7 +41,7 @@ if (process.env.FORK_CHAIN_ID && process.env.FORK_URL) {
   const chainInfo = helpers.getChainInfo(chainId);
   const chainName = chainInfo.chainName;
 
-  if (chainName === "matic") {
+  if (chainName === "polygon") {
     networks.hardhat.chains = {
       137: {
         hardforkHistory: {

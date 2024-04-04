@@ -15,7 +15,7 @@ export interface Options extends GlobalOptions {
 }
 
 const defaults = {
-  chain: "maticmum",
+  chain: "polygon-amoy",
   rpcRelay: false,
 };
 

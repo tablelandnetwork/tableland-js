@@ -43,8 +43,8 @@ describe("validator", function () {
   });
 
   test("when initialized via .forChain()", async function () {
-    const reg = Validator.forChain("maticmum");
-    strictEqual(reg.config.baseUrl, getBaseUrl("maticmum"));
+    const reg = Validator.forChain("polygon-amoy");
+    strictEqual(reg.config.baseUrl, getBaseUrl("polygon-amoy"));
   });
 
   this.beforeAll(async function () {

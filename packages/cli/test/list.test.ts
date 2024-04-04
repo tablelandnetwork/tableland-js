@@ -22,7 +22,7 @@ describe("commands/list", function () {
 
   test("throws without privateKey or address", async function () {
     const consoleError = spy(logger, "error");
-    await yargs(["list", "--chain", "maticmum", ...defaultArgs])
+    await yargs(["list", "--chain", "polygon-amoy", ...defaultArgs])
       .command(mod)
       .parse();
 
