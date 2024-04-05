@@ -22,9 +22,14 @@ export interface paths {
   "/query": {
     /**
      * Query the network 
-     * @description Returns the results of a SQL read query against the Tabeland network
+     * @description Returns the results of a SQL read query against the Tableland network
      */
     get: operations["queryByStatement"];
+    /**
+     * Query the network (POST) 
+     * @description Returns the results of a SQL read query against the Tableland network
+     */
+    post: operations["queryByStatementPost"];
   };
   "/receipt/{chainId}/{transactionHash}": {
     /**
@@ -130,11 +135,6 @@ export interface components {
       readonly constraints?: readonly (string)[];
     };
     readonly VersionInfo: {
-      /**
-       * Format: int32 
-       * @example 0
-       */
-      readonly version?: number;
       /** @example 79688910d4689dcc0991a0d8eb9d988200586d8f */
       readonly git_commit?: string;
       /** @example foo/experimentalfeature */
@@ -147,6 +147,29 @@ export interface components {
       readonly build_date?: string;
       /** @example v1.0.1 */
       readonly binary_version?: string;
+    };
+    readonly Query: {
+      /**
+       * @description The SQL read query statement 
+       * @example select * from healthbot_80001_1
+       */
+      readonly statement?: string;
+      /**
+       * @description The requested response format: * `objects` - Returns the query results as a JSON array of JSON objects. * `table` - Return the query results as a JSON object with columns and rows properties.
+       *  
+       * @example objects
+       */
+      readonly format?: string;
+      /**
+       * @description Whether to extract the JSON object from the single property of the surrounding JSON object. 
+       * @example false
+       */
+      readonly extract?: boolean;
+      /**
+       * @description Whether to unwrap the returned JSON objects from their surrounding array. 
+       * @example false
+       */
+      readonly unwrap?: boolean;
     };
   };
   responses: never;
@@ -186,7 +209,7 @@ export interface operations {
   };
   /**
    * Query the network 
-   * @description Returns the results of a SQL read query against the Tabeland network
+   * @description Returns the results of a SQL read query against the Tableland network
    */
   queryByStatement: {
     parameters: {
@@ -206,6 +229,32 @@ export interface operations {
         extract?: boolean;
         /** @description Whether to unwrap the returned JSON objects from their surrounding array. */
         unwrap?: boolean;
+      };
+    };
+    responses: {
+      /** @description Successful operation */
+      200: {
+        content: {
+          readonly "application/json": Record<string, never>;
+        };
+      };
+      /** @description Invalid query/statement value */
+      400: never;
+      /** @description Row Not Found */
+      404: never;
+      /** @description Too Many Requests */
+      429: never;
+    };
+  };
+  /**
+   * Query the network (POST) 
+   * @description Returns the results of a SQL read query against the Tableland network
+   */
+  queryByStatementPost: {
+    /** @description A JSON containing the statement and additional options */
+    readonly requestBody: {
+      readonly content: {
+        readonly "application/json": components["schemas"]["Query"];
       };
     };
     responses: {

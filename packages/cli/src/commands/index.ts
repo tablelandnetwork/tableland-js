@@ -9,6 +9,7 @@ import * as receipt from "./receipt.js";
 import * as schema from "./schema.js";
 import * as write from "./write.js";
 import * as shell from "./shell.js";
+import * as studio from "./studio.js";
 import * as namespace from "./namespace.js";
 import * as transfer from "./transfer.js";
 
@@ -24,6 +25,7 @@ export const commands = [
   schema,
   write,
   shell,
+  studio,
   namespace,
   transfer,
 ];
