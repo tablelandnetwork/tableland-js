@@ -7,7 +7,9 @@ import { TEST_TIMEOUT_FACTOR } from "./setup.js";
 const expect = chai.expect;
 // const localTablelandChainId = 1; // mainnet
 
-describe("Starting a Fork", function () {
+// NOTE: these are skipped because they take a significant amount of time. They
+//    can be temporarily un-skipped if working on a feature that affects forks.
+describe.skip("Starting a Fork", function () {
   this.timeout(30000 * TEST_TIMEOUT_FACTOR);
 
   describe("mainnet", function () {
