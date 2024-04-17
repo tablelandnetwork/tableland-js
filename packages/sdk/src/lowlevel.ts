@@ -14,6 +14,7 @@ import {
   create,
   type CreateManyParams,
 } from "./registry/create.js";
+import { extractChainId } from "./helpers/config.js";
 import {
   prepareMutateOne,
   mutate,
@@ -81,7 +82,11 @@ export async function exec(
   { type, sql, tables: [first] }: ExtractedStatement
 ): Promise<WaitableTransactionReceipt> {
   const signer = await extractSigner(config);
-  const chainId = await signer.getChainId();
+  const network = await signer.provider?.getNetwork();
+  const chainId = Number(network?.chainId);
+  if (chainId == null) {
+    throw new Error("chain ID not found");
+  }
   const baseUrl = await extractBaseUrl(config, chainId);
   const _config = { baseUrl, signer };
   const _params = { chainId, first, statement: sql };
@@ -140,7 +145,7 @@ export async function execMutateMany(
   runnables: Runnable[]
 ): Promise<WaitableTransactionReceipt> {
   const signer = await extractSigner(config);
-  const chainId = await signer.getChainId();
+  const chainId = await extractChainId(config);
   const baseUrl = await extractBaseUrl(config, chainId);
   const _config = { baseUrl, signer };
   const params: MutateManyParams = { runnables, chainId };
@@ -178,7 +183,7 @@ export async function execCreateMany(
   statements: string[]
 ): Promise<WaitableTransactionReceipt> {
   const signer = await extractSigner(config);
-  const chainId = await signer.getChainId();
+  const chainId = await extractChainId(config);
   const baseUrl = await extractBaseUrl(config, chainId);
   const _config = { baseUrl, signer };
   const params: CreateManyParams = {

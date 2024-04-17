@@ -34,12 +34,12 @@ export {
 } from "./config.js";
 export {
   type Signer,
-  type ExternalProvider,
-  getDefaultProvider,
-  type ContractTransaction,
-  type ContractReceipt,
+  type Eip1193Provider,
+  type ContractTransactionResponse,
+  type ContractTransactionReceipt,
   type RegistryReceipt,
   type MultiEventTransactionReceipt,
+  getDefaultProvider,
   getSigner,
   getContractReceipt,
 } from "./ethers.js";

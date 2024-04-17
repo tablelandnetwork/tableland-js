@@ -182,7 +182,7 @@ describe("lowlevel", function () {
       }
     });
 
-    test("when select statment has a syntax error", async function () {
+    test("when select statement has a syntax error", async function () {
       // This rejects on the validator because we don't have the parser to catch the syntax error
       await rejects(
         queryAll({ baseUrl }, "SELECT * FROM 3.14;"),

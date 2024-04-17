@@ -1,20 +1,78 @@
 import {
-  providers,
-  type Signer,
+  BrowserProvider,
+  FeeData,
+  getDefaultProvider,
+  parseUnits,
+  type ContractTransactionResponse,
+  type ContractTransactionReceipt,
+  type Eip1193Provider,
+  type EventLog,
+  type Log,
   type Overrides,
-  type ContractTransaction,
-  type ContractReceipt,
+  type Signer,
 } from "ethers";
 import { type TransactionReceipt } from "../validator/receipt.js";
 import { type SignerConfig } from "./config.js";
-
-type ExternalProvider = providers.ExternalProvider;
-const { getDefaultProvider, Web3Provider } = providers;
+import { isTestnet } from "./chains.js";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 declare module globalThis {
   // eslint-disable-next-line no-var
-  var ethereum: ExternalProvider | undefined;
+  var ethereum: Eip1193Provider | undefined;
+}
+
+/**
+ * Response for current gas fee data from the Amoy gas station API at:
+ * https://gasstation-testnet.polygon.technology/amoy (testnet) &
+ * https://gasstation.polygon.technology/v2 (mainnet)
+ */
+interface PolygonFeeData {
+  safeLow: {
+    maxPriorityFee: number;
+    maxFee: number;
+  };
+  standard: {
+    maxPriorityFee: number;
+    maxFee: number;
+  };
+  fast: {
+    maxPriorityFee: number;
+    maxFee: number;
+  };
+  estimatedBaseFee: number;
+  blockTime: number;
+  blockNumber: number;
+}
+
+/**
+ * Fetches the current gas fee data for a connected network.
+ * @param signer A signer instance.
+ * @returns Current gas fee information for the network.
+ */
+export async function getFeeData(signer: Signer): Promise<FeeData> {
+  const network = await signer.provider?.getNetwork();
+  const chainId = network?.chainId;
+  // Use custom Polygon gas data, else, use built-in ethers method
+  try {
+    if (chainId && isPolygon(chainId)) {
+      const url = isTestnet(Number(chainId))
+        ? "https://gasstation-testnet.polygon.technology/amoy"
+        : "https://gasstation.polygon.technology/v2";
+      const response = await fetch(url);
+      const data: PolygonFeeData = await response.json();
+      const feeData = new FeeData(
+        null, // No gas price value needed
+        BigInt(parseUnits(String(data.standard.maxFee), "gwei")),
+        BigInt(parseUnits(String(data.standard.maxPriorityFee), "gwei"))
+      );
+      return feeData;
+    } else {
+      const feeData = await signer.provider?.getFeeData();
+      return feeData ?? new FeeData();
+    }
+  } catch {
+    return new FeeData(); // Return null values if fee data is not available
+  }
 }
 
 /**
@@ -25,27 +83,22 @@ declare module globalThis {
 export async function getOverrides({
   signer,
 }: SignerConfig): Promise<Overrides> {
-  // Hack: Revert to gasPrice to avoid always underpriced eip-1559 transactions on Polygon
+  // TODO: validate passing max fee params work the same as gasPrice bump by 10%
   const opts: Overrides = {};
-  const network = await signer.provider?.getNetwork();
-  /* c8 ignore next 7 */
-  if (network && isPolygon(network.chainId)) {
-    const feeData = await signer.getFeeData();
-    if (feeData.gasPrice != null) {
-      opts.gasPrice =
-        Math.floor(feeData.gasPrice.toNumber() * 1.1) ?? undefined;
-    }
-  }
+  const { maxFeePerGas, maxPriorityFeePerGas } = await getFeeData(signer);
+  opts.maxFeePerGas = maxFeePerGas ?? null;
+  opts.maxPriorityFeePerGas = maxPriorityFeePerGas ?? null;
   return opts;
 }
 
 /**
  * Check if a chain is Polygon.
- * @param chainId The chainId of the network.
+ * @param chainId The chainId of the network as a number or bigint.
  * @returns A boolean that indicates if the chain is a mainnet/testnet Polygon.
  */
-export function isPolygon(chainId: number): boolean {
-  return chainId === 137 || chainId === 80001;
+export function isPolygon(chainId: number | bigint): boolean {
+  const chainIdNumber = typeof chainId === "bigint" ? Number(chainId) : chainId;
+  return chainIdNumber === 137 || chainIdNumber === 80001;
 }
 
 /**
@@ -73,7 +126,6 @@ export interface MultiEventTransactionReceipt {
 }
 
 /**
- *
  * Given a transaction, this helper will return the tableIds that were part of the transaction.
  * Especially useful for transactions that create new tables because you need the tableId to
  * calculate the full table name.
@@ -82,20 +134,26 @@ export interface MultiEventTransactionReceipt {
  *
  */
 export async function getContractReceipt(
-  tx: ContractTransaction
+  tx: ContractTransactionResponse
 ): Promise<MultiEventTransactionReceipt> {
   const receipt = await tx.wait();
+  if (receipt == null) {
+    throw new Error(
+      `could not get receipt for transaction: ${JSON.stringify(tx, null, 4)}`
+    );
+  }
 
   /* c8 ignore next */
-  const events = receipt.events ?? [];
-  const transactionHash = receipt.transactionHash;
+  const logs = receipt?.logs ?? [];
+  const events = logs.filter(isEventLog) ?? [];
+  const transactionHash = receipt.hash;
   const blockNumber = receipt.blockNumber;
-  const chainId = tx.chainId;
+  const chainId = Number(tx.chainId);
   const tableIds: string[] = [];
   for (const event of events) {
     const tableId =
       event.args?.tableId != null && event.args.tableId.toString();
-    switch (event.event) {
+    switch (event.eventName) {
       case "CreateTable":
       case "RunSQL":
         if (tableId != null) tableIds.push(tableId);
@@ -114,7 +172,7 @@ export async function getContractReceipt(
  * @returns A promise that resolves to a valid web3 provider/signer
  * @throws If no global ethereum object is available.
  */
-export async function getSigner(external?: ExternalProvider): Promise<Signer> {
+export async function getSigner(external?: Eip1193Provider): Promise<Signer> {
   const provider = external ?? globalThis.ethereum;
   if (provider == null) {
     throw new Error("provider error: missing global ethereum provider");
@@ -125,14 +183,35 @@ export async function getSigner(external?: ExternalProvider): Promise<Signer> {
     );
   }
   await provider.request({ method: "eth_requestAccounts" });
-  const web3Provider = new Web3Provider(provider);
-  return web3Provider.getSigner();
+  const browserProvider = new BrowserProvider(provider);
+  return await browserProvider.getSigner();
+}
+
+/**
+ * Check if the signer has an attached provider (mimics ethers v5
+ * `signer._checkProvider`).
+ * @param signer A signer instance.
+ */
+export function checkProvider(signer: Signer): void {
+  if (!signer.provider) {
+    throw new Error("missing provider: cannot connect to contract");
+  }
+}
+
+/**
+ * Check if a log value is an ether `EventLog`.
+ * @param logOrEvent Response from `ContractTransactionResponse` awaited receipt that
+ * includes both `Log` and `EventLog` types.
+ * @returns
+ */
+export function isEventLog(logOrEvent: EventLog | Log): logOrEvent is EventLog {
+  return "args" in logOrEvent;
 }
 
 export {
-  Signer,
   getDefaultProvider,
-  type ExternalProvider,
-  type ContractTransaction,
-  type ContractReceipt,
+  type Eip1193Provider,
+  type ContractTransactionResponse,
+  type ContractTransactionReceipt,
+  type Signer,
 };

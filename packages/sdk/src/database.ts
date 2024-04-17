@@ -157,6 +157,7 @@ export class Database<D = unknown> {
       // TODO: wrapping in an Array is required for back compat, consider changing this for next major
       return [wrapResult(receipt, performance.now() - start)];
     } catch (cause: any) {
+      console.log(cause);
       if (cause.message.startsWith("ALL_ERROR") === true) {
         throw errorWithCause("BATCH_ERROR", cause.cause);
       }

@@ -1,5 +1,9 @@
-import { type SignerConfig } from "../helpers/config.js";
-import { type ContractTransaction, isPolygon } from "../helpers/ethers.js";
+import { Typed } from "ethers";
+import { type SignerConfig, extractChainId } from "../helpers/config.js";
+import {
+  type ContractTransactionResponse,
+  isPolygon,
+} from "../helpers/ethers.js";
 import { type TableIdentifier, getContractSetup } from "./contract.js";
 
 export interface SetParams {
@@ -16,45 +20,54 @@ export interface SetParams {
 export async function setController(
   { signer }: SignerConfig,
   params: SetParams
-): Promise<ContractTransaction> {
+): Promise<ContractTransactionResponse> {
   const { contract, overrides, tableId } = await getContractSetup(
     signer,
     params.tableName
   );
   const caller = await signer.getAddress();
   const controller = params.controller;
-  const chainId = await signer.getChainId();
+  const chainId = await extractChainId({ signer });
   if (isPolygon(chainId)) {
-    const gasLimit = await contract.estimateGas.setController(
-      caller,
-      tableId,
-      controller,
+    const gasLimit = await contract.setController.estimateGas(
+      Typed.address(caller),
+      Typed.uint256(tableId),
+      Typed.address(controller),
       overrides
     );
-    overrides.gasLimit = Math.floor(gasLimit.toNumber() * 1.2);
+    overrides.gasLimit = Math.floor(Number(gasLimit) * 1.2);
   }
-  return await contract.setController(caller, tableId, controller, overrides);
+  return await contract.setController(
+    Typed.address(caller),
+    Typed.uint256(tableId),
+    Typed.address(controller),
+    overrides
+  );
 }
 
 export async function lockController(
   { signer }: SignerConfig,
   tableName: string | TableIdentifier
-): Promise<ContractTransaction> {
+): Promise<ContractTransactionResponse> {
   const { contract, overrides, tableId } = await getContractSetup(
     signer,
     tableName
   );
   const caller = await signer.getAddress();
-  const chainId = await signer.getChainId();
+  const chainId = await extractChainId({ signer });
   if (isPolygon(chainId)) {
-    const gasLimit = await contract.estimateGas.lockController(
-      caller,
-      tableId,
+    const gasLimit = await contract.lockController.estimateGas(
+      Typed.address(caller),
+      Typed.uint256(tableId),
       overrides
     );
-    overrides.gasLimit = Math.floor(gasLimit.toNumber() * 1.2);
+    overrides.gasLimit = Math.floor(Number(gasLimit) * 1.2);
   }
-  return await contract.lockController(caller, tableId, overrides);
+  return await contract.lockController(
+    Typed.address(caller),
+    Typed.uint256(tableId),
+    overrides
+  );
 }
 
 export async function getController(
@@ -65,5 +78,5 @@ export async function getController(
     signer,
     tableName
   );
-  return await contract.getController(tableId, overrides);
+  return await contract.getController(Typed.uint256(tableId), overrides);
 }

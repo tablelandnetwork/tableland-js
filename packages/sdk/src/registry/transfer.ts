@@ -1,5 +1,9 @@
-import { type SignerConfig } from "../helpers/config.js";
-import { type ContractTransaction, isPolygon } from "../helpers/ethers.js";
+import { Typed } from "ethers";
+import { type SignerConfig, extractChainId } from "../helpers/config.js";
+import {
+  type ContractTransactionResponse,
+  isPolygon,
+} from "../helpers/ethers.js";
 import { type TableIdentifier, getContractSetup } from "./contract.js";
 
 export interface TransferParams {
@@ -16,23 +20,28 @@ export interface TransferParams {
 export async function safeTransferFrom(
   { signer }: SignerConfig,
   params: TransferParams
-): Promise<ContractTransaction> {
+): Promise<ContractTransactionResponse> {
   const { contract, overrides, tableId } = await getContractSetup(
     signer,
     params.tableName
   );
   const caller = await signer.getAddress();
-  const chainId = await signer.getChainId();
+  const chainId = await extractChainId({ signer });
   if (isPolygon(chainId)) {
-    const gasLimit = await contract.estimateGas[
+    const gasLimit = await contract[
       "safeTransferFrom(address,address,uint256)"
-    ](caller, params.to, tableId, overrides);
-    overrides.gasLimit = Math.floor(gasLimit.toNumber() * 1.2);
+    ].estimateGas(
+      Typed.address(caller),
+      Typed.address(params.to),
+      Typed.uint256(tableId),
+      overrides
+    );
+    overrides.gasLimit = Math.floor(Number(gasLimit) * 1.2);
   }
   return await contract["safeTransferFrom(address,address,uint256)"](
-    caller,
-    params.to,
-    tableId,
+    Typed.address(caller),
+    Typed.address(params.to),
+    Typed.uint256(tableId),
     overrides
   );
 }

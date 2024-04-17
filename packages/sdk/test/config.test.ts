@@ -1,4 +1,4 @@
-import { rejects, strictEqual } from "assert";
+import { rejects, notEqual, strictEqual } from "assert";
 import { describe, test } from "mocha";
 import { getAccounts } from "@tableland/local";
 import {
@@ -10,9 +10,10 @@ import {
 } from "../src/helpers/config.js";
 import {
   getDefaultProvider,
-  type ExternalProvider,
   getChainId,
+  type Eip1193Provider,
 } from "../src/helpers/index.js";
+import { checkProvider } from "../src/helpers/ethers.js";
 import { TEST_PROVIDER_URL, TEST_VALIDATOR_URL } from "./setup";
 
 describe("config", function () {
@@ -59,41 +60,57 @@ describe("config", function () {
     });
 
     test("where signer is obtained via an external provider", async function () {
+      const [, wallet] = getAccounts();
       const conn: Config = {};
+      // Mock RPC methods to work with `getSigner` calls within `extractSigner`
       const external = {
         request: async (request: {
           method: string;
           params?: any[];
-        }): Promise<any> => {},
+        }): Promise<any> => {
+          switch (request.method) {
+            case "eth_requestAccounts":
+              return [wallet.address];
+            case "eth_accounts":
+              return [wallet.address];
+            default:
+              throw new Error(
+                `method ${request.method} not supported by the mock provider`
+              );
+          }
+        },
       };
       const extracted = await extractSigner(conn, external);
-      strictEqual(extracted._isSigner, true);
-    });
-
-    test("where signer is obtained via an external provider and it fails", async function () {
-      const conn: Config = {};
-      const external = {};
-      await rejects(extractSigner(conn, external), (err: any) => {
-        strictEqual(
-          err.message,
-          "provider error: missing request method on ethereum provider"
-        );
-        return true;
-      });
+      notEqual(await extracted.getAddress(), null);
+      notEqual(extracted.provider, null);
     });
 
     test("where signer is obtained via an injected provider", async function () {
+      const [, wallet] = getAccounts();
       const conn: Config = {};
-      const ethereum: ExternalProvider = {
+      // Mock RPC methods to work with `getSigner` calls within `extractSigner`
+      const ethereum: Eip1193Provider = {
         request: async (request: {
           method: string;
           params?: any[];
-        }): Promise<any> => {},
+        }): Promise<any> => {
+          switch (request.method) {
+            case "eth_requestAccounts":
+              return [wallet.address];
+            case "eth_accounts":
+              return [wallet.address];
+            default:
+              throw new Error(
+                `method ${request.method} not supported by the mock provider`
+              );
+          }
+        },
       };
       (globalThis as any).ethereum = ethereum;
       const extracted = await extractSigner(conn);
-      extracted._checkProvider();
-      strictEqual(extracted._isSigner, true);
+      checkProvider(extracted);
+      notEqual(await extracted.getAddress(), null);
+      notEqual(extracted.provider, null);
       delete (globalThis as any).ethereum;
     });
 

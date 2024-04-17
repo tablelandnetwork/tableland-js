@@ -1,4 +1,6 @@
-import { type SignerConfig } from "../helpers/config.js";
+import { Typed } from "ethers";
+import { type SignerConfig, extractChainId } from "../helpers/config.js";
+import { checkProvider } from "../helpers/ethers.js";
 import { type TableIdentifier, getContractAndOverrides } from "./contract.js";
 
 export async function listTables(
@@ -6,12 +8,15 @@ export async function listTables(
   owner?: string
 ): Promise<TableIdentifier[]> {
   const address = owner ?? (await signer.getAddress());
-  const chainId = await signer.getChainId();
-  signer._checkProvider();
+  const chainId = await extractChainId({ signer });
+  checkProvider(signer);
   const { contract, overrides } = await getContractAndOverrides(
     signer,
     chainId
   );
-  const tokens = await contract.tokensOfOwner(address, overrides);
+  const tokens = await contract.tokensOfOwner(
+    Typed.address(address),
+    overrides
+  );
   return tokens.map((token) => ({ tableId: token.toString(), chainId }));
 }

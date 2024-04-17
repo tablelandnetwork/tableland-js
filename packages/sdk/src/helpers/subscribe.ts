@@ -1,4 +1,5 @@
 import { EventEmitter } from "events";
+import type { ContractEventPayload } from "ethers";
 import asyncGenFromEmit from "@async-generators/from-emitter";
 import { type TablelandTables } from "@tableland/evm";
 import { pollTransactionReceipt } from "../validator/receipt.js";
@@ -30,9 +31,11 @@ type ListenerMap = Record<
   }
 >;
 
+type ContractEventName = "RunSQL" | "TransferTable" | "SetController";
+
 type ContractEventTableIdMap = Record<
   // the key is the event name in the Solidity contract
-  string,
+  ContractEventName,
   {
     // `tableIdIndex` is the index of the event's argument that contains the tableId
     tableIdIndex: number;
@@ -130,8 +133,8 @@ export class TableEventBus {
    * changes to.
    */
   async addTableIterator<T>(tableName: string): Promise<AsyncIterable<T>> {
-    const emmiter = await this.addListener(tableName);
-    return fromEmitter(emmiter, {
+    const emitter = await this.addListener(tableName);
+    return fromEmitter(emitter, {
       onNext: "change",
       onError: "error",
       onDone: "close",
@@ -175,7 +178,7 @@ export class TableEventBus {
           // the contract is listening to we remove the listener
           for (let i = 0; i < listenerObj.contractListeners.length; i++) {
             const listenerEventFunc = listenerObj.contractListeners[i];
-            contract.off(
+            void contract.off(
               listenerEventFunc.eventName,
               listenerEventFunc.eventListener
             );
@@ -230,7 +233,7 @@ export class TableEventBus {
     const listenerEventFunctions = [];
 
     for (const key in contractEvents) {
-      const eve = contractEvents[key];
+      const eve = contractEvents[key as ContractEventName];
       // put the listener function in memory so we can remove it if needed
       const listener = (...args: any[]): void => {
         const _tableId = args[eve.tableIdIndex].toString();
@@ -238,9 +241,8 @@ export class TableEventBus {
         if (key !== "RunSQL") {
           emitter.emit(eve.emit, args);
         }
-
-        const transactionHash = args[args.length - 1].transactionHash;
-
+        const eventPayload = args[args.length - 1] as ContractEventPayload;
+        const transactionHash = eventPayload.log.transactionHash;
         const poll = async (): Promise<void> => {
           const baseUrl =
             this.config.baseUrl == null
@@ -260,7 +262,8 @@ export class TableEventBus {
         });
       };
 
-      contract.on(key, listener);
+      const topicFilter = contract.filters[key as ContractEventName];
+      void contract.on(topicFilter, listener);
 
       listenerEventFunctions.push({
         eventName: key,

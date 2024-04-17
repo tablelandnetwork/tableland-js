@@ -3,7 +3,8 @@ import {
   TablelandTables__factory as Factory,
 } from "@tableland/evm";
 import type { Overrides } from "ethers";
-import { getOverrides, type Signer } from "../helpers/ethers.js";
+import { checkProvider, getOverrides, type Signer } from "../helpers/ethers.js";
+import { extractChainId } from "../helpers/config.js";
 import { validateTableName } from "../helpers/parser.js";
 import { getContractAddress } from "../helpers/chains.js";
 
@@ -38,7 +39,7 @@ export async function getContractAndOverrides(
   chainId: number
 ): Promise<{ contract: TablelandTables; overrides: Overrides }> {
   const address = getContractAddress(chainId);
-  signer._checkProvider();
+  checkProvider(signer);
   const contract = connect(address, signer);
   const overrides = await getOverrides({ signer });
   return { contract, overrides };
@@ -62,7 +63,7 @@ export async function getContractSetup(
   tableId: string;
 }> {
   const { chainId: chain, tableId } = await getTableIdentifier(tableName);
-  const chainId = await signer.getChainId();
+  const chainId = await extractChainId({ signer });
   assertChainId(chainId, chain);
   const { contract, overrides } = await getContractAndOverrides(
     signer,

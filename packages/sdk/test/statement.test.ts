@@ -7,6 +7,7 @@ import assert, {
   throws,
 } from "assert";
 import { describe, test } from "mocha";
+import { NonceManager } from "ethers";
 import { getAccounts } from "@tableland/local";
 import { getDelay } from "../src/helpers/utils.js";
 import {
@@ -21,7 +22,10 @@ describe("statement", function () {
   // Note that we're using the second account here
   const [, wallet, wallet2] = getAccounts();
   const provider = getDefaultProvider(TEST_PROVIDER_URL);
-  const signer = wallet.connect(provider);
+  const baseSigner = wallet.connect(provider);
+  // TODO: figure out why tests fail when using the base signer directly due to
+  // nonce too low / nonce has already been used / NONCE_EXPIRED error
+  const signer = new NonceManager(baseSigner);
   const db = new Database({ signer });
 
   test("when initialized via constructor", async function () {
@@ -201,7 +205,10 @@ CREATE TABLE test_run (counter blurg);
 
       test("when non-owner tries to alter table", async function () {
         const provider = getDefaultProvider(TEST_PROVIDER_URL);
-        const signer = wallet2.connect(provider);
+        const baseSigner = wallet2.connect(provider);
+        // TODO: figure out why tests fail when using the base signer directly due to
+        // nonce too low / nonce has already been used / NONCE_EXPIRED error
+        const signer = new NonceManager(baseSigner);
         const db2 = new Database({ signer });
 
         const [batchGrant] = await db.batch([

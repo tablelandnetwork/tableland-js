@@ -12,7 +12,7 @@ import {
   extractChainId,
 } from "../helpers/config.js";
 import {
-  type ContractTransaction,
+  type ContractTransactionResponse,
   getContractReceipt,
 } from "../helpers/ethers.js";
 import { validateTables, type StatementType } from "../helpers/parser.js";
@@ -208,7 +208,7 @@ export async function extractReadonly(
 export async function wrapTransaction(
   conn: Config,
   prefix: string,
-  tx: ContractTransaction
+  tx: ContractTransactionResponse
 ): Promise<WaitableTransactionReceipt> {
   // TODO: next major we should combine this with wrapManyTransaction
   const _params = await getContractReceipt(tx);
@@ -241,7 +241,7 @@ export async function wrapTransaction(
 export async function wrapManyTransaction(
   conn: Config,
   statements: string[] | Runnable[],
-  tx: ContractTransaction
+  tx: ContractTransactionResponse
 ): Promise<WaitableTransactionReceipt & Named> {
   const _params = await getContractReceipt(tx);
   const chainId =

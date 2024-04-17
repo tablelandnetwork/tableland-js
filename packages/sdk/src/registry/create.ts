@@ -1,6 +1,10 @@
+import { Typed } from "ethers";
 import { normalize } from "../helpers/index.js";
 import { type SignerConfig } from "../helpers/config.js";
-import { type ContractTransaction, isPolygon } from "../helpers/ethers.js";
+import {
+  type ContractTransactionResponse,
+  isPolygon,
+} from "../helpers/ethers.js";
 import { validateTableName } from "../helpers/parser.js";
 import { getContractAndOverrides } from "./contract.js";
 
@@ -80,7 +84,7 @@ export type CreateParams = CreateOneParams | CreateManyParams;
 export async function create(
   config: SignerConfig,
   params: CreateParams
-): Promise<ContractTransaction> {
+): Promise<ContractTransactionResponse> {
   if (isCreateOne(params)) {
     return await _createOne(config, params);
   }
@@ -90,42 +94,47 @@ export async function create(
 async function _createOne(
   { signer }: SignerConfig,
   { statement, chainId }: CreateOneParams
-): Promise<ContractTransaction> {
+): Promise<ContractTransactionResponse> {
   const owner = await signer.getAddress();
   const { contract, overrides } = await getContractAndOverrides(
     signer,
     chainId
   );
   if (isPolygon(chainId)) {
-    const gasLimit = await contract.estimateGas["create(address,string)"](
-      owner,
-      statement,
+    const gasLimit = await contract["create(address,string)"].estimateGas(
+      Typed.address(owner),
+      Typed.string(statement),
       overrides
     );
-    overrides.gasLimit = Math.floor(gasLimit.toNumber() * 1.2);
+    overrides.gasLimit = Math.floor(Number(gasLimit) * 1.2);
   }
-  return await contract["create(address,string)"](owner, statement, overrides);
+  return await contract["create(address,string)"](
+    Typed.address(owner),
+    Typed.string(statement),
+    overrides
+  );
 }
 
 async function _createMany(
   { signer }: SignerConfig,
   { statements, chainId }: CreateManyParams
-): Promise<ContractTransaction> {
+): Promise<ContractTransactionResponse> {
   const owner = await signer.getAddress();
   const { contract, overrides } = await getContractAndOverrides(
     signer,
     chainId
   );
+  // TODO: once ethers `Typed.array` is added, use it for `statements`
   if (isPolygon(chainId)) {
-    const gasLimit = await contract.estimateGas["create(address,string[])"](
-      owner,
+    const gasLimit = await contract["create(address,string[])"].estimateGas(
+      Typed.address(owner),
       statements,
       overrides
     );
-    overrides.gasLimit = Math.floor(gasLimit.toNumber() * 1.2);
+    overrides.gasLimit = Math.floor(Number(gasLimit) * 1.2);
   }
   return await contract["create(address,string[])"](
-    owner,
+    Typed.address(owner),
     statements,
     overrides
   );

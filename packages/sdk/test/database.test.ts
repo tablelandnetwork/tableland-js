@@ -8,7 +8,7 @@ import assert, {
 } from "assert";
 import { describe, test } from "mocha";
 import { getAccounts } from "@tableland/local";
-import { getDefaultProvider } from "ethers";
+import { getDefaultProvider, NonceManager } from "ethers";
 import { Database } from "../src/database.js";
 import { Statement } from "../src/statement.js";
 import { createPollingController } from "../src/helpers/await.js";
@@ -19,6 +19,10 @@ import {
   TEST_VALIDATOR_URL,
 } from "./setup";
 
+// TODO: figure out why tests log repeated errors (but still pass) for:
+// `JsonRpcProvider failed to detect network and cannot start up; retry in 1s
+// (perhaps the URL is wrong or the node is not started)` even though the nodes
+// are running and can be accessed without issue via cURL.
 describe("database", function () {
   this.timeout(TEST_TIMEOUT_FACTOR * 15000);
 
@@ -26,7 +30,10 @@ describe("database", function () {
   // Note that we're using the second account here
   const wallet = accounts[1];
   const provider = getDefaultProvider(TEST_PROVIDER_URL);
-  const signer = wallet.connect(provider);
+  const baseSigner = wallet.connect(provider);
+  // TODO: figure out why tests fail when using the base signer directly due to
+  // nonce too low / nonce has already been used / NONCE_EXPIRED error
+  const signer = new NonceManager(baseSigner);
   const db = new Database({ signer, autoWait: true });
 
   test("when initialized via constructor", async function () {
@@ -196,7 +203,7 @@ describe("database", function () {
       const stmt = db.prepare(
         `insert into ${tableToSubselect} (address) values (?1);insert into ${tableToMutate} (data) select ?2 from ${tableToSubselect} where address=?1;`
       );
-      const batch = db.batch([stmt.bind(signer.address, "test")]);
+      const batch = db.batch([stmt.bind(await signer.getAddress(), "test")]);
 
       // expect an error due to the individual statements touching two tables
       await rejects(batch, (err: any) => {
@@ -288,7 +295,7 @@ describe("database", function () {
       // seed the target subselect table with data
       const { meta: writeMeta } = await db
         .prepare(`insert into ${tableToSubselect} (address) values (?1);`)
-        .bind(signer.address)
+        .bind(await signer.getAddress())
         .run();
       await writeMeta.txn?.wait();
 
@@ -297,7 +304,9 @@ describe("database", function () {
       const stmt = db.prepare(
         `insert into ${tableToMutate} (data) select ?1 from ${tableToSubselect} where address=?2;`
       );
-      const [batch] = await db.batch([stmt.bind(val, signer.address)]);
+      const [batch] = await db.batch([
+        stmt.bind(val, await signer.getAddress()),
+      ]);
 
       assert(batch.meta.duration != null);
       assert(batch.meta.txn?.transactionHash != null);
@@ -391,12 +400,15 @@ describe("database", function () {
       // note we are using the third account
       const wallet = accounts[2];
       const provider = getDefaultProvider(TEST_PROVIDER_URL);
-      const signer = wallet.connect(provider);
+      const baseSigner = wallet.connect(provider);
+      // TODO: figure out why tests fail when using the base signer directly due to
+      // nonce too low / nonce has already been used / NONCE_EXPIRED error
+      const signer = new NonceManager(baseSigner);
       const db2 = new Database({ signer, autoWait: true });
 
       test("when doing grant with batch", async function () {
         // Need to make a lot of changes in this test, increase timeout
-        this.timeout(TEST_TIMEOUT_FACTOR * 20000);
+        this.timeout(TEST_TIMEOUT_FACTOR * 25000);
 
         const [batch] = await db.batch([
           db.prepare(`CREATE TABLE test_grant_1 (id INTEGER, name TEXT);`),
