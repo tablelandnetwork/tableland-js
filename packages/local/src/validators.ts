@@ -16,6 +16,17 @@ const spawnSync = spawn.sync;
 // store the Validator config file in memory, so we can restore it during cleanup
 let ORIGINAL_VALIDATOR_CONFIG: string | undefined;
 
+function _getEol(fileStr: string): string {
+  if (fileStr.slice(-2) === "\r\n") {
+    return "\r\n";
+  }
+  if (fileStr.slice(-1) === "\n") {
+    return "\n";
+  }
+
+  return "";
+}
+
 interface StartConfig {
   chainId?: number;
   registryAddress?: string;
@@ -98,7 +109,10 @@ class ValidatorPkg {
     if (typeof config.chainId === "number") {
       validatorConfig.Chains[0].ChainID = config.chainId;
     }
-    writeFileSync(configFilePath, JSON.stringify(validatorConfig, null, 2));
+    writeFileSync(
+      configFilePath,
+      JSON.stringify(validatorConfig, null, 2) + _getEol(configFileStr)
+    );
 
     // start the validator
     this.process = spawn(binPath, ["--dir", validatorUri], {
@@ -214,7 +228,10 @@ class ValidatorDev {
 
     validatorConfig.Chains[0].Registry.ContractAddress = config.registryAddress;
 
-    writeFileSync(configFilePath, JSON.stringify(validatorConfig, null, 2));
+    writeFileSync(
+      configFilePath,
+      JSON.stringify(validatorConfig, null, 2) + _getEol(configFileStr)
+    );
 
     // start the validator
     this.process = spawn("make", ["local-up"], {
