@@ -1,6 +1,6 @@
 {
   "name": "@tableland/local",
-  "version": "2.4.1",
+  "version": "3.0.0",
   "description": "Tooling to start a sandboxed Tableland network.",
   "repository": {
     "type": "git",
@@ -17,7 +17,7 @@
     "ethereum"
   ],
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=18.0.0"
   },
   "type": "module",
   "main": "./dist/cjs/main.js",
@@ -65,12 +65,12 @@
     "up:dev": "node dist/esm/up.js --validator ../go-tableland --registry ../evm-tableland"
   },
   "dependencies": {
-    "@tableland/sdk": "^6.0.0",
-    "@tableland/validator": "^1.8.1",
+    "@tableland/sdk": "^7.0.0",
+    "@tableland/validator": "^1.10.2",
     "cross-spawn": "^7.0.3",
     "dotenv": "^16.4.1",
     "enquirer": "^2.3.6",
-    "ethers": "^5.7.2",
+    "ethers": "^6.11.1",
     "shelljs": "^0.8.5",
     "yargs": "^17.5.1"
   }

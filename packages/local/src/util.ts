@@ -4,10 +4,10 @@ import { isAbsolute, join, resolve } from "node:path";
 import { EventEmitter } from "node:events";
 import { Readable } from "node:stream";
 import { type ChildProcess, type SpawnSyncReturns } from "node:child_process";
-import { getDefaultProvider, Wallet } from "ethers";
+import { JsonRpcProvider, Wallet, Network } from "ethers";
 import { helpers, Database, Registry, Validator } from "@tableland/sdk";
 import { chalk } from "./chalk.js";
-import { type LocalTableland } from "./main.js";
+import { LocalTableland } from "./main.js";
 
 // NOTE: this file exists in a way that works for tests, but we replace it before
 //       building cjs and esm with versions specific to those js flavors
@@ -504,25 +504,45 @@ export const getValidator = function (baseUrl?: string): Validator {
 /**
  * Get all of the connected accounts available for signing transactions.
  * Defaults to RPC URL `http://127.0.0.1:8545` if no instance is provided.
- * @param instance An instance of Local Tableland.
+ * @param instanceOrUrl An instance of Local Tableland or a chain RPC URL.
  * @returns An instance of a Tableland `Validator` with the correct `baseUrl`.
  */
-export const getAccounts = function (instance?: LocalTableland): Wallet[] {
+export const getAccounts = function (
+  instanceOrUrl?: LocalTableland | string
+): Wallet[] {
   // explicitly use IPv4 127.0.0.1
   // node resolves localhost to IPv4 or IPv6 depending on env
   return hardhatAccounts.map((account) => {
     const wallet = new Wallet(account);
-    const port = instance != null ? getRegistryPort(instance) : 8545;
-    return wallet.connect(getDefaultProvider(`http://127.0.0.1:${port}`));
+    const port = getRegistryPort(instanceOrUrl);
+    const chainName = "local-tableland";
+    const chainId = getChainId(chainName);
+    const network = new Network(chainName, chainId);
+    return wallet.connect(
+      new JsonRpcProvider(`http://127.0.0.1:${port}`, network, {
+        staticNetwork: true, // Reduce `eth_chainId` calls
+        batchStallTime: 0, // Don't batch requests, send them immediately
+        cacheTimeout: -1, //  Don't cache
+      })
+    );
   });
 };
 
 /**
  * Retrieve the port being used by the Registry on a local hardhat network.
  * Defaults to port 8545 if no instance is provided.
- * @param instance An instance of Local Tableland.
+ * @param instanceOrUrl An instance of Local Tableland or a chain RPC URL.
  * @returns The port number being used by the Registry.
  */
-export const getRegistryPort = (instance?: LocalTableland): number => {
-  return instance != null ? instance.registryPort : 8545;
+export const getRegistryPort = (
+  instanceOrUrl?: LocalTableland | string
+): number => {
+  let port = 8545;
+  if (instanceOrUrl == null) return port;
+  if (instanceOrUrl instanceof LocalTableland) {
+    port = instanceOrUrl.registryPort;
+  } else {
+    port = Number(new URL(instanceOrUrl).port);
+  }
+  return port;
 };
