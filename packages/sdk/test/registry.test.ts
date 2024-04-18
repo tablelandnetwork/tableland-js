@@ -2,7 +2,6 @@
 import { match, notStrictEqual, rejects, strictEqual } from "assert";
 import { describe, test } from "mocha";
 import { getAccounts } from "@tableland/local";
-import { NonceManager } from "ethers";
 import {
   getDefaultProvider,
   type MultiEventTransactionReceipt,
@@ -17,10 +16,7 @@ describe("registry", function () {
   // Note that we're using the second account here
   const [, wallet, controller] = getAccounts();
   const provider = getDefaultProvider(TEST_PROVIDER_URL);
-  const baseSigner = wallet.connect(provider);
-  // TODO: figure out why tests fail when using the base signer directly due to
-  // nonce too low / nonce has already been used / NONCE_EXPIRED error
-  const signer = new NonceManager(baseSigner);
+  const signer = wallet.connect(provider);
   const reg = new Registry({ signer });
 
   test("when initialized via constructor", async function () {
@@ -251,7 +247,7 @@ describe("registry", function () {
       strictEqual(rec?.hash.length, 66);
     });
 
-    test("when insert statement is valid", async function () {
+    test("when update statement is valid", async function () {
       const tx = await reg.mutate({
         chainId: receipt.chainId,
         tableId: receipt.tableIds[0],

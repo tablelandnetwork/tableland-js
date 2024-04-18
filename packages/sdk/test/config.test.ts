@@ -13,7 +13,7 @@ import {
   getChainId,
   type Eip1193Provider,
 } from "../src/helpers/index.js";
-import { checkProvider } from "../src/helpers/ethers.js";
+import { checkProviderOfSigner } from "../src/helpers/ethers.js";
 import { TEST_PROVIDER_URL, TEST_VALIDATOR_URL } from "./setup";
 
 describe("config", function () {
@@ -73,6 +73,8 @@ describe("config", function () {
               return [wallet.address];
             case "eth_accounts":
               return [wallet.address];
+            case "eth_chainId":
+              return "0x7a69"; // 31337
             default:
               throw new Error(
                 `method ${request.method} not supported by the mock provider`
@@ -99,6 +101,8 @@ describe("config", function () {
               return [wallet.address];
             case "eth_accounts":
               return [wallet.address];
+            case "eth_chainId":
+              return "0x7a69"; // 31337
             default:
               throw new Error(
                 `method ${request.method} not supported by the mock provider`
@@ -108,7 +112,7 @@ describe("config", function () {
       };
       (globalThis as any).ethereum = ethereum;
       const extracted = await extractSigner(conn);
-      checkProvider(extracted);
+      checkProviderOfSigner(extracted);
       notEqual(await extracted.getAddress(), null);
       notEqual(extracted.provider, null);
       delete (globalThis as any).ethereum;

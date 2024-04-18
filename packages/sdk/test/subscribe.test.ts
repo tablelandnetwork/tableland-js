@@ -1,11 +1,10 @@
 import { match, rejects, throws, strictEqual, deepStrictEqual } from "assert";
 import { EventEmitter } from "events";
 import { describe, test } from "mocha";
-import { getDefaultProvider } from "ethers";
 import { getAccounts } from "@tableland/local";
 import { Database } from "../src/database.js";
 import { Registry } from "../src/registry/index.js";
-import { TableEventBus } from "../src/helpers/subscribe.js";
+import { getDefaultProvider, TableEventBus } from "../src/helpers/index.js";
 import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
 
 describe("subscribe", function () {

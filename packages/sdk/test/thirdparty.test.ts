@@ -19,7 +19,8 @@ import {
 } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { getDefaultProvider } from "../src/helpers/index.js";
+import { NonceManager } from "ethers";
+import { createSigner } from "../src/helpers/index.js";
 import { Database } from "../src/index.js";
 import { type NameMapping } from "../src/helpers/index.js";
 import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
@@ -29,9 +30,11 @@ describe("thirdparty", function () {
 
   // Note that we're using the second account here
   const [, wallet] = getAccounts();
-  const provider = getDefaultProvider(TEST_PROVIDER_URL);
-  // const signer = wallet.connect(provider);
-  const baseSigner = wallet.connect(provider);
+  // Test out creating a signer via `createSigner`
+  const baseSigner = createSigner({
+    privateKey: wallet.privateKey,
+    providerUrl: TEST_PROVIDER_URL,
+  });
   // Also demonstrates the nonce manager usage
   const signer = new NonceManager(baseSigner);
   // an `aliases` option is required for Drizzle ORM usage since D1 uses `exec`

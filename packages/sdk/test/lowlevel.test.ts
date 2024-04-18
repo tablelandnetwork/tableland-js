@@ -196,7 +196,7 @@ describe("lowlevel", function () {
       );
     });
 
-    test("when select statment has a runtime error", async function () {
+    test("when select statement has a runtime error", async function () {
       await rejects(
         queryAll({ baseUrl }, "SELECT * FROM test_all_31337_0;"),
         (err: any) => {
@@ -315,7 +315,7 @@ describe("lowlevel", function () {
       }
     });
 
-    test("when select statment has a error parsing statement", async function () {
+    test("when select statement has a error parsing statement", async function () {
       // This rejects on the validator because we don't have the parser to catch the syntax error
       await rejects(
         queryFirst({ baseUrl }, "SELECT * FROM 3.14;"),
@@ -343,7 +343,7 @@ describe("lowlevel", function () {
       );
     });
 
-    test("when select statment has a runtime error", async function () {
+    test("when select statement has a runtime error", async function () {
       await rejects(
         queryFirst({ baseUrl }, "SELECT * FROM test_first_31337_0;"),
         (err: any) => {
@@ -414,7 +414,7 @@ describe("lowlevel", function () {
       }
     });
 
-    test("when select statment has a error parsing statement", async function () {
+    test("when select statement has a error parsing statement", async function () {
       await rejects(
         queryRaw({ baseUrl }, "SELECT * FROM 3.14;"),
         (err: any) => {
@@ -427,7 +427,7 @@ describe("lowlevel", function () {
       );
     });
 
-    test("when select statment has a runtime error", async function () {
+    test("when select statement has a runtime error", async function () {
       await rejects(
         queryRaw({ baseUrl }, "SELECT * FROM test_raw_31337_0;"),
         (err: any) => {
