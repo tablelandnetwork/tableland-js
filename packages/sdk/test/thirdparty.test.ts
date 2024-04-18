@@ -19,7 +19,6 @@ import {
 } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { NonceManager } from "ethers";
 import { getDefaultProvider } from "../src/helpers/index.js";
 import { Database } from "../src/index.js";
 import { type NameMapping } from "../src/helpers/index.js";

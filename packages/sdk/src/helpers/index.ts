@@ -39,6 +39,7 @@ export {
   type ContractTransactionReceipt,
   type RegistryReceipt,
   type MultiEventTransactionReceipt,
+  createSigner,
   getDefaultProvider,
   getSigner,
   getContractReceipt,

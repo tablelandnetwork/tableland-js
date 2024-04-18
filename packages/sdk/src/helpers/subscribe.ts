@@ -1,5 +1,5 @@
 import { EventEmitter } from "events";
-import type { ContractEventPayload } from "ethers";
+import { type ContractEventPayload } from "ethers";
 import asyncGenFromEmit from "@async-generators/from-emitter";
 import { type TablelandTables } from "@tableland/evm";
 import { pollTransactionReceipt } from "../validator/receipt.js";

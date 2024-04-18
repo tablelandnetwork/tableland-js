@@ -2,18 +2,22 @@ import {
   BrowserProvider,
   FeeData,
   getDefaultProvider,
+  JsonRpcProvider,
+  Network,
   parseUnits,
+  Wallet,
   type ContractTransactionResponse,
   type ContractTransactionReceipt,
   type Eip1193Provider,
   type EventLog,
+  type JsonRpcApiProviderOptions,
   type Log,
   type Overrides,
   type Signer,
 } from "ethers";
 import { type TransactionReceipt } from "../validator/receipt.js";
 import { type SignerConfig } from "./config.js";
-import { isTestnet } from "./chains.js";
+import { type ChainName, getChainInfo, isTestnet } from "./chains.js";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 declare module globalThis {
@@ -86,8 +90,8 @@ export async function getOverrides({
   // TODO: validate passing max fee params work the same as gasPrice bump by 10%
   const opts: Overrides = {};
   const { maxFeePerGas, maxPriorityFeePerGas } = await getFeeData(signer);
-  opts.maxFeePerGas = maxFeePerGas ?? null;
-  opts.maxPriorityFeePerGas = maxPriorityFeePerGas ?? null;
+  opts.maxFeePerGas = maxFeePerGas;
+  opts.maxPriorityFeePerGas = maxPriorityFeePerGas;
   return opts;
 }
 
@@ -182,9 +186,17 @@ export async function getSigner(external?: Eip1193Provider): Promise<Signer> {
       "provider error: missing request method on ethereum provider"
     );
   }
-  await provider.request({ method: "eth_requestAccounts" });
   const browserProvider = new BrowserProvider(provider);
-  return await browserProvider.getSigner();
+  // Calling `browserProvider.getSigner` leads to a loop of annoying logging:
+  // `JsonRpcProvider failed to detect network and cannot start up; retry in 1s
+  // (perhaps the URL is wrong or the node is not started)`. Calling
+  // `_detectNetwork` here ensures this doesn't happen, but follow here for
+  // this issue getting resolved in the future:
+  // https://github.com/ethers-io/ethers.js/issues/4377#issuecomment-2023855491
+  await browserProvider._detectNetwork();
+  const signer = await browserProvider.getSigner();
+
+  return signer;
 }
 
 /**
@@ -192,8 +204,8 @@ export async function getSigner(external?: Eip1193Provider): Promise<Signer> {
  * `signer._checkProvider`).
  * @param signer A signer instance.
  */
-export function checkProvider(signer: Signer): void {
-  if (!signer.provider) {
+export function checkProviderOfSigner(signer: Signer): void {
+  if (signer.provider == null) {
     throw new Error("missing provider: cannot connect to contract");
   }
 }
@@ -206,6 +218,44 @@ export function checkProvider(signer: Signer): void {
  */
 export function isEventLog(logOrEvent: EventLog | Log): logOrEvent is EventLog {
   return "args" in logOrEvent;
+}
+
+/**
+ * Create a signer with a private key, a provider URL, and a chain. Optionally,
+ * pass the chain name or ID to create a static network and reduce calls made by
+ * the provider (by not checking the chain ID).
+ * @param privateKey The private key of the signer.
+ * @param providerUrl The URL of the provider.
+ * @param chainNameOrId The chain name or ID.
+ * @param options Optional settings for the provider. See ethersjs
+ * {@link JsonRpcApiProviderOptions} for more information.
+ */
+export function createSigner({
+  privateKey,
+  providerUrl,
+  chainNameOrId,
+  options = {},
+}: {
+  privateKey: string;
+  providerUrl: string;
+  chainNameOrId?: ChainName | number;
+  options?: JsonRpcApiProviderOptions;
+}): Signer {
+  const wallet = new Wallet(privateKey);
+  let network: Network | undefined;
+  // Presume a static network if `chainNameOrId` is provided, which reduces the
+  // number of `eth_chainId` calls since the network is bound to the provider
+  const staticNetwork = chainNameOrId != null;
+  if (chainNameOrId != null) {
+    const { chainName, chainId } = getChainInfo(chainNameOrId);
+    network = new Network(chainName, chainId);
+  }
+  const provider = new JsonRpcProvider(providerUrl, network, {
+    staticNetwork,
+    ...options,
+  });
+  const signer = wallet.connect(provider);
+  return signer;
 }
 
 export {
