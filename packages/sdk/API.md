@@ -378,7 +378,7 @@ const isHealthy = await obj.health();
 console.log(isHealthy); // true
 
 const { name, schema } = await obj.getTableById({
-  chainId: 80001,
+  chainId: 80002,
   tableId: "1",
 });
 console.log(name); // healthbot_31337_1

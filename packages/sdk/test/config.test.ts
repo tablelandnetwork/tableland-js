@@ -8,11 +8,7 @@ import {
   type SignerConfig,
   type Config,
 } from "../src/helpers/config.js";
-import {
-  getDefaultProvider,
-  getChainId,
-  type Eip1193Provider,
-} from "../src/helpers/index.js";
+import { getChainId, type Eip1193Provider } from "../src/helpers/index.js";
 import { checkProviderOfSigner } from "../src/helpers/ethers.js";
 import { TEST_PROVIDER_URL, TEST_VALIDATOR_URL } from "./setup";
 
@@ -25,8 +21,7 @@ describe("config", function () {
     });
 
     test("where baseUrl is obtained via the chainId", async function () {
-      const [, wallet] = getAccounts();
-      const signer = wallet.connect(getDefaultProvider(TEST_PROVIDER_URL));
+      const [, signer] = getAccounts(TEST_PROVIDER_URL);
       const conn: SignerConfig = { signer };
       const extracted = await extractBaseUrl(conn);
       strictEqual(extracted, TEST_VALIDATOR_URL);
@@ -52,15 +47,14 @@ describe("config", function () {
   });
   describe("extractSigner()", function () {
     test("where signer is explicitly provided", async function () {
-      const [, wallet] = getAccounts();
-      const signer = wallet.connect(getDefaultProvider());
+      const [, signer] = getAccounts(TEST_PROVIDER_URL);
       const conn: SignerConfig = { signer };
       const extracted = await extractSigner(conn);
-      strictEqual(await extracted.getAddress(), wallet.address);
+      strictEqual(await extracted.getAddress(), signer.address);
     });
 
     test("where signer is obtained via an external provider", async function () {
-      const [, wallet] = getAccounts();
+      const [, wallet] = getAccounts(TEST_PROVIDER_URL);
       const conn: Config = {};
       // Mock RPC methods to work with `getSigner` calls within `extractSigner`
       const external = {
@@ -88,7 +82,7 @@ describe("config", function () {
     });
 
     test("where signer is obtained via an injected provider", async function () {
-      const [, wallet] = getAccounts();
+      const [, wallet] = getAccounts(TEST_PROVIDER_URL);
       const conn: Config = {};
       // Mock RPC methods to work with `getSigner` calls within `extractSigner`
       const ethereum: Eip1193Provider = {

@@ -29,11 +29,17 @@ describe("thirdparty", function () {
   this.timeout(TEST_TIMEOUT_FACTOR * 10000);
 
   // Note that we're using the second account here
-  const [, wallet] = getAccounts();
-  // Test out creating a signer via `createSigner`
+  const [, wallet] = getAccounts(TEST_PROVIDER_URL);
+  // Test out creating a signer via `createSigner` and same settings with
+  // `getAccounts` (needed for hardhat)
   const baseSigner = createSigner({
     privateKey: wallet.privateKey,
     providerUrl: TEST_PROVIDER_URL,
+    options: {
+      staticNetwork: true,
+      batchStallTime: 0,
+      cacheTimeout: -1,
+    },
   });
   // Also demonstrates the nonce manager usage
   const signer = new NonceManager(baseSigner);

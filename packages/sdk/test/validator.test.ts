@@ -10,11 +10,7 @@ import assert, {
 import { describe, test } from "mocha";
 import { getAccounts } from "@tableland/local";
 import { getDelay, getRange } from "../src/helpers/utils.js";
-import {
-  getDefaultProvider,
-  getBaseUrl,
-  getChainId,
-} from "../src/helpers/index.js";
+import { getBaseUrl, getChainId } from "../src/helpers/index.js";
 import { Database } from "../src/index.js";
 import { Validator } from "../src/validator/index.js";
 import type { WaitableTransactionReceipt } from "../src/registry/index.js";
@@ -29,10 +25,8 @@ const chainId = getChainId("local-tableland");
 describe("validator", function () {
   this.timeout(TEST_TIMEOUT_FACTOR * 10000);
   // Note that we're using the second account here
-  const [, wallet] = getAccounts();
-  const provider = getDefaultProvider(TEST_PROVIDER_URL);
+  const [, signer] = getAccounts(TEST_PROVIDER_URL);
   const baseUrl = getBaseUrl(chainId);
-  const signer = wallet.connect(provider);
   const db = new Database({ signer, autoWait: true, baseUrl });
   const api = new Validator({ baseUrl });
   let txn: WaitableTransactionReceipt;

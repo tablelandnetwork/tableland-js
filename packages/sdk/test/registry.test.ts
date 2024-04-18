@@ -2,10 +2,7 @@
 import { match, notStrictEqual, rejects, strictEqual } from "assert";
 import { describe, test } from "mocha";
 import { getAccounts } from "@tableland/local";
-import {
-  getDefaultProvider,
-  type MultiEventTransactionReceipt,
-} from "../src/helpers/index.js";
+import { type MultiEventTransactionReceipt } from "../src/helpers/index.js";
 import { getContractReceipt } from "../src/helpers/ethers.js";
 import { wrapTransaction } from "../src/registry/utils.js";
 import { Registry } from "../src/registry/index.js";
@@ -14,9 +11,7 @@ import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
 describe("registry", function () {
   this.timeout(TEST_TIMEOUT_FACTOR * 10000);
   // Note that we're using the second account here
-  const [, wallet, controller] = getAccounts();
-  const provider = getDefaultProvider(TEST_PROVIDER_URL);
-  const signer = wallet.connect(provider);
+  const [, signer, controller] = getAccounts(TEST_PROVIDER_URL);
   const reg = new Registry({ signer });
 
   test("when initialized via constructor", async function () {
@@ -135,7 +130,7 @@ describe("registry", function () {
       // Try to set it back, should be locked now (and also not allowed)
       await rejects(
         reg.setController({
-          controller: wallet.address,
+          controller: signer.address,
           tableName: {
             chainId: receipt.chainId,
             tableId: receipt.tableIds[0],
@@ -203,7 +198,7 @@ describe("registry", function () {
     test("when transfer fails", async function () {
       await rejects(
         reg.safeTransferFrom({
-          to: wallet.address,
+          to: signer.address,
           tableName: {
             chainId: receipt.chainId,
             tableId: receipt.tableIds[0],

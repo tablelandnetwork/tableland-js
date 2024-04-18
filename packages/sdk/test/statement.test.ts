@@ -19,9 +19,7 @@ import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
 describe("statement", function () {
   this.timeout(TEST_TIMEOUT_FACTOR * 10000);
   // Note that we're using the second account here
-  const [, wallet, wallet2] = getAccounts();
-  const provider = getDefaultProvider(TEST_PROVIDER_URL);
-  const signer = wallet.connect(provider);
+  const [, signer, wallet2] = getAccounts(TEST_PROVIDER_URL);
   const db = new Database({ signer });
 
   test("when initialized via constructor", async function () {
@@ -263,11 +261,11 @@ CREATE TABLE test_run (counter blurg);
 
     test("when trying to update a table on the wrong chain", async function () {
       await rejects(
-        db.prepare("UPDATE prefix_80001_1 SET counter=2").run(),
+        db.prepare("UPDATE prefix_80002_1 SET counter=2").run(),
         (err: any) => {
           strictEqual(
             err.cause.message,
-            "chain id mismatch: received 80001, expected 31337"
+            "chain id mismatch: received 80002, expected 31337"
           );
           return true;
         }

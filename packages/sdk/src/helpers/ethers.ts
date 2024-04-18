@@ -102,7 +102,7 @@ export async function getOverrides({
  */
 export function isPolygon(chainId: number | bigint): boolean {
   const chainIdNumber = typeof chainId === "bigint" ? Number(chainId) : chainId;
-  return chainIdNumber === 137 || chainIdNumber === 80001;
+  return chainIdNumber === 137 || chainIdNumber === 80002;
 }
 
 /**

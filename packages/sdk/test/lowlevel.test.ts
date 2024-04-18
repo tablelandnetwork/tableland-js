@@ -5,7 +5,6 @@ import { getAccounts } from "@tableland/local";
 import {
   overrideDefaults,
   getChainId,
-  getDefaultProvider,
   getBaseUrl,
   getContractAddress,
 } from "../src/helpers/index.js";
@@ -31,9 +30,7 @@ overrideDefaults("local-tableland", { contractAddress });
 describe("lowlevel", function () {
   this.timeout(TEST_TIMEOUT_FACTOR * 10000);
   // Note that we're using the second account here
-  const [, wallet] = getAccounts();
-  const provider = getDefaultProvider(TEST_PROVIDER_URL);
-  const signer = wallet.connect(provider);
+  const [, signer] = getAccounts(TEST_PROVIDER_URL);
   const baseUrl = getBaseUrl("localhost");
   console.log();
   console.log();
@@ -119,14 +116,14 @@ describe("lowlevel", function () {
           { signer },
           {
             type: "write",
-            sql: `UPDATE prefix_80001_1 SET counter=2`,
-            tables: ["prefix_80001_1"],
+            sql: `UPDATE prefix_80002_1 SET counter=2`,
+            tables: ["prefix_80002_1"],
           }
         ),
         (err: any) => {
           strictEqual(
             err.message,
-            "chain id mismatch: received 80001, expected 31337"
+            "chain id mismatch: received 80002, expected 31337"
           );
           return true;
         }

@@ -4,16 +4,14 @@ import { describe, test } from "mocha";
 import { getAccounts } from "@tableland/local";
 import { Database } from "../src/database.js";
 import { Registry } from "../src/registry/index.js";
-import { getDefaultProvider, TableEventBus } from "../src/helpers/index.js";
+import { TableEventBus } from "../src/helpers/index.js";
 import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
 
 describe("subscribe", function () {
   this.timeout(TEST_TIMEOUT_FACTOR * 15000);
 
   // Note that we're using the second account here
-  const [, wallet, wallet2] = getAccounts();
-  const provider = getDefaultProvider(TEST_PROVIDER_URL);
-  const signer = wallet.connect(provider);
+  const [, signer, wallet2] = getAccounts(TEST_PROVIDER_URL);
   const db = new Database({ signer });
 
   describe("TableEventBus", function () {

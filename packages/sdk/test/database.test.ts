@@ -22,11 +22,9 @@ import {
 describe("database", function () {
   this.timeout(TEST_TIMEOUT_FACTOR * 15000);
 
-  const accounts = getAccounts();
+  const accounts = getAccounts(TEST_PROVIDER_URL);
   // Note that we're using the second account here
-  const wallet = accounts[1];
-  const provider = getDefaultProvider(TEST_PROVIDER_URL);
-  const signer = wallet.connect(provider);
+  const signer = accounts[1];
   const db = new Database({ signer, autoWait: true });
 
   test("when initialized via constructor", async function () {
@@ -398,7 +396,7 @@ describe("database", function () {
 
       test("when doing grant with batch", async function () {
         // Need to make a lot of changes in this test, increase timeout
-        this.timeout(TEST_TIMEOUT_FACTOR * 25000);
+        this.timeout(TEST_TIMEOUT_FACTOR * 20000);
 
         const [batch] = await db.batch([
           db.prepare(`CREATE TABLE test_grant_1 (id INTEGER, name TEXT);`),
@@ -468,7 +466,7 @@ describe("database", function () {
       // test after insert is revoked
       test("when doing grant with batch", async function () {
         // Need to make a lot of changes in this test, increase timeout
-        this.timeout(TEST_TIMEOUT_FACTOR * 25000);
+        this.timeout(TEST_TIMEOUT_FACTOR * 20000);
 
         const [batch] = await db.batch([
           db.prepare(`CREATE TABLE test_revoke_1 (id INTEGER, name TEXT);`),
