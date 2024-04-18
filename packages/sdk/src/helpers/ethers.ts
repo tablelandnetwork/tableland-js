@@ -16,6 +16,7 @@ import {
   type Signer,
 } from "ethers";
 import { type TransactionReceipt } from "../validator/receipt.js";
+import { contractEventsTableIdx } from "./subscribe.js";
 import { type SignerConfig } from "./config.js";
 import { type ChainName, getChainInfo, isTestnet } from "./chains.js";
 
@@ -149,23 +150,38 @@ export async function getContractReceipt(
 
   /* c8 ignore next */
   const logs = receipt?.logs ?? [];
+  console.log(receipt);
   const events = logs.filter(isEventLog) ?? [];
   const transactionHash = receipt.hash;
   const blockNumber = receipt.blockNumber;
   const chainId = Number(tx.chainId);
   const tableIds: string[] = [];
   for (const event of events) {
-    const tableId =
-      event.args?.tableId != null && event.args.tableId.toString();
+    const args = event.args;
     switch (event.eventName) {
       case "CreateTable":
+        tableIds.push(
+          String(args[contractEventsTableIdx.CreateTable.tableIdIndex])
+        );
+        break;
       case "RunSQL":
-        if (tableId != null) tableIds.push(tableId);
-
+        tableIds.push(String(args[contractEventsTableIdx.RunSQL.tableIdIndex]));
+        break;
+      case "TransferTable":
+        tableIds.push(
+          String(args[contractEventsTableIdx.TransferTable.tableIdIndex])
+        );
+        break;
+      case "SetController":
+        tableIds.push(
+          String(args[contractEventsTableIdx.SetController.tableIdIndex])
+        );
         break;
       default:
-      // Could be a Transfer or other
+      // Could be a non-ITablelandTables event (e.g., `Transfer`)
     }
+    // Remove duplicates
+    tableIds.filter((value, index, self) => self.indexOf(value) === index);
   }
   return { tableIds, transactionHash, blockNumber, chainId };
 }

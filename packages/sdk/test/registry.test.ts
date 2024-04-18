@@ -190,9 +190,9 @@ describe("registry", function () {
           tableId: receipt.tableIds[0],
         },
       });
-      const rec = await tx.wait();
-      strictEqual(typeof rec?.hash, "string");
-      strictEqual(rec?.hash.length, 66);
+      const rec = await getContractReceipt(tx);
+      notStrictEqual(rec.tableIds[0], undefined);
+      strictEqual(rec.chainId, 31337);
     });
 
     test("when transfer fails", async function () {
