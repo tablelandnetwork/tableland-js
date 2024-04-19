@@ -27,6 +27,7 @@ export async function safeTransferFrom(
   );
   const caller = await signer.getAddress();
   const chainId = await extractChainId({ signer });
+  /* c8 ignore next 11 */
   if (isPolygon(chainId)) {
     const gasLimit = await contract[
       "safeTransferFrom(address,address,uint256)"

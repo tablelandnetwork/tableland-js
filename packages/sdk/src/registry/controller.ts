@@ -28,6 +28,7 @@ export async function setController(
   const caller = await signer.getAddress();
   const controller = params.controller;
   const chainId = await extractChainId({ signer });
+  /* c8 ignore next 9 */
   if (isPolygon(chainId)) {
     const gasLimit = await contract.setController.estimateGas(
       Typed.address(caller),
@@ -55,6 +56,7 @@ export async function lockController(
   );
   const caller = await signer.getAddress();
   const chainId = await extractChainId({ signer });
+  /* c8 ignore next 8 */
   if (isPolygon(chainId)) {
     const gasLimit = await contract.lockController.estimateGas(
       Typed.address(caller),

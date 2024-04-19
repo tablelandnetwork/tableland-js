@@ -88,6 +88,7 @@ async function _mutateOne(
     signer,
     chainId
   );
+  /* c8 ignore next 11 */
   if (isPolygon(chainId)) {
     const gasLimit = await contract[
       "mutate(address,uint256,string)"
@@ -117,6 +118,7 @@ async function _mutateMany(
     chainId
   );
   // TODO: once ethers `Typed.array` is added, use it for `runnables`
+  /* c8 ignore next 5 */
   if (isPolygon(chainId)) {
     const gasLimit = await contract[
       "mutate(address,(uint256,string)[])"

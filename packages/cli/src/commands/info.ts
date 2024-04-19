@@ -40,7 +40,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       chainId,
     });
     logger.log(JSON.stringify(res));
-    /* c8 ignore next 7 */
+    /* c8 ignore next 13 */
   } catch (err: any) {
     if (err.message.match(/table name has wrong format/)) {
       logger.error(

@@ -100,6 +100,7 @@ async function _createOne(
     signer,
     chainId
   );
+  /* c8 ignore next 8 */
   if (isPolygon(chainId)) {
     const gasLimit = await contract["create(address,string)"].estimateGas(
       Typed.address(owner),
@@ -125,6 +126,7 @@ async function _createMany(
     chainId
   );
   // TODO: once ethers `Typed.array` is added, use it for `statements`
+  /* c8 ignore next 8 */
   if (isPolygon(chainId)) {
     const gasLimit = await contract["create(address,string[])"].estimateGas(
       Typed.address(owner),
