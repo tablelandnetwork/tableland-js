@@ -1,5 +1,8 @@
 import type { Arguments, Argv } from "yargs";
+// TODO: remove ts-expect-errors once new Studio CLI published
+// @ts-expect-error studio cli missing types
 import type { GlobalOptions as StudioOptions } from "@tableland/studio-cli";
+// @ts-expect-error studio cli missing types
 import { commands as studioCommands } from "@tableland/studio-cli/dist/commands/index.js";
 import type { GlobalOptions } from "../cli.js";
 

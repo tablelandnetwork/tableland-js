@@ -1,7 +1,6 @@
 import { equal, match } from "node:assert";
 import { describe, test, afterEach, before } from "mocha";
-import { spy, stub, restore } from "sinon";
-import { ethers, getDefaultProvider } from "ethers";
+import { spy, restore } from "sinon";
 import yargs from "yargs/yargs";
 import { temporaryWrite } from "tempy";
 import mockStd from "mock-stdin";
@@ -10,7 +9,6 @@ import { Database } from "@tableland/sdk";
 import { jsonFileAliases } from "@tableland/node-helpers";
 import * as mod from "../src/commands/write.js";
 import { wait, logger } from "../src/utils.js";
-import { getResolverUndefinedMock } from "./mock.js";
 import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
 
 const defaultArgs = [
@@ -20,10 +18,8 @@ const defaultArgs = [
   "local-tableland",
 ];
 
-const accounts = getAccounts();
-const wallet = accounts[1];
-const provider = getDefaultProvider(TEST_PROVIDER_URL);
-const signer = wallet.connect(provider);
+const accounts = getAccounts(TEST_PROVIDER_URL);
+const signer = accounts[1];
 const db = new Database({ signer, autoWait: true });
 
 describe("commands/write", function () {
@@ -354,44 +350,6 @@ describe("commands/write", function () {
     equal(link, undefined);
   });
 
-  test("resolves table name to literal name if ens is not set", async function () {
-    const resolverMock = stub(
-      ethers.providers.JsonRpcProvider.prototype,
-      "getResolver"
-      // @ts-expect-error type does not match since we are testing undefined response
-    ).callsFake(getResolverUndefinedMock);
-
-    const { meta } = await db.prepare("CREATE TABLE ens_write (a int);").all();
-    const tableName = meta.txn?.name ?? "";
-
-    const account = accounts[1];
-    const privateKey = account.privateKey.slice(2);
-    const consoleLog = spy(logger, "log");
-
-    await yargs([
-      "write",
-      `insert into ${tableName} (a) values (1);`,
-      ...defaultArgs,
-      "--privateKey",
-      privateKey,
-      "--enableEnsExperiment",
-      "--ensProviderUrl",
-      "https://localhost:7070",
-    ])
-      .command(mod)
-      .parse();
-
-    const res = consoleLog.getCall(0).firstArg;
-    const value = JSON.parse(res);
-    const { transactionHash, link } = value.meta?.txn;
-
-    equal(typeof transactionHash, "string");
-    equal(transactionHash.startsWith("0x"), true);
-    equal(link, undefined);
-
-    equal(resolverMock.calledOnce, true);
-  });
-
   test("passes with GRANT statement", async function () {
     const account1 = accounts[1];
     const account2 = accounts[2];
@@ -401,7 +359,7 @@ describe("commands/write", function () {
     // db is configged with account 1
     const { meta } = await db.prepare("CREATE TABLE test_grant (a int);").all();
     const tableName = meta.txn?.name ?? "";
-    console.log(tableName);
+
     const consoleError = spy(logger, "error");
 
     // first ensure account 2 cannot insert

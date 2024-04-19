@@ -1,6 +1,7 @@
 import type yargs from "yargs";
 import type { Arguments, CommandBuilder } from "yargs";
 import { init } from "@tableland/sqlparser";
+import { isAddress } from "ethers";
 import { type GlobalOptions } from "../cli.js";
 import { setupCommand } from "../lib/commandSetup.js";
 import { logger, getTableNameWithAlias } from "../utils.js";
@@ -32,8 +33,12 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     const { receiver, chain } = argv;
     const name = await getTableNameWithAlias(argv.aliases, argv.name);
 
-    const tableDetails = await globalThis.sqlparser.validateTableName(name);
-    const chainId = tableDetails.chainId;
+    const { chainId } = await globalThis.sqlparser.validateTableName(name);
+    const isValidReceiver = isAddress(receiver);
+    if (!isValidReceiver) {
+      logger.error(`invalid address: '${receiver}'`);
+      return;
+    }
 
     const { registry } = await setupCommand({
       ...argv,

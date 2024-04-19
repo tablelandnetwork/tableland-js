@@ -1,6 +1,6 @@
 import type yargs from "yargs";
 import type { Arguments, CommandBuilder } from "yargs";
-import { Registry } from "@tableland/sdk";
+import { Registry, helpers } from "@tableland/sdk";
 import { init } from "@tableland/sqlparser";
 import {
   getTableNameWithAlias,
@@ -82,9 +82,10 @@ export const builder: CommandBuilder<Record<string, unknown>, Options> = (
           });
 
           const reg = new Registry({ signer });
-          const res = await reg.setController({ tableName: name, controller });
+          const tx = await reg.setController({ tableName: name, controller });
+          const res = await helpers.getContractReceipt(tx);
 
-          const link = getLink(chain, res.hash);
+          const link = getLink(chain, tx.hash);
           const out = { ...res, link };
           logger.log(JSON.stringify(out));
           /* c8 ignore next 3 */
@@ -115,9 +116,10 @@ export const builder: CommandBuilder<Record<string, unknown>, Options> = (
           });
 
           const reg = new Registry({ signer });
-          const res = await reg.lockController(name);
+          const tx = await reg.lockController(name);
+          const res = await helpers.getContractReceipt(tx);
 
-          const link = getLink(chain, res.hash);
+          const link = getLink(chain, tx.hash);
           const out = { ...res, link };
           logger.log(JSON.stringify(out));
           /* c8 ignore next 3 */

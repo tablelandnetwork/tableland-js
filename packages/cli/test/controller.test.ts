@@ -1,5 +1,4 @@
 import { equal, match } from "node:assert";
-import { getDefaultProvider } from "ethers";
 import { describe, test, afterEach, before } from "mocha";
 import { spy, restore } from "sinon";
 import yargs from "yargs/yargs";
@@ -24,10 +23,8 @@ const defaultArgs = [
   "local-tableland",
 ];
 
-const accounts = getAccounts();
-const wallet = accounts[1];
-const provider = getDefaultProvider(TEST_PROVIDER_URL, { chainId: 31337 });
-const signer = wallet.connect(provider);
+const accounts = getAccounts(TEST_PROVIDER_URL);
+const signer = accounts[1];
 const db = new Database({ signer, autoWait: true });
 
 describe("commands/controller", function () {
@@ -150,9 +147,9 @@ describe("commands/controller", function () {
       .parse();
 
     const res = consoleLog.getCall(0).firstArg;
-    const { hash, link } = JSON.parse(res);
-    equal(typeof hash, "string");
-    equal(hash.startsWith("0x"), true);
+    const { transactionHash, link } = JSON.parse(res);
+    equal(typeof transactionHash, "string");
+    equal(transactionHash.startsWith("0x"), true);
     equal(link, "");
   });
 
@@ -190,9 +187,8 @@ describe("commands/controller", function () {
 
     const res = consoleLog.getCall(0).firstArg;
     const value = JSON.parse(res);
-
-    equal(value.hash.startsWith("0x"), true);
-    equal(value.from, accounts[1].address);
+    equal(value.transactionHash.startsWith("0x"), true);
+    equal(value.tableIds[0], undefined); // No `setController` emitted for locking
   });
 
   describe("with table aliases", function () {
@@ -318,9 +314,9 @@ describe("commands/controller", function () {
         .parse();
 
       const res = consoleLog.getCall(0).firstArg;
-      const { hash, link } = JSON.parse(res);
-      equal(typeof hash, "string");
-      equal(hash.startsWith("0x"), true);
+      const { transactionHash, link } = JSON.parse(res);
+      equal(typeof transactionHash, "string");
+      equal(transactionHash.startsWith("0x"), true);
       equal(link != null, true);
     });
 
@@ -414,9 +410,8 @@ describe("commands/controller", function () {
 
       const res = consoleLog.getCall(0).firstArg;
       const value = JSON.parse(res);
-
-      equal(value.hash.startsWith("0x"), true);
-      equal(value.from, account.address);
+      equal(value.transactionHash.startsWith("0x"), true);
+      equal(value.tableIds[0], undefined); // No `setController` emitted for locking
     });
   });
 });

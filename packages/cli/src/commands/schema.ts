@@ -23,22 +23,12 @@ export const builder: CommandBuilder<Record<string, unknown>, Options> = (
 export const handler = async (argv: Arguments<Options>): Promise<void> => {
   try {
     await init();
-    let name = await getTableNameWithAlias(argv.aliases, argv.name);
-
-    // Check if the passed `name` uses ENS
-    // Note: duplicative `setupCommand` calls will occur with ENS, but this is
-    // required to properly parse the chainId from the table name
-    if (argv.enableEnsExperiment != null && argv.ensProviderUrl != null) {
-      const { ens } = await setupCommand({
-        ...argv,
-      });
-      if (ens != null) name = await ens.resolveTable(name);
-    }
+    const name = await getTableNameWithAlias(argv.aliases, argv.name);
 
     const [tableId, chainId] = name.split("_").reverse();
     const parts = name.split("_");
 
-    if (parts.length < 3 && argv.enableEnsExperiment == null) {
+    if (parts.length < 3) {
       logger.error(
         "invalid table name (name format is `{prefix}_{chainId}_{tableId}`)"
       );

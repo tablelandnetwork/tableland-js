@@ -64,11 +64,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       return;
     }
 
-    const { database: db, ens, normalize } = await setupCommand(argv);
-
-    if (argv.enableEnsExperiment != null && ens != null) {
-      statement = await ens.resolve(statement);
-    }
+    const { database: db, normalize } = await setupCommand(argv);
 
     // Parse the statement to see if more than one table is affected.
     // If yes, then combine into separate statements and batch.
