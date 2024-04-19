@@ -150,7 +150,6 @@ export async function getContractReceipt(
 
   /* c8 ignore next */
   const logs = receipt?.logs ?? [];
-  console.log(receipt);
   const events = logs.filter(isEventLog) ?? [];
   const transactionHash = receipt.hash;
   const blockNumber = receipt.blockNumber;
