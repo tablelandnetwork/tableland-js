@@ -45,7 +45,7 @@ export function getLink(chain: helpers.ChainName, hash: string): string {
     return `https://etherscan.io/tx/${hash}`;
   } else if (chain.includes("polygon")) {
     if (chain.includes("amoy")) {
-      return `https://www.oklink.com/amoy/tx/${hash}`;
+      return `https://amoy.polygonscan.com/tx/${hash}`;
     }
     return `https://polygonscan.com/tx/${hash}`;
   } else if (chain.includes("optimism")) {
