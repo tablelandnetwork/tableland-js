@@ -276,6 +276,7 @@ export function createSigner({
 export {
   getDefaultProvider,
   type Eip1193Provider,
+  type FeeData,
   type ContractTransactionResponse,
   type ContractTransactionReceipt,
   type Signer,
