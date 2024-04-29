@@ -57,9 +57,10 @@ interface PolygonFeeData {
 export async function getFeeData(signer: Signer): Promise<FeeData> {
   const network = await signer.provider?.getNetwork();
   const chainId = network?.chainId;
+  if (!chainId || !chainCanGetFeeData(chainId)) return new FeeData();
   // Use custom Polygon gas data, else, use built-in ethers method
   try {
-    if (chainId && isPolygon(chainId)) {
+    if (isPolygon(chainId)) {
       const url = isTestnet(Number(chainId))
         ? "https://gasstation-testnet.polygon.technology/amoy"
         : "https://gasstation.polygon.technology/v2";
@@ -71,10 +72,9 @@ export async function getFeeData(signer: Signer): Promise<FeeData> {
         BigInt(parseUnits(String(data.standard.maxPriorityFee), "gwei"))
       );
       return feeData;
-    } else {
-      const feeData = await signer.provider?.getFeeData();
-      return feeData ?? new FeeData();
     }
+    const feeData = await signer.provider?.getFeeData();
+    return feeData ?? new FeeData();
   } catch {
     return new FeeData(); // Return null values if fee data is not available
   }
@@ -104,6 +104,23 @@ export async function getOverrides({
 export function isPolygon(chainId: number | bigint): boolean {
   const chainIdNumber = typeof chainId === "bigint" ? Number(chainId) : chainId;
   return chainIdNumber === 137 || chainIdNumber === 80002;
+}
+
+/**
+ * Check if a chain can use the `eth_getMaxFeePerGas`,
+ * `eth_getMaxPriorityFeePerGas`, or `eth_estimateGas`, which are used by the
+ * built-in ethers `getFeeData` method.
+ * @param chainId The chainId of the network as a number or bigint.
+ * @returns A boolean that indicates if `getFeeData` can be used for the chain.
+ */
+export function chainCanGetFeeData(chainId: number | bigint): boolean {
+  const chainIdNumber = typeof chainId === "bigint" ? Number(chainId) : chainId;
+  // Hardhat, Optimism Sepolia, & Filecoin Calibration will return an RPC error
+  return !(
+    chainIdNumber === 31337 ||
+    chainIdNumber === 11155420 ||
+    chainIdNumber === 314159
+  );
 }
 
 /**
