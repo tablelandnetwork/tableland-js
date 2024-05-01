@@ -107,20 +107,16 @@ export function isPolygon(chainId: number | bigint): boolean {
 }
 
 /**
- * Check if a chain can use the `eth_getMaxFeePerGas`,
- * `eth_getMaxPriorityFeePerGas`, or `eth_estimateGas`, which are used by the
- * built-in ethers `getFeeData` method.
+ * Check if a chain can use the `eth_getMaxPriorityFeePerGas` or
+ * `eth_getMaxFeePerGas` calls, which are used by the built-in ethers
+ * `getFeeData` method.
  * @param chainId The chainId of the network as a number or bigint.
  * @returns A boolean that indicates if `getFeeData` can be used for the chain.
  */
 export function chainCanGetFeeData(chainId: number | bigint): boolean {
   const chainIdNumber = typeof chainId === "bigint" ? Number(chainId) : chainId;
-  // Hardhat, Optimism Sepolia, & Filecoin Calibration will return an RPC error
-  return !(
-    chainIdNumber === 31337 ||
-    chainIdNumber === 11155420 ||
-    chainIdNumber === 314159
-  );
+  // Optimism Sepolia and Filecoin Calibration will log an RPC error
+  return !(chainIdNumber === 11155420 || chainIdNumber === 314159);
 }
 
 /**
