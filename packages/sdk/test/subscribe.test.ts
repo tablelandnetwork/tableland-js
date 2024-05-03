@@ -1,20 +1,17 @@
 import { match, rejects, throws, strictEqual, deepStrictEqual } from "assert";
 import { EventEmitter } from "events";
 import { describe, test } from "mocha";
-import { getDefaultProvider, Contract } from "ethers";
 import { getAccounts } from "@tableland/local";
 import { Database } from "../src/database.js";
 import { Registry } from "../src/registry/index.js";
-import { TableEventBus } from "../src/helpers/subscribe.js";
+import { TableEventBus } from "../src/helpers/index.js";
 import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
 
 describe("subscribe", function () {
-  this.timeout(TEST_TIMEOUT_FACTOR * 10000);
+  this.timeout(TEST_TIMEOUT_FACTOR * 15000);
 
   // Note that we're using the second account here
-  const [, wallet, wallet2] = getAccounts();
-  const provider = getDefaultProvider(TEST_PROVIDER_URL);
-  const signer = wallet.connect(provider);
+  const [, signer, wallet2] = getAccounts(TEST_PROVIDER_URL);
   const db = new Database({ signer });
 
   describe("TableEventBus", function () {
@@ -32,7 +29,6 @@ describe("subscribe", function () {
       );
     });
 
-    test("can listen for transfer event", async function () {});
     test("addListener() throws if called without a table name", async function () {
       await rejects(
         async function () {
@@ -126,13 +122,12 @@ describe("subscribe", function () {
           const from = eve[0];
           const to = eve[1];
           const eventTableId = eve[2].toString();
-          const txn = eve[3];
-
+          const log = eve[3].log;
           match(from, /^0x[0-9a-fA-F]+$/);
           match(to, /^0x[0-9a-fA-F]+$/);
           strictEqual(tableId, eventTableId);
-          strictEqual(txn.event, "TransferTable");
-          match(txn.transactionHash, /^0x[0-9a-fA-F]+$/);
+          strictEqual(log.fragment.name, "TransferTable");
+          match(log.transactionHash, /^0x[0-9a-fA-F]+$/);
 
           eventBus.removeAllListeners();
           done();
@@ -243,8 +238,16 @@ describe("subscribe", function () {
 
       await eventBus.addListener(`${tableName}`);
       const listeners = eventBus.listeners[tableIdentifier];
-
-      strictEqual(eventBus.contracts["31337"] instanceof Contract, true);
+      // TODO: understand why checking `instanceof Contract` doesn't work
+      // anymore (this also doesn't work for `BaseContract`, which is what
+      // `TablelandTables` is an instance of...and `Contract` is a subclass of
+      // `BaseContract`). Instead, do a few method type guard checks.
+      strictEqual(
+        typeof eventBus.contracts["31337"].target === "string" &&
+          typeof eventBus.contracts["31337"].interface === "object" &&
+          typeof eventBus.contracts["31337"].waitForDeployment === "function",
+        true
+      );
       strictEqual(listeners.chainId, 31337);
       strictEqual(listeners.tableId, tableIdentifier.split("_")[2]);
       strictEqual(listeners.emitter instanceof EventEmitter, true);

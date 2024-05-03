@@ -1,16 +1,14 @@
 import { equal, deepStrictEqual, match } from "node:assert";
 import { describe, test, afterEach, before } from "mocha";
-import { spy, restore, stub } from "sinon";
+import { spy, restore } from "sinon";
 import yargs from "yargs/yargs";
 import { temporaryWrite } from "tempy";
 import mockStd from "mock-stdin";
-import { ethers, getDefaultProvider } from "ethers";
 import { Database } from "@tableland/sdk";
 import { getAccounts } from "@tableland/local";
 import { jsonFileAliases } from "@tableland/node-helpers";
 import * as mod from "../src/commands/read.js";
 import { wait, logger } from "../src/utils.js";
-import { getResolverMock } from "./mock.js";
 import {
   TEST_TIMEOUT_FACTOR,
   TEST_PROVIDER_URL,
@@ -26,10 +24,8 @@ const defaultArgs = [
   "local-tableland",
 ];
 
-const accounts = getAccounts();
-const wallet = accounts[1];
-const provider = getDefaultProvider(TEST_PROVIDER_URL);
-const signer = wallet.connect(provider);
+const accounts = getAccounts(TEST_PROVIDER_URL);
+const signer = accounts[1];
 const db = new Database({ signer, autoWait: true });
 
 describe("commands/read", function () {
@@ -236,31 +232,6 @@ describe("commands/read", function () {
 
     const value = consoleLog.getCall(0).firstArg;
     equal(value, '{"columns":[{"name":"0"}],"rows":[[1]]}');
-  });
-
-  test("ENS experimental replaces shorthand with tablename", async function () {
-    const fullReolverStub = stub(
-      ethers.providers.JsonRpcProvider.prototype,
-      "getResolver"
-    ).callsFake(getResolverMock);
-    const consoleLog = spy(logger, "log");
-    await yargs([
-      "read",
-      "select * from [foo.bar.ens];",
-      "--format",
-      "objects",
-      "--enableEnsExperiment",
-      "--ensProviderUrl",
-      "https://localhost:7070",
-    ])
-      .command(mod)
-      .parse();
-
-    fullReolverStub.restore();
-
-    const res = consoleLog.getCall(0).firstArg;
-    const value = JSON.parse(res);
-    equal(value[0].counter, 1);
   });
 
   test("passes when provided input from file", async function () {

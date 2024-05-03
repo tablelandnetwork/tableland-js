@@ -52,13 +52,13 @@ export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
     readonly Table: {
-      /** @example healthbot_80001_1 */
+      /** @example healthbot_80002_1 */
       readonly name?: string;
-      /** @example https://testnets.tableland.network/api/v1/tables/80001/1 */
+      /** @example https://testnets.tableland.network/api/v1/tables/80002/1 */
       readonly external_url?: string;
-      /** @example https://tables.testnets.tableland.xyz/80001/1.html */
+      /** @example https://tables.testnets.tableland.xyz/80002/1.html */
       readonly animation_url?: string;
-      /** @example https://tables.testnets.tableland.xyz/80001/1.svg */
+      /** @example https://tables.testnets.tableland.xyz/80002/1.svg */
       readonly image?: string;
       /**
        * @example {
@@ -100,7 +100,7 @@ export interface components {
       readonly block_number?: number;
       /**
        * Format: int32 
-       * @example 80001
+       * @example 80002
        */
       readonly chain_id?: number;
       /** @example The query statement is invalid */
@@ -151,7 +151,7 @@ export interface components {
     readonly Query: {
       /**
        * @description The SQL read query statement 
-       * @example select * from healthbot_80001_1
+       * @example select * from healthbot_80002_1
        */
       readonly statement?: string;
       /**
@@ -216,7 +216,7 @@ export interface operations {
       query: {
         /**
          * @description The SQL read query statement 
-         * @example select * from healthbot_80001_1
+         * @example select * from healthbot_80002_1
          */
         statement: string;
         /**
@@ -281,7 +281,7 @@ export interface operations {
       path: {
         /**
          * @description The parent chain to target 
-         * @example 80001
+         * @example 80002
          */
         chainId: number;
         /**
@@ -315,7 +315,7 @@ export interface operations {
       path: {
         /**
          * @description The parent chain to target 
-         * @example 80001
+         * @example 80002
          */
         chainId: number;
         /**

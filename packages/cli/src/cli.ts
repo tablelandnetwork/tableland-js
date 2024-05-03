@@ -44,8 +44,6 @@ export interface GlobalOptions {
   providerUrl: string;
   baseUrl: string;
   verbose: boolean;
-  ensProviderUrl?: string;
-  enableEnsExperiment?: boolean;
   aliases?: string;
 }
 
@@ -74,14 +72,6 @@ const _argv = yargs(hideBin(process.argv))
     alias: "c",
     type: "string",
     description: "The EVM chain to target",
-  })
-  .option("enableEnsExperiment", {
-    type: "boolean",
-    description: "Enable ENS experiment",
-  })
-  .option("ensProviderUrl", {
-    type: "string",
-    description: "Enable ENS experiment",
   })
   .option("privateKey", {
     alias: "k",

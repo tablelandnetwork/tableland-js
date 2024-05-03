@@ -1,8 +1,8 @@
 import { HardhatUserConfig, extendEnvironment } from "hardhat/config";
-import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { HardhatRuntimeEnvironment, NetworksUserConfig } from "hardhat/types";
 import "@openzeppelin/hardhat-upgrades";
 import "@nomicfoundation/hardhat-toolbox";
-import "@nomiclabs/hardhat-ethers";
+import "@nomicfoundation/hardhat-ethers";
 import {
   baseURIs,
   proxies,
@@ -10,7 +10,7 @@ import {
 } from "@tableland/evm/network";
 import { helpers } from "@tableland/sdk";
 
-const networks = {
+const networks: NetworksUserConfig = {
   hardhat: {
     chainId: process.env.FORK_CHAIN_ID
       ? parseInt(process.env.FORK_CHAIN_ID, 10)
@@ -41,7 +41,9 @@ if (process.env.FORK_CHAIN_ID && process.env.FORK_URL) {
   const chainInfo = helpers.getChainInfo(chainId);
   const chainName = chainInfo.chainName;
 
-  if (chainName === "matic") {
+  // Node: `networks.hardhat` is guaranteed to exist but need to satisfy type
+  // checker
+  if (networks.hardhat && chainName === "polygon") {
     networks.hardhat.chains = {
       137: {
         hardforkHistory: {

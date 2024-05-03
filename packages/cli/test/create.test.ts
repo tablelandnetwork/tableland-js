@@ -1,15 +1,13 @@
 import { equal, match } from "node:assert";
 import { describe, test, afterEach, before } from "mocha";
-import { spy, restore, stub } from "sinon";
+import { spy, restore } from "sinon";
 import yargs from "yargs/yargs";
 import { temporaryWrite } from "tempy";
 import mockStd from "mock-stdin";
 import { getAccounts } from "@tableland/local";
 import { jsonFileAliases } from "@tableland/node-helpers";
-import { ethers } from "ethers";
 import * as mod from "../src/commands/create.js";
 import { wait, logger } from "../src/utils.js";
-import { getResolverMock } from "./mock.js";
 import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
 
 const defaultArgs = [
@@ -19,7 +17,7 @@ const defaultArgs = [
   TEST_PROVIDER_URL,
 ];
 
-const accounts = getAccounts();
+const accounts = getAccounts(TEST_PROVIDER_URL);
 
 describe("commands/create", function () {
   this.timeout(30000 * TEST_TIMEOUT_FACTOR);
@@ -385,38 +383,6 @@ describe("commands/create", function () {
     equal(name.endsWith(tableId), true);
     equal(typeof transactionHash, "string");
     equal(transactionHash.startsWith("0x"), true);
-  });
-
-  test("create namespace with table using ENS", async () => {
-    const fullReolverStub = stub(
-      ethers.providers.JsonRpcProvider.prototype,
-      "getResolver"
-    ).callsFake(getResolverMock);
-
-    const consoleLog = spy(logger, "log");
-    const [account] = getAccounts();
-    const privateKey = account.privateKey.slice(2);
-    await yargs([
-      "create",
-      "id integer, message text",
-      "hello",
-      ...defaultArgs,
-      "--privateKey",
-      privateKey,
-      "--ns",
-      "foo.bar.eth",
-      "--enableEnsExperiment",
-      "--ensProviderUrl",
-      "https://localhost:8080",
-    ])
-      .command(mod)
-      .parse();
-
-    fullReolverStub.restore();
-
-    const res = consoleLog.getCall(1).firstArg;
-    const value = JSON.parse(res);
-    equal(value.ensNameRegistered, true);
   });
 
   test("create can accept custom providerUrl", async function () {

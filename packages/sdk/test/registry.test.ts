@@ -2,10 +2,7 @@
 import { match, notStrictEqual, rejects, strictEqual } from "assert";
 import { describe, test } from "mocha";
 import { getAccounts } from "@tableland/local";
-import {
-  getDefaultProvider,
-  type MultiEventTransactionReceipt,
-} from "../src/helpers/index.js";
+import { type MultiEventTransactionReceipt } from "../src/helpers/index.js";
 import { getContractReceipt } from "../src/helpers/ethers.js";
 import { wrapTransaction } from "../src/registry/utils.js";
 import { Registry } from "../src/registry/index.js";
@@ -14,9 +11,7 @@ import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
 describe("registry", function () {
   this.timeout(TEST_TIMEOUT_FACTOR * 10000);
   // Note that we're using the second account here
-  const [, wallet, controller] = getAccounts();
-  const provider = getDefaultProvider(TEST_PROVIDER_URL);
-  const signer = wallet.connect(provider);
+  const [, signer, controller] = getAccounts(TEST_PROVIDER_URL);
   const reg = new Registry({ signer });
 
   test("when initialized via constructor", async function () {
@@ -47,6 +42,7 @@ describe("registry", function () {
         chainId: 31337,
         statement: "create table test_no_chainid_31337 (id int, name text)",
       });
+      // @ts-expect-error `chainId` is read-only but can still be set
       tx.chainId = 0; // Wipe out chainId information, which can happen
       // with MetaMask if no provider is connected
       const wrapped = await wrapTransaction(reg.config, "test_no_chainid", tx);
@@ -59,8 +55,8 @@ describe("registry", function () {
         tableName: `test_controller_${receipt.chainId}_${receipt.tableIds[0]}`,
       });
       const rec = await tx.wait();
-      strictEqual(typeof rec.transactionHash, "string");
-      strictEqual(rec.transactionHash.length, 66);
+      strictEqual(typeof rec?.hash, "string");
+      strictEqual(rec?.hash.length, 66);
     });
 
     test("when setting the controller fails", async function () {
@@ -74,7 +70,7 @@ describe("registry", function () {
             err.message,
             // Actual hidden error:
             // reverted with custom error 'OwnerQueryForNonexistentToken()'
-            /cannot estimate gas; transaction may fail or may require manual gas limit.*/
+            /execution reverted (unknown custom error)*/
           );
           return true;
         }
@@ -115,7 +111,7 @@ describe("registry", function () {
             err.message,
             // Actual hidden error:
             // reverted with custom error 'OwnerQueryForNonexistentToken()'
-            /cannot estimate gas; transaction may fail or may require manual gas limit.*/
+            /execution reverted (unknown custom error)*/
           );
           return true;
         }
@@ -128,13 +124,13 @@ describe("registry", function () {
         tableId: receipt.tableIds[0],
       });
       const rec = await tx.wait();
-      strictEqual(typeof rec.transactionHash, "string");
-      strictEqual(rec.transactionHash.length, 66);
+      strictEqual(typeof rec?.hash, "string");
+      strictEqual(rec?.hash.length, 66);
 
       // Try to set it back, should be locked now (and also not allowed)
       await rejects(
         reg.setController({
-          controller: wallet.address,
+          controller: signer.address,
           tableName: {
             chainId: receipt.chainId,
             tableId: receipt.tableIds[0],
@@ -145,7 +141,7 @@ describe("registry", function () {
             err.message,
             // Actual hidden error:
             // reverted with custom error 'Unauthorized()'
-            /cannot estimate gas; transaction may fail or may require manual gas limit.*/
+            /execution reverted (unknown custom error)*/
           );
           return true;
         }
@@ -194,15 +190,15 @@ describe("registry", function () {
           tableId: receipt.tableIds[0],
         },
       });
-      const rec = await tx.wait();
-      strictEqual(typeof rec.transactionHash, "string");
-      strictEqual(rec.transactionHash.length, 66);
+      const rec = await getContractReceipt(tx);
+      notStrictEqual(rec.tableIds[0], undefined);
+      strictEqual(rec.chainId, 31337);
     });
 
     test("when transfer fails", async function () {
       await rejects(
         reg.safeTransferFrom({
-          to: wallet.address,
+          to: signer.address,
           tableName: {
             chainId: receipt.chainId,
             tableId: receipt.tableIds[0],
@@ -213,7 +209,7 @@ describe("registry", function () {
             err.message,
             // Actual hidden error:
             // reverted with custom error 'TransferFromIncorrectOwner()'
-            /cannot estimate gas; transaction may fail or may require manual gas limit.*/
+            /execution reverted (unknown custom error)*/
           );
           return true;
         }
@@ -234,6 +230,7 @@ describe("registry", function () {
       notStrictEqual(receipt.tableIds[0], undefined);
       strictEqual(receipt.chainId, 31337);
     });
+
     test("when insert statement is valid", async function () {
       const tx = await reg.mutate({
         chainId: receipt.chainId,
@@ -241,19 +238,19 @@ describe("registry", function () {
         statement: `INSERT INTO test_runsql_${receipt.chainId}_${receipt.tableIds[0]} (counter, info) VALUES (1, 'Tables');`,
       });
       const rec = await tx.wait();
-      strictEqual(typeof rec.transactionHash, "string");
-      strictEqual(rec.transactionHash.length, 66);
+      strictEqual(typeof rec?.hash, "string");
+      strictEqual(rec?.hash.length, 66);
     });
 
-    test("when insert statement is valid", async function () {
+    test("when update statement is valid", async function () {
       const tx = await reg.mutate({
         chainId: receipt.chainId,
         tableId: receipt.tableIds[0],
         statement: `UPDATE test_runsql_${receipt.chainId}_${receipt.tableIds[0]} SET counter=2`,
       });
       const rec = await tx.wait();
-      strictEqual(typeof rec.transactionHash, "string");
-      strictEqual(rec.transactionHash.length, 66);
+      strictEqual(typeof rec?.hash, "string");
+      strictEqual(rec?.hash.length, 66);
     });
   });
 });

@@ -54,15 +54,10 @@ async function confirmQuery(): Promise<boolean> {
 
 async function fireFullQuery(
   statement: string,
-  argv: any,
   tablelandConnection: Connections
 ): Promise<void> {
   try {
-    const { database, ens } = tablelandConnection;
-
-    if (argv.enableEnsExperiment != null && ens != null) {
-      statement = await ens.resolve(statement);
-    }
+    const { database } = tablelandConnection;
 
     const { type } = await globalThis.sqlparser.normalize(statement);
     if (type !== "read" && !(await confirmQuery())) return;
@@ -114,14 +109,14 @@ async function fireFullQuery(
   }
 }
 
-async function shellYeah(
+async function shell(
   argv: any,
   tablelandConnection: Connections,
   history: string[] = []
 ): Promise<void> {
   try {
     if (argv.statement != null) {
-      await fireFullQuery(argv.statement, argv, tablelandConnection);
+      await fireFullQuery(argv.statement, tablelandConnection);
       delete argv.statement;
     } else {
       let statement = "";
@@ -165,13 +160,13 @@ async function shellYeah(
       }
       rl.close();
       if (!statement.trim().startsWith(".")) {
-        await fireFullQuery(statement, argv, tablelandConnection);
+        await fireFullQuery(statement, tablelandConnection);
       }
     }
 
     // NOTE: we must use catch here instead of awaiting because this is calling
     //       itself and the tests will hang forever if we use `await`
-    shellYeah(argv, tablelandConnection, history).catch((err) => {
+    shell(argv, tablelandConnection, history).catch((err) => {
       /* c8 ignore next 1 */
       logger.error(err);
     });
@@ -218,13 +213,8 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     logger.log(
       `Connected to ${network.chainName} using ${await signer.getAddress()}`
     );
-    if (argv.enableEnsExperiment != null) {
-      logger.log(
-        "ENS namespace is experimental, no promises that it will exist in future builds"
-      );
-    }
 
-    await shellYeah(argv, connections);
+    await shell(argv, connections);
   } catch (e: any) {
     logger.error(e.message);
   }

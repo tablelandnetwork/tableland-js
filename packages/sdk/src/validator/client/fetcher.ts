@@ -262,7 +262,7 @@ function fetcher<Paths>() {
                 init: mergeRequestInit(defaultInit, init),
                 fetch,
               })
-          )) as CreateFetch<M, Paths[P][M]>,
+          )) as unknown as CreateFetch<M, Paths[P][M]>,
       }),
     }),
   };

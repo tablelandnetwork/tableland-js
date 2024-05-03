@@ -1,17 +1,13 @@
 import { equal } from "node:assert";
 import { describe, test, afterEach, before } from "mocha";
-import { spy, restore, stub } from "sinon";
+import { spy, restore } from "sinon";
 import yargs from "yargs/yargs";
-import { ethers, getDefaultProvider } from "ethers";
 import { getAccounts } from "@tableland/local";
 import { Database } from "@tableland/sdk";
 import { jsonFileAliases } from "@tableland/node-helpers";
 import { temporaryWrite } from "tempy";
-import ensLib from "../src/lib/EnsCommand";
 import * as mod from "../src/commands/info.js";
-import * as ns from "../src/commands/namespace.js";
 import { logger, wait } from "../src/utils.js";
-import { getResolverMock } from "./mock.js";
 import {
   TEST_TIMEOUT_FACTOR,
   TEST_PROVIDER_URL,
@@ -25,10 +21,8 @@ const defaultArgs = [
   TEST_VALIDATOR_URL,
 ];
 
-const accounts = getAccounts();
-const wallet = accounts[1];
-const provider = getDefaultProvider(TEST_PROVIDER_URL);
-const signer = wallet.connect(provider);
+const accounts = getAccounts(TEST_PROVIDER_URL);
+const signer = accounts[1];
 
 describe("commands/info", function () {
   this.timeout(30000 * TEST_TIMEOUT_FACTOR);
@@ -121,131 +115,6 @@ describe("commands/info", function () {
 
     const res = consoleLog.getCall(0).firstArg;
     const value = JSON.parse(res);
-    const { name, attributes, externalUrl } = value;
-
-    equal(name, "healthbot_31337_1");
-    equal(externalUrl, `${TEST_VALIDATOR_URL}/tables/31337/1`);
-    equal(Array.isArray(attributes), true);
-  });
-
-  test("passes with valid ENS name", async function () {
-    // Must do initial ENS setup and set the record name to the table
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    stub(ensLib, "ENS").callsFake(function () {
-      return {
-        withProvider: () => {
-          return {
-            setRecords: async () => {
-              return false;
-            },
-          };
-        },
-      };
-    });
-    stub(ethers.providers.JsonRpcProvider.prototype, "getResolver").callsFake(
-      getResolverMock
-    );
-
-    const consoleLog = spy(logger, "log");
-    await yargs([
-      "namespace",
-      "set",
-      "foo.bar.eth",
-      "healthbot=healthbot_31337_1",
-      "--enableEnsExperiment",
-      "--ensProviderUrl",
-      "https://localhost:7070",
-      ...defaultArgs,
-    ])
-      .command(ns)
-      .parse();
-
-    let res = consoleLog.getCall(0).firstArg;
-    let value = JSON.parse(res);
-    equal(value.domain, "foo.bar.eth");
-    equal(value.records[0].key, "healthbot");
-    equal(value.records[0].value, "healthbot_31337_1");
-
-    // Now, check the table info using ENS as the name
-    await yargs([
-      "info",
-      "foo.bar.eth",
-      ...defaultArgs,
-      "--enableEnsExperiment",
-      "--ensProviderUrl",
-      "https://localhost:7070",
-    ])
-      .command(mod)
-      .parse();
-
-    res = consoleLog.getCall(1).firstArg;
-    value = JSON.parse(res);
-    const { name, attributes, externalUrl } = value;
-
-    equal(name, "healthbot_31337_1");
-    equal(externalUrl, `${TEST_VALIDATOR_URL}/tables/31337/1`);
-    equal(Array.isArray(attributes), true);
-  });
-
-  test("passes with valid ENS name when invalid alias provided", async function () {
-    // Must do initial ENS setup and set the record name to the table
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    stub(ensLib, "ENS").callsFake(function () {
-      return {
-        withProvider: () => {
-          return {
-            setRecords: async () => {
-              return false;
-            },
-          };
-        },
-      };
-    });
-    stub(ethers.providers.JsonRpcProvider.prototype, "getResolver").callsFake(
-      getResolverMock
-    );
-
-    const consoleLog = spy(logger, "log");
-    await yargs([
-      "namespace",
-      "set",
-      "foo.bar.eth",
-      "healthbot=healthbot_31337_1",
-      "--enableEnsExperiment",
-      "--ensProviderUrl",
-      "https://localhost:7070",
-      ...defaultArgs,
-    ])
-      .command(ns)
-      .parse();
-
-    let res = consoleLog.getCall(0).firstArg;
-    let value = JSON.parse(res);
-    equal(value.domain, "foo.bar.eth");
-    equal(value.records[0].key, "healthbot");
-    equal(value.records[0].value, "healthbot_31337_1");
-
-    // Create an empty aliases file
-    const aliasesFilePath = await temporaryWrite(`{}`, {
-      extension: "json",
-    });
-
-    // Now, check the table info using ENS as the name
-    await yargs([
-      "info",
-      "foo.bar.eth",
-      ...defaultArgs,
-      "--enableEnsExperiment",
-      "--ensProviderUrl",
-      "https://localhost:7070",
-      "--aliases",
-      aliasesFilePath,
-    ])
-      .command(mod)
-      .parse();
-
-    res = consoleLog.getCall(1).firstArg;
-    value = JSON.parse(res);
     const { name, attributes, externalUrl } = value;
 
     equal(name, "healthbot_31337_1");

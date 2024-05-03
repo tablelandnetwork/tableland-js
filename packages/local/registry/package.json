@@ -1,12 +1,12 @@
 {
   "name": "local-tableland-registry",
   "dependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
-    "@nomiclabs/hardhat-ethers": "^2.2.3",
+    "@nomicfoundation/hardhat-ethers": "^3.0.5",
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "@openzeppelin/contracts-upgradeable": "^4.8.3",
-    "@openzeppelin/hardhat-upgrades": "^1.21.0",
-    "@tableland/evm": "^4.5.0",
+    "@openzeppelin/hardhat-upgrades": "^3.0.5",
+    "@tableland/evm": "^6.1.0",
     "erc721a-upgradeable": "^4.2.2",
-    "hardhat": "^2.19.0"
+    "hardhat": "^2.22.2"
   }
 }

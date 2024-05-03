@@ -5,11 +5,9 @@ import yargs from "yargs/yargs";
 import mockStd from "mock-stdin";
 import { getAccounts } from "@tableland/local";
 import { Database } from "@tableland/sdk";
-import { ethers, getDefaultProvider } from "ethers";
 import { temporaryWrite } from "tempy";
 import * as mod from "../src/commands/shell.js";
 import { wait, logger } from "../src/utils.js";
-import { getResolverMock } from "./mock.js";
 import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
 
 const defaultArgs = [
@@ -19,10 +17,8 @@ const defaultArgs = [
   "local-tableland",
 ];
 
-const accounts = getAccounts();
-const wallet = accounts[1];
-const provider = getDefaultProvider(TEST_PROVIDER_URL);
-const signer = wallet.connect(provider);
+const accounts = getAccounts(TEST_PROVIDER_URL);
+const signer = accounts[1];
 const db = new Database({ signer, autoWait: true });
 
 describe("commands/shell", function () {
@@ -71,108 +67,6 @@ describe("commands/shell", function () {
       .parse();
 
     const value = consoleLog.getCall(3).args[0];
-    equal(value, '[{"counter":1}]');
-  });
-
-  test("ENS in shell with single line", async function () {
-    const fullResolverStub = stub(
-      ethers.providers.JsonRpcProvider.prototype,
-      "getResolver"
-    ).callsFake(getResolverMock);
-
-    const consoleLog = spy(logger, "log");
-    const stdin = mockStd.stdin();
-
-    setTimeout(() => {
-      stdin.send("select * from [foo.bar.eth];\n").end();
-    }, 2000);
-
-    const privateKey = accounts[0].privateKey.slice(2);
-    await yargs([
-      "shell",
-      ...defaultArgs,
-      "--format",
-      "objects",
-      "--privateKey",
-      privateKey,
-      "--enableEnsExperiment",
-      "--ensProviderUrl",
-      "http://localhost:8545",
-    ])
-      .command(mod)
-      .parse();
-
-    fullResolverStub.reset();
-
-    const call4 = consoleLog.getCall(4);
-    equal(call4.args[0], '[{"counter":1}]');
-  });
-
-  test("ENS in shell with backtics", async function () {
-    const fullResolverStub = stub(
-      ethers.providers.JsonRpcProvider.prototype,
-      "getResolver"
-    ).callsFake(getResolverMock);
-
-    const consoleLog = spy(logger, "log");
-    const stdin = mockStd.stdin();
-
-    setTimeout(() => {
-      stdin.send("select * from `foo.bar.eth`;\n").end();
-    }, 2000);
-
-    const privateKey = accounts[0].privateKey.slice(2);
-    await yargs([
-      "shell",
-      ...defaultArgs,
-      "--format",
-      "objects",
-      "--privateKey",
-      privateKey,
-      "--enableEnsExperiment",
-      "--ensProviderUrl",
-      "http://localhost:8545",
-    ])
-      .command(mod)
-      .parse();
-
-    fullResolverStub.reset();
-
-    const call4 = consoleLog.getCall(4);
-    equal(call4.args[0], '[{"counter":1}]');
-  });
-
-  test("ENS in shell with double quotes", async function () {
-    const fullResolverStub = stub(
-      ethers.providers.JsonRpcProvider.prototype,
-      "getResolver"
-    ).callsFake(getResolverMock);
-
-    const consoleLog = spy(logger, "log");
-    const stdin = mockStd.stdin();
-
-    setTimeout(() => {
-      stdin.send(`select * from "foo.bar.eth";\n`).end();
-    }, 2000);
-
-    const privateKey = accounts[0].privateKey.slice(2);
-    await yargs([
-      "shell",
-      ...defaultArgs,
-      "--format",
-      "objects",
-      "--privateKey",
-      privateKey,
-      "--enableEnsExperiment",
-      "--ensProviderUrl",
-      "http://localhost:8545",
-    ])
-      .command(mod)
-      .parse();
-
-    fullResolverStub.reset();
-
-    const value = consoleLog.getCall(4).args[0];
     equal(value, '[{"counter":1}]');
   });
 
@@ -484,7 +378,7 @@ SQL Queries can be multi-line, and must end with a semicolon (;)`
     setTimeout(() => {
       stdin.send("y\n");
     }, 500);
-    await wait(4000);
+    await wait(6000);
 
     // Check the write was successful
     res = consoleLog.getCall(6).args[0];

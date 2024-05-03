@@ -1,5 +1,9 @@
+import { Typed } from "ethers";
 import { type SignerConfig } from "../helpers/config.js";
-import { type ContractTransaction, isPolygon } from "../helpers/ethers.js";
+import {
+  type ContractTransactionResponse,
+  isPolygon,
+} from "../helpers/ethers.js";
 import { validateTableName } from "../helpers/parser.js";
 import {
   getContractAndOverrides,
@@ -67,7 +71,7 @@ export type MutateParams = MutateOneParams | MutateManyParams;
 export async function mutate(
   config: SignerConfig,
   params: MutateParams
-): Promise<ContractTransaction> {
+): Promise<ContractTransactionResponse> {
   if (isMutateOne(params)) {
     return await _mutateOne(config, params);
   }
@@ -78,22 +82,28 @@ export async function mutate(
 async function _mutateOne(
   { signer }: SignerConfig,
   { statement, tableId, chainId }: MutateOneParams
-): Promise<ContractTransaction> {
+): Promise<ContractTransactionResponse> {
   const caller = await signer.getAddress();
   const { contract, overrides } = await getContractAndOverrides(
     signer,
     chainId
   );
+  /* c8 ignore next 11 */
   if (isPolygon(chainId)) {
-    const gasLimit = await contract.estimateGas[
+    const gasLimit = await contract[
       "mutate(address,uint256,string)"
-    ](caller, tableId, statement, overrides);
-    overrides.gasLimit = Math.floor(gasLimit.toNumber() * 1.2);
+    ].estimateGas(
+      Typed.address(caller),
+      Typed.uint256(tableId),
+      Typed.string(statement),
+      overrides
+    );
+    overrides.gasLimit = Math.floor(Number(gasLimit) * 1.2);
   }
   return await contract["mutate(address,uint256,string)"](
-    caller,
-    tableId,
-    statement,
+    Typed.address(caller),
+    Typed.uint256(tableId),
+    Typed.string(statement),
     overrides
   );
 }
@@ -101,20 +111,22 @@ async function _mutateOne(
 async function _mutateMany(
   { signer }: SignerConfig,
   { runnables, chainId }: MutateManyParams
-): Promise<ContractTransaction> {
+): Promise<ContractTransactionResponse> {
   const caller = await signer.getAddress();
   const { contract, overrides } = await getContractAndOverrides(
     signer,
     chainId
   );
+  // TODO: once ethers `Typed.array` is added, use it for `runnables`
+  /* c8 ignore next 5 */
   if (isPolygon(chainId)) {
-    const gasLimit = await contract.estimateGas[
+    const gasLimit = await contract[
       "mutate(address,(uint256,string)[])"
-    ](caller, runnables, overrides);
-    overrides.gasLimit = Math.floor(gasLimit.toNumber() * 1.2);
+    ].estimateGas(Typed.address(caller), runnables, overrides);
+    overrides.gasLimit = Math.floor(Number(gasLimit) * 1.2);
   }
   return await contract["mutate(address,(uint256,string)[])"](
-    caller,
+    Typed.address(caller),
     runnables,
     overrides
   );

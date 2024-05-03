@@ -1,6 +1,6 @@
 {
   "name": "@tableland/node-helpers",
-  "version": "0.0.2",
+  "version": "1.0.0",
   "description": "Helpers for the @tableland/sdk in a Node.js environment",
   "repository": {
     "type": "git",
@@ -47,7 +47,7 @@
     "build": "npm run build:esm && npm run build:cjs && ./fixup"
   },
   "devDependencies": {
-    "@tableland/sdk": "^5.0.0",
+    "@tableland/sdk": "^7.0.0",
     "tempy": "^3.1.0"
   }
 }

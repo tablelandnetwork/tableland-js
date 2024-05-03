@@ -1,5 +1,4 @@
-import { equal } from "node:assert";
-import { getDefaultProvider } from "ethers";
+import { equal, match } from "node:assert";
 import { describe, test, afterEach, before } from "mocha";
 import { spy, restore } from "sinon";
 import yargs from "yargs/yargs";
@@ -7,6 +6,7 @@ import { temporaryWrite } from "tempy";
 import { getAccounts } from "@tableland/local";
 import { helpers, Database } from "@tableland/sdk";
 import { jsonFileAliases } from "@tableland/node-helpers";
+import { ZeroAddress } from "ethers";
 import * as mod from "../src/commands/transfer.js";
 import { logger, wait } from "../src/utils.js";
 import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
@@ -19,10 +19,8 @@ const defaultArgs = [
 ];
 
 // account[0] is the Validator's wallet, try to avoid using that
-const accounts = getAccounts();
-const wallet = accounts[1];
-const provider = getDefaultProvider(TEST_PROVIDER_URL);
-const signer = wallet.connect(provider);
+const accounts = getAccounts(TEST_PROVIDER_URL);
+const signer = accounts[1];
 const db = new Database({ signer, autoWait: true });
 
 describe("commands/transfer", function () {
@@ -43,12 +41,7 @@ describe("commands/transfer", function () {
 
   test("throws without privateKey", async function () {
     const consoleError = spy(logger, "error");
-    await yargs([
-      "transfer",
-      tableName,
-      "0x0000000000000000000000",
-      ...defaultArgs,
-    ])
+    await yargs(["transfer", tableName, ZeroAddress, ...defaultArgs])
       .command(mod)
       .parse();
 
@@ -66,7 +59,7 @@ describe("commands/transfer", function () {
     await yargs([
       "transfer",
       tableName,
-      "0x0000000000000000000000000000000000000000",
+      ZeroAddress,
       "--chain",
       "does-not-exist",
       // don't use defaults since we are testing chain
@@ -109,11 +102,22 @@ describe("commands/transfer", function () {
       .command(mod)
       .parse();
 
-    const value = consoleError.getCall(0).firstArg;
-    equal(
-      value,
-      'invalid address (argument="address", value="0x00", code=INVALID_ARGUMENT, version=address/5.7.0)'
-    );
+    const value1 = consoleError.getCall(0).firstArg;
+    match(value1, /invalid address/);
+
+    await yargs([
+      "transfer",
+      tableName,
+      "0xabcdefghijklmnopqrstuvwxyzabcdefabcdefab",
+      "--privateKey",
+      privateKey,
+      ...defaultArgs,
+    ])
+      .command(mod)
+      .parse();
+
+    const value2 = consoleError.getCall(1).firstArg;
+    match(value2, /invalid address/);
   });
 
   test("throws with invalid table aliases file", async function () {

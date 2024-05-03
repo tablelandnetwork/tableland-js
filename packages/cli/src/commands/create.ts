@@ -30,10 +30,6 @@ export const builder: CommandBuilder<Record<string, unknown>, Options> = (
       description:
         "Table name prefix (ignored if full create statement is provided)",
     })
-    .option("ns", {
-      type: "string",
-      description: "ENS namespace to resolve schema from (experimental)",
-    })
     .option("file", {
       alias: "f",
       description: "Get statement from input file",
@@ -83,11 +79,8 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     }
 
     // now that we have parsed the command args, run the create operation
-    const { database: db, ens, normalize } = await setupCommand(argv);
+    const { database: db, normalize } = await setupCommand(argv);
 
-    if (argv.enableEnsExperiment != null && ens != null) {
-      statement = await ens.resolve(statement);
-    }
     statement = statement
       .replace(/\n/g, "")
       .replace(/\r/g, "")
@@ -115,19 +108,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       // send the original statement as a single create
       const res = await db.prepare(statement).all();
       const link = getLink(chain, res.meta.txn?.transactionHash as string);
-      const out = { ...res, link, ensNameRegistered: false };
-
-      if (
-        check == null &&
-        argv.ns != null &&
-        argv.enableEnsExperiment != null &&
-        prefix != null
-      ) {
-        const register = (await ens?.addTableRecords(argv.ns, [
-          { key: prefix, value: out.meta.txn?.name as string },
-        ])) as boolean;
-        out.ensNameRegistered = register;
-      }
+      const out = { ...res, link };
 
       logger.log(JSON.stringify(out));
       return;
@@ -139,21 +120,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
       })
     );
     const link = getLink(chain, res.meta.txn?.transactionHash as string);
-    const out = { ...res, link, ensNameRegistered: false };
-
-    /* c8 ignore next 11 */
-    if (
-      check == null &&
-      argv.ns != null &&
-      argv.enableEnsExperiment != null &&
-      prefix != null
-    ) {
-      const register = (await ens?.addTableRecords(argv.ns, [
-        { key: prefix, value: out.meta.txn?.name as string },
-      ])) as boolean;
-      out.ensNameRegistered = register;
-    }
-
+    const out = { ...res, link };
     logger.log(JSON.stringify(out));
     /* c8 ignore next 7 */
   } catch (err: any) {

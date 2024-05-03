@@ -1,4 +1,9 @@
-import { Wallet, providers, getDefaultProvider } from "ethers";
+import {
+  Wallet,
+  JsonRpcProvider,
+  getDefaultProvider,
+  type Provider,
+} from "ethers";
 import { helpers } from "@tableland/sdk";
 import { jsonFileAliases } from "@tableland/node-helpers";
 
@@ -39,8 +44,8 @@ export function getLink(chain: helpers.ChainName, hash: string): string {
     }
     return `https://etherscan.io/tx/${hash}`;
   } else if (chain.includes("polygon")) {
-    if (chain.includes("mumbai")) {
-      return `https://mumbai.polygonscan.com/tx/${hash}`;
+    if (chain.includes("amoy")) {
+      return `https://amoy.polygonscan.com/tx/${hash}`;
     }
     return `https://polygonscan.com/tx/${hash}`;
   } else if (chain.includes("optimism")) {
@@ -84,10 +89,10 @@ export async function getWalletWithProvider({
   const wallet = new Wallet(privateKey);
 
   // We want to acquire a provider using the params given by the caller.
-  let provider: providers.BaseProvider | undefined;
+  let provider: Provider | undefined;
   // first we check if a providerUrl was given.
   if (typeof providerUrl === "string") {
-    provider = new providers.JsonRpcProvider(providerUrl, network.name);
+    provider = new JsonRpcProvider(providerUrl, network.name);
   }
 
   // Second we will check if the "local-tableland" chain is being used,
@@ -95,7 +100,7 @@ export async function getWalletWithProvider({
   // note: can't test this since the cli tests are using non-standard port for chain
   /* c8 ignore next 3 */
   if (provider == null && network.chainName === "local-tableland") {
-    provider = new providers.JsonRpcProvider("http://127.0.0.1:8545");
+    provider = new JsonRpcProvider("http://127.0.0.1:8545");
   }
 
   // Finally we use the default provider
@@ -118,7 +123,7 @@ export async function getWalletWithProvider({
 
   let providerChainId: number | undefined;
   try {
-    providerChainId = (await provider.getNetwork()).chainId;
+    providerChainId = Number((await provider.getNetwork()).chainId);
   } catch (err) {
     throw new Error("cannot determine provider chain ID");
   }

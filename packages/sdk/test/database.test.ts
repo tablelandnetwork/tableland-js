@@ -8,10 +8,10 @@ import assert, {
 } from "assert";
 import { describe, test } from "mocha";
 import { getAccounts } from "@tableland/local";
-import { getDefaultProvider } from "ethers";
 import { Database } from "../src/database.js";
 import { Statement } from "../src/statement.js";
 import { createPollingController } from "../src/helpers/await.js";
+import { getDefaultProvider } from "../src/helpers/ethers.js";
 import { getDelay, getRange } from "../src/helpers/utils.js";
 import {
   TEST_TIMEOUT_FACTOR,
@@ -22,11 +22,9 @@ import {
 describe("database", function () {
   this.timeout(TEST_TIMEOUT_FACTOR * 15000);
 
-  const accounts = getAccounts();
+  const accounts = getAccounts(TEST_PROVIDER_URL);
   // Note that we're using the second account here
-  const wallet = accounts[1];
-  const provider = getDefaultProvider(TEST_PROVIDER_URL);
-  const signer = wallet.connect(provider);
+  const signer = accounts[1];
   const db = new Database({ signer, autoWait: true });
 
   test("when initialized via constructor", async function () {
@@ -196,7 +194,7 @@ describe("database", function () {
       const stmt = db.prepare(
         `insert into ${tableToSubselect} (address) values (?1);insert into ${tableToMutate} (data) select ?2 from ${tableToSubselect} where address=?1;`
       );
-      const batch = db.batch([stmt.bind(signer.address, "test")]);
+      const batch = db.batch([stmt.bind(await signer.getAddress(), "test")]);
 
       // expect an error due to the individual statements touching two tables
       await rejects(batch, (err: any) => {
@@ -288,7 +286,7 @@ describe("database", function () {
       // seed the target subselect table with data
       const { meta: writeMeta } = await db
         .prepare(`insert into ${tableToSubselect} (address) values (?1);`)
-        .bind(signer.address)
+        .bind(await signer.getAddress())
         .run();
       await writeMeta.txn?.wait();
 
@@ -297,7 +295,9 @@ describe("database", function () {
       const stmt = db.prepare(
         `insert into ${tableToMutate} (data) select ?1 from ${tableToSubselect} where address=?2;`
       );
-      const [batch] = await db.batch([stmt.bind(val, signer.address)]);
+      const [batch] = await db.batch([
+        stmt.bind(val, await signer.getAddress()),
+      ]);
 
       assert(batch.meta.duration != null);
       assert(batch.meta.txn?.transactionHash != null);

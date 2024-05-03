@@ -4,14 +4,12 @@ import { jsonFileAliases } from "@tableland/node-helpers";
 import { type Signer } from "ethers";
 import { type GlobalOptions } from "../cli.js";
 import { getWalletWithProvider, logger } from "../utils.js";
-import EnsResolver from "./EnsResolver.js";
 
 export class Connections {
   _database: Database | undefined;
   _validator: Validator | undefined;
   _signer: Signer | undefined;
   _registry: Registry | undefined;
-  _ens: EnsResolver | undefined;
   _network: helpers.ChainInfo | undefined;
   _ready: Promise<void>;
   _readyResolved = false;
@@ -26,11 +24,6 @@ export class Connections {
       throw new Error(
         "You must await the 'ready' method before using this class"
       );
-  }
-
-  get ens(): EnsResolver | undefined {
-    this.readyCheck();
-    return this._ens;
   }
 
   get registry(): Registry {
@@ -95,15 +88,7 @@ export class Connections {
   // Then the command handler will have everything it needs as long as it is requiring the correct
   // args.
   async prepare(argv: GlobalOptions): Promise<void> {
-    const {
-      privateKey,
-      providerUrl,
-      chain,
-      baseUrl,
-      enableEnsExperiment,
-      ensProviderUrl,
-      aliases,
-    } = argv;
+    const { privateKey, providerUrl, chain, baseUrl, aliases } = argv;
 
     if (privateKey != null && chain != null) {
       this._signer = await getWalletWithProvider({
@@ -111,13 +96,6 @@ export class Connections {
         // providerUrl is optional, and this might be undefined
         providerUrl,
         chain,
-      });
-    }
-
-    if (enableEnsExperiment != null && ensProviderUrl != null) {
-      this._ens = new EnsResolver({
-        ensProviderUrl,
-        signer: this._signer,
       });
     }
 

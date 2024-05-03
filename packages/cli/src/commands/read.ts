@@ -79,11 +79,7 @@ export const handler = async (argv: Arguments<Options>): Promise<void> => {
     }
 
     const setup = await setupCommand(argv);
-    const { database: db, ens } = setup;
-
-    if (argv.enableEnsExperiment != null && ens != null) {
-      statement = await ens.resolve(statement);
-    }
+    const { database: db } = setup;
 
     let res;
     // TODO: linting really complains about this kind of conditional. need to refactor.

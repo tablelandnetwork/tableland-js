@@ -2,7 +2,7 @@ import { type WaitableTransactionReceipt } from "../registry/utils.js";
 import { type FetchConfig } from "../validator/client/index.js";
 import { type PollingController } from "./await.js";
 import { type ChainName, getBaseUrl } from "./chains.js";
-import { type Signer, type ExternalProvider, getSigner } from "./ethers.js";
+import { type Signer, type Eip1193Provider, getSigner } from "./ethers.js";
 import { isPromise } from "./utils.js";
 
 export interface ReadConfig {
@@ -63,7 +63,7 @@ export async function extractBaseUrl(
       }
       return getBaseUrl(chainNameOrId);
     }
-    const chainId = await conn.signer.getChainId();
+    const chainId = await extractChainId(conn);
     return getBaseUrl(chainId);
   }
   return conn.baseUrl;
@@ -71,7 +71,7 @@ export async function extractBaseUrl(
 
 export async function extractSigner(
   conn: Config = {},
-  external?: ExternalProvider
+  external?: Eip1193Provider
 ): Promise<Signer> {
   if (conn.signer == null) {
     return await getSigner(external);
@@ -81,7 +81,8 @@ export async function extractSigner(
 
 export async function extractChainId(conn: Config = {}): Promise<number> {
   const signer = await extractSigner(conn);
-  const chainId = await signer.getChainId();
+  const network = await signer.provider?.getNetwork();
+  const chainId = Number(network?.chainId);
 
   if (chainId === 0 || isNaN(chainId) || chainId == null) {
     /* c8 ignore next 4 */

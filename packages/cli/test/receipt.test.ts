@@ -1,5 +1,4 @@
 import { equal, match } from "node:assert";
-import { getDefaultProvider } from "ethers";
 import { Database } from "@tableland/sdk";
 import { getAccounts } from "@tableland/local";
 import { describe, test, afterEach, before } from "mocha";
@@ -11,11 +10,9 @@ import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup";
 
 const defaultArgs = ["--providerUrl", TEST_PROVIDER_URL];
 
-const accounts = getAccounts();
+const accounts = getAccounts(TEST_PROVIDER_URL);
 // using the validator wallet since the test is updating healthbot
-const wallet = accounts[0];
-const provider = getDefaultProvider(TEST_PROVIDER_URL);
-const signer = wallet.connect(provider);
+const signer = accounts[0];
 const db = new Database({ signer, autoWait: true });
 
 describe("commands/receipt", function () {

@@ -1,4 +1,5 @@
 import { EventEmitter } from "events";
+import { type ContractEventPayload } from "ethers";
 import asyncGenFromEmit from "@async-generators/from-emitter";
 import { type TablelandTables } from "@tableland/evm";
 import { pollTransactionReceipt } from "../validator/receipt.js";
@@ -30,21 +31,74 @@ type ListenerMap = Record<
   }
 >;
 
-type ContractEventTableIdMap = Record<
-  // the key is the event name in the Solidity contract
-  string,
+/**
+ * Possible events that can be emitted by the Registry as defined in the
+ * ITablelandTables interface.
+ */
+export type ContractEventNames =
+  | "CreateTable"
+  | "RunSQL"
+  | "TransferTable"
+  | "SetController";
+
+/**
+ * The names of the events that can be subscribed to (i.e., everything except
+ * table creation).
+ */
+type SubscribableEventNames = Exclude<ContractEventNames, "CreateTable">;
+
+/**
+ * A mapping of the contract events to the event names that will be emitted and
+ * where the corresponding `tableId` can be found in the event arguments.
+ * Optionally, the `emit` key/value can for subscribing to events.
+ * @template T The event names that will be emitted.
+ * @typedef {Object} EventTableIdMap
+ * @property {number} tableIdIndex Index of the tableId in the event arguments.
+ * @property {string} [emit] Event name that will be emitted.
+ */
+type EventTableIdMap<T extends string> = Record<
+  T,
   {
-    // `tableIdIndex` is the index of the event's argument that contains the tableId
     tableIdIndex: number;
-    // `emit` is the name of the event that will be emitted by the TableEventBus instance
-    emit: string;
+    emit?: string;
   }
 >;
 
 /**
- * List of the Registry Contract events that will be emitted from the TableEventBus.
+ * Mapping of all contract events to the event names and the location of
+ * `tableId` in the event arguments.
  */
-const contractEvents: ContractEventTableIdMap = {
+type ContractEventTableIdMap = EventTableIdMap<ContractEventNames>;
+
+/**
+ * Mapping of only the subscribable contract events to the event names and the
+ * location of `tableId` in the event arguments, plus, emitter keyword.
+ */
+type SubscribableEventTableIdMap = EventTableIdMap<SubscribableEventNames>;
+
+/**
+ * Mapping of all ITablelandTables contract events and `tableId` event index.
+ */
+export const contractEventsTableIdx: ContractEventTableIdMap = {
+  CreateTable: {
+    tableIdIndex: 1,
+  },
+  RunSQL: {
+    tableIdIndex: 2,
+  },
+  TransferTable: {
+    tableIdIndex: 2,
+  },
+  SetController: {
+    tableIdIndex: 0,
+  },
+};
+
+/**
+ * Mapping of only the subscribable contract events, `tableId` event index, and
+ * emitter keyword.
+ */
+const contractEvents: SubscribableEventTableIdMap = {
   RunSQL: {
     tableIdIndex: 2,
     emit: "change",
@@ -130,8 +184,8 @@ export class TableEventBus {
    * changes to.
    */
   async addTableIterator<T>(tableName: string): Promise<AsyncIterable<T>> {
-    const emmiter = await this.addListener(tableName);
-    return fromEmitter(emmiter, {
+    const emitter = await this.addListener(tableName);
+    return fromEmitter(emitter, {
       onNext: "change",
       onError: "error",
       onDone: "close",
@@ -175,7 +229,7 @@ export class TableEventBus {
           // the contract is listening to we remove the listener
           for (let i = 0; i < listenerObj.contractListeners.length; i++) {
             const listenerEventFunc = listenerObj.contractListeners[i];
-            contract.off(
+            void contract.off(
               listenerEventFunc.eventName,
               listenerEventFunc.eventListener
             );
@@ -230,17 +284,16 @@ export class TableEventBus {
     const listenerEventFunctions = [];
 
     for (const key in contractEvents) {
-      const eve = contractEvents[key];
+      const eve = contractEvents[key as SubscribableEventNames];
       // put the listener function in memory so we can remove it if needed
       const listener = (...args: any[]): void => {
         const _tableId = args[eve.tableIdIndex].toString();
         if (_tableId !== tableId) return;
-        if (key !== "RunSQL") {
+        if (key !== "RunSQL" && eve.emit != null) {
           emitter.emit(eve.emit, args);
         }
-
-        const transactionHash = args[args.length - 1].transactionHash;
-
+        const eventPayload = args[args.length - 1] as ContractEventPayload;
+        const transactionHash = eventPayload.log.transactionHash;
         const poll = async (): Promise<void> => {
           const baseUrl =
             this.config.baseUrl == null
@@ -260,7 +313,8 @@ export class TableEventBus {
         });
       };
 
-      contract.on(key, listener);
+      const topicFilter = contract.filters[key as SubscribableEventNames];
+      void contract.on(topicFilter, listener);
 
       listenerEventFunctions.push({
         eventName: key,

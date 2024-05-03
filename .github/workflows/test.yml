@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        nodejs: [16, 18, 20]
+        nodejs: [18, 20]
 
     steps:
       - name: Checkout 🛎️

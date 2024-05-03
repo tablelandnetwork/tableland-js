@@ -5,19 +5,15 @@ import { strictEqual } from "node:assert";
 import { describe, test } from "mocha";
 import { getAccounts } from "@tableland/local";
 import { Database } from "@tableland/sdk";
-import { providers } from "ethers";
 import { jsonFileAliases } from "../src/utils.js";
 import { TEST_TIMEOUT_FACTOR, TEST_PROVIDER_URL } from "./setup.js";
 
-const { getDefaultProvider } = providers;
 const _dirname = url.fileURLToPath(new URL(".", import.meta.url));
 
 describe("sdk", function () {
   this.timeout(TEST_TIMEOUT_FACTOR * 10000);
   // Note that we're using the second account here
-  const [, wallet] = getAccounts();
-  const provider = getDefaultProvider(TEST_PROVIDER_URL);
-  const signer = wallet.connect(provider);
+  const [, signer] = getAccounts(TEST_PROVIDER_URL);
 
   describe("json file aliases", function () {
     const aliasesDir = path.join(_dirname, "aliases");
