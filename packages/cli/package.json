@@ -51,7 +51,7 @@
     "@tableland/node-helpers": "^1.0.0",
     "@tableland/sdk": "^7.0.0",
     "@tableland/sqlparser": "^1.3.0",
-    "@tableland/studio-cli": "^0.1.0-pre.3",
+    "@tableland/studio-cli": "^0.1.0-pre.4",
     "cli-select-2": "^2.0.0",
     "cosmiconfig": "^9.0.0",
     "data-uri-to-buffer": "^6.0.1",

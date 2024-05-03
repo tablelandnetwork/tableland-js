@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 
+// eslint-disable-next-line
+// @ts-ignore
 import yargs from "yargs/yargs";
+// eslint-disable-next-line
+// @ts-ignore
 import { hideBin } from "yargs/helpers";
 import { LocalTableland } from "./main.js";
 import { type Config } from "./util.js";

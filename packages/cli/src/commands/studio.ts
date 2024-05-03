@@ -6,7 +6,6 @@ import type { GlobalOptions } from "../cli.js";
 export const command = "studio <sub>";
 export const desc = "Tableland Studio CLI commands";
 
-// @ts-expect-error polygon amoy vs mumbai is `temporarily` causing a type error
 export interface Options extends GlobalOptions, StudioOptions {}
 
 export const builder: (yargs: Argv<Record<string, unknown>>) => void =
