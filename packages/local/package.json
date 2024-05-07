@@ -1,6 +1,6 @@
 {
   "name": "@tableland/local",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Tooling to start a sandboxed Tableland network.",
   "repository": {
     "type": "git",
