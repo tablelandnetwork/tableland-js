@@ -229,18 +229,20 @@ export const getConfigFile = async function (): Promise<
 const isExtraneousLog = function (log: string): boolean {
   log = log.toLowerCase();
 
+  if (log.match(/dropping new height/i) != null) return true;
+  if (log.match(/eth_blockNumber/i) != null) return true;
+  if (log.match(/eth_feeHistory/i) != null) return true;
   if (log.match(/eth_getLogs/i) != null) return true;
-  if (log.match(/Mined empty block/i) != null) return true;
   if (log.match(/eth_getBlockByNumber/i) != null) return true;
   if (log.match(/eth_getBalance/i) != null) return true;
-  if (log.match(/processing height/i) != null) return true;
-  if (log.match(/new last processed height/i) != null) return true;
-  if (log.match(/eth_unsubscribe/i) != null) return true;
   if (log.match(/eth_subscribe/i) != null) return true;
+  if (log.match(/eth_unsubscribe/i) != null) return true;
+  if (log.match(/Mined empty block/i) != null) return true;
   if (log.match(/new blocks subscription is quiet, rebuilding/i) != null)
     return true;
+  if (log.match(/new last processed height/i) != null) return true;
+  if (log.match(/processing height/i) != null) return true;
   if (log.match(/received new chain header/i) != null) return true;
-  if (log.match(/dropping new height/i) != null) return true;
 
   return false;
 };
