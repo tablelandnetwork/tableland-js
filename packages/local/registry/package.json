@@ -5,7 +5,7 @@
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "@openzeppelin/contracts-upgradeable": "^4.8.3",
     "@openzeppelin/hardhat-upgrades": "^3.0.5",
-    "@tableland/evm": "^6.1.0",
+    "@tableland/evm": "^6.1.1",
     "erc721a-upgradeable": "^4.2.2",
     "hardhat": "^2.22.2"
   }
