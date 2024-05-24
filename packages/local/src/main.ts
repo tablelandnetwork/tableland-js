@@ -34,6 +34,7 @@ class LocalTableland {
   readonly defaultRegistryPort: number = 8545;
 
   #_readyResolves: Array<(value: unknown) => any> = [];
+  stopping: boolean = false;
   config;
   initEmitter;
   ready: boolean = false;
@@ -349,12 +350,24 @@ class LocalTableland {
 
   async shutdown(): Promise<void> {
     try {
+      // need to ensure shutdown isn't run twice in parallel since SIGINT is
+      // sent repeatedly depending on where it originates
+      if (this.stopping) {
+        console.log("stopping...");
+        return;
+      }
+
+      this.stopping = true;
       await this.shutdownValidator();
       await this.shutdownRegistry();
 
       this.#_cleanup();
+      this.stopping = false;
+      this.ready = false;
     } catch (err: any) {
       this.#_cleanup();
+      this.stopping = false;
+      this.ready = false;
       throw new Error(
         `unexpected error during shutdown: ${err.message as string}`
       );
