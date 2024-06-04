@@ -52,6 +52,7 @@ describe("chains", function () {
         "arbitrum-sepolia",
         "polygon-amoy",
         "optimism-sepolia",
+        "base-sepolia",
         "local-tableland",
         "localhost",
       ];
@@ -94,6 +95,7 @@ describe("chains", function () {
       strictEqual(getChainId("polygon-amoy"), 80002);
       strictEqual(getChainId("optimism-sepolia"), 11155420);
       strictEqual(getChainId("arbitrum-sepolia"), 421614);
+      strictEqual(getChainId("base-sepolia"), 84532);
       strictEqual(getChainId("filecoin-calibration"), 314159);
       // Local
       strictEqual(getChainId("localhost"), 31337);
