@@ -61,6 +61,8 @@ export function getLink(chain: helpers.ChainName, hash: string): string {
       return `https://nova.arbiscan.io/tx/${hash}`;
     }
     return `https://arbiscan.io/tx/${hash}`;
+  } else if (chain.includes("base")) {
+    return `https://sepolia.basescan.org/tx/${hash}`;
   } else if (chain.includes("filecoin")) {
     if (chain.includes("calibration")) {
       return `https://calibration.filfox.info/tx/${hash}`;

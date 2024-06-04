@@ -155,6 +155,16 @@ export interface components {
        */
       readonly statement?: string;
       /**
+       * @description The values of query parameters 
+       * @example [
+       *   1,
+       *   "hello",
+       *   null,
+       *   true
+       * ]
+       */
+      readonly params?: readonly (string | number | boolean)[];
+      /**
        * @description The requested response format: * `objects` - Returns the query results as a JSON array of JSON objects. * `table` - Return the query results as a JSON object with columns and rows properties.
        *  
        * @example objects

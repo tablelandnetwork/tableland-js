@@ -115,8 +115,13 @@ export function isPolygon(chainId: number | bigint): boolean {
  */
 export function chainCanGetFeeData(chainId: number | bigint): boolean {
   const chainIdNumber = typeof chainId === "bigint" ? Number(chainId) : chainId;
-  // Optimism Sepolia and Filecoin Calibration will log an RPC error
-  return !(chainIdNumber === 11155420 || chainIdNumber === 314159);
+  // Optimism Sepolia, Base Sepolia, and Filecoin Calibration will log an RPC
+  // error when calling `getFeeData` because they don't support the method.
+  return !(
+    chainIdNumber === 11155420 ||
+    chainIdNumber === 84532 ||
+    chainIdNumber === 314159
+  );
 }
 
 /**
