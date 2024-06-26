@@ -1,6 +1,6 @@
 {
   "name": "@tableland/cli",
-  "version": "7.1.0",
+  "version": "7.2.0",
   "description": "Tableland command line tools",
   "repository": {
     "type": "git",
