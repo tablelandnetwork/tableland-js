@@ -59,6 +59,7 @@ describe("chains", function () {
       const mainnets: ChainName[] = [
         "mainnet",
         "arbitrum",
+        "base",
         "polygon",
         "optimism",
       ];
@@ -89,6 +90,7 @@ describe("chains", function () {
       strictEqual(getChainId("optimism"), 10);
       strictEqual(getChainId("arbitrum"), 42161);
       strictEqual(getChainId("arbitrum-nova"), 42170);
+      strictEqual(getChainId("base"), 8453);
       strictEqual(getChainId("filecoin"), 314);
       // Testnets
       strictEqual(getChainId("sepolia"), 11155111);
