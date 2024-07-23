@@ -1,6 +1,6 @@
 {
   "name": "@tableland/sdk",
-  "version": "7.2.0",
+  "version": "7.2.1",
   "description": "A database client and helpers for the Tableland network",
   "repository": {
     "type": "git",
@@ -83,7 +83,7 @@
   "dependencies": {
     "@async-generators/from-emitter": "^0.3.0",
     "@tableland/evm": "^6.3.0",
-    "@tableland/sqlparser": "^1.3.0",
+    "@tableland/sqlparser": "^1.4.1",
     "ethers": "^6.12.1"
   }
 }
